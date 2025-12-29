@@ -18,5 +18,4 @@ Improve user experience with a clean, modern interface
 🗂 Task & schedule organization
 
 👥 Team collaboration support
-
 📊 Dashboard for monitoring event progress
