@@ -1,22 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Smart Event Management</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Event Management</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <div class="container">
-    <h1>Smart Event Management System</h1>
-    <p>Please login or create an account to continue</p>
+    <div class="container">
+        <header class="hero-section">
+            <h1>Smart Event Management System</h1>
+            <p class="subtitle">AI-Driven Planning & Budget Optimization</p>
+        </header>
 
-    <div class="btn-group">
-      <a href="login.html" class="btn">Login</a>
-      <a href="register.html" class="btn btn-outline">Create Account</a>
+        <div class="glass-card">
+            <p>Welcome! Please login or create an account to start planning your event.</p>
+            
+            <div class="btn-group">
+                <a href="login.html" class="btn btn-primary">Login</a>
+                <a href="register.html" class="btn btn-outline">Create Account</a>
+            </div>
+
+            <div id="status-container">
+                <span id="status-dot"></span>
+                <span id="status-text">Checking System Status...</span>
+            </div>
+        </div>
     </div>
-  </div>
 
+    <script>
+        // Check if Flask Backend is running on startup
+        async function checkBackend() {
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
+            try {
+                const response = await fetch('http://127.0.0.1:5000/');
+                if (response.ok) {
+                    statusText.innerText = "System Online";
+                    statusDot.style.backgroundColor = "#2ecc71"; // Green
+                }
+            } catch (error) {
+                statusText.innerText = "Backend Offline - Start app.py";
+                statusDot.style.backgroundColor = "#e74c3c"; // Red
+            }
+        }
+        window.onload = checkBackend;
+    </script>
 </body>
 </html>
-
