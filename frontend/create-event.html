@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Event</title>
+  <link rel="stylesheet" href="css/event.css">
+</head>
+<body>
+
+  <div class="card">
+    <h2>Create New Event</h2>
+
+    <form>
+      <!-- Basic Details -->
+      <input type="text" placeholder="Event Name" required>
+
+      <select required>
+        <option value="">Event Type</option>
+        <option>Conference</option>
+        <option>Workshop</option>
+        <option>Cultural Program</option>
+        <option>Festival</option>
+        <option>Seminar</option>
+      </select>
+
+      <input type="date" required>
+      <input type="time" required>
+      <input type="text" placeholder="Venue" required>
+
+      <!-- Guests & Budget -->
+      <input type="number" placeholder="Number of Guests" required>
+      <input type="number" placeholder="Estimated Budget (₹)" required>
+
+      <!-- Food & Facilities -->
+      <select required>
+        <option value="">Food Arrangement</option>
+        <option>Veg</option>
+        <option>Non-Veg</option>
+        <option>Both</option>
+        <option>No Food</option>
+      </select>
+
+      <select required>
+        <option value="">Seating Arrangement</option>
+        <option>Classroom Style</option>
+        <option>Theatre Style</option>
+        <option>Round Tables</option>
+        <option>Open Seating</option>
+      </select>
+
+      <!-- Additional Requirements -->
+      <textarea placeholder="Additional Requirements (Sound system, projector, etc.)"></textarea>
+
+      <button class="btn">Create Event</button>
+    </form>
+  </div>
+
+</body>
+</html>
+
