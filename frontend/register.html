@@ -2,37 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Create Account</title>
-  <link rel="stylesheet" href="css/style2.css">
-</head>
-<body>
-
-  <div class="card">
-    <h2>Create Account</h2>
-
-    <form>
-      <input type="text" placeholder="Full Name" required>
-      <input type="email" placeholder="Email" required>
-      <input type="password" placeholder="Password" required>
-
-      <button class="btn">Register</button>
-    </form>
-
-    <p class="small-text">
-      Already have an account?
-      <a href="login.html">Login</a>
-    </p>
-  </div>
-
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Account - Smart Event Management</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style2.css">
 </head>
 <body>
 
@@ -40,9 +12,10 @@
     <h2>Create Account</h2>
 
     <form id="registration-form">
-      <input type="text" placeholder="Full Name" required class="input-field">
-      <input type="email" placeholder="Email" required class="input-field">
-      <input type="password" placeholder="Password" required class="input-field">
+
+      <input type="text" id="name" placeholder="Full Name" required class="input-field">
+      <input type="email" id="email" placeholder="Email" required class="input-field">
+      <input type="password" id="password" placeholder="Password" required class="input-field">
 
       <button type="submit" class="btn btn-primary">Register</button>
     </form>
@@ -54,105 +27,37 @@
   </div>
 
   <script>
-    document.querySelector('#registration-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Match the JSON keys with what your app.py expects
-        const userData = {
-            username: document.querySelector('input[placeholder="Full Name"]').value,
-            email: document.querySelector('input[placeholder="Email"]').value,
-            password: document.querySelector('input[placeholder="Password"]').value
-        };
+    document.getElementById('registration-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
 
-        try {
-            // Ensure Flask is running on port 5000
-            const response = await fetch('http://127.0.0.1:5000/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                alert("Registration Successful!");
-                window.location.href = 'login.html';
-            } else {
-                alert("Error: " + result.message);
-            }
-        } catch (err) {
-            console.error("Connection failed", err);
-            alert("Backend server not reachable. Ensure app.py is running.");
+      const userData = {
+        username: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      };
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert("Registration Successful!");
+          window.location.href = "login.html";
+        } else {
+          alert(result.message || "Registration failed");
         }
+
+      } catch (error) {
+        console.error(error);
+        alert("Cannot connect to server. Please make sure backend is running.");
+      }
     });
   </script>
+
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Account - Smart Event Management</title>
-  <link rel="stylesheet" href="css/style2.css">
-</head>
-<body>
-
-  <div class="glass-card">
-    <h2>Create Account</h2>
-
-    <form action="dashboard.html">
-
-      <input type="text" placeholder="Full Name" required>
-      <input type="email" placeholder="Email" required>
-      <input type="password" placeholder="Password" required>
-    <form id="registration-form">
-      <input type="text" placeholder="Full Name" required class="input-field">
-      <input type="email" placeholder="Email" required class="input-field">
-      <input type="password" placeholder="Password" required class="input-field">
-
-      <button type="submit" class="btn btn-primary">Register</button>
-    </form>
-
-    <p class="small-text">
-      Already have an account?
-      <a href="login.html" style="color: white; font-weight: bold;">Login</a>
-    </p>
-  </div>
-
-  <script>
-    document.querySelector('#registration-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Match the JSON keys with what your app.py expects
-        const userData = {
-            username: document.querySelector('input[placeholder="Full Name"]').value,
-            email: document.querySelector('input[placeholder="Email"]').value,
-            password: document.querySelector('input[placeholder="Password"]').value
-        };
-
-        try {
-            // Ensure Flask is running on port 5000
-            const response = await fetch('http://127.0.0.1:5000/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                alert("Registration Successful!");
-                window.location.href = 'login.html';
-            } else {
-                alert("Error: " + result.message);
-            }
-        } catch (err) {
-            console.error("Connection failed", err);
-            alert("Backend server not reachable. Ensure app.py is running.");
-        }
-    });
-  </script>
-</body>
-</html>
-
