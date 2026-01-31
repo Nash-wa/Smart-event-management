@@ -11,22 +11,17 @@
   <div class="glass-card">
     <h2>Create Account</h2>
 
-    <form action="dashboard.html">
-
-      <input type="text" placeholder="Full Name" required>
-      <input type="email" placeholder="Email" required>
-      <input type="password" placeholder="Password" required>
     <form id="registration-form">
-      <input type="text" placeholder="Full Name" required class="input-field">
-      <input type="email" placeholder="Email" required class="input-field">
-      <input type="password" placeholder="Password" required class="input-field">
+      <input id="fullName" name="username" type="text" placeholder="Full Name" required class="input-field">
+      <input id="email" name="email" type="email" placeholder="Email" required class="input-field">
+      <input id="password" name="password" type="password" placeholder="Password" required class="input-field">
 
       <button type="submit" class="btn btn-primary">Register</button>
     </form>
 
     <p class="small-text">
       Already have an account?
-      <a href="login.html" style="color: white; font-weight: bold;">Login</a>
+      <a href="login.html" class="login-link">Login</a>
     </p>
   </div>
 
