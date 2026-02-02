@@ -1,0 +1,24 @@
+const mongoose = require('mongoose');
+
+const eventSchema = mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
+    name: { type: String, required: true },
+    description: { type: String },
+    category: { type: String, required: true },
+    mode: { type: String, default: 'Offline' },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date },
+    startTime: { type: String },
+    endTime: { type: String },
+    venue: { type: String },
+    address: { type: String },
+    capacity: { type: Number },
+    budget: { type: Number },
+    selectedVendors: { type: Map, of: Object }, // Store selected vendor details
+    features: { type: Object },
+    plan: { type: Object }, // To store generated plan (Timeline, Budget Breakdown, etc.)
+}, {
+    timestamps: true,
+});
+
+module.exports = mongoose.model('Event', eventSchema);

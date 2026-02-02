@@ -1,42 +1,95 @@
 import { useNavigate } from "react-router-dom";
-import "../css/login.css";
 
 function Login() {
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault(); // ❗ stop page reload
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const email = e.target[0].value;
+    const password = e.target[1].value;
 
-    // later: validate username & password with backend
-    navigate("/dashboard");
+    console.log("--- Login Attempt ---");
+    console.log("Email:", email);
+    console.log("Password:", password);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      console.log("Server Response:", data);
+
+      if (response.ok) {
+        localStorage.setItem('userInfo', JSON.stringify(data));
+        if (data.role === 'admin') {
+          navigate("/admin-dashboard");
+        } else if (data.role === 'vendor') {
+          navigate("/vendor-dashboard");
+        } else {
+          navigate("/dashboard");
+        }
+      } else {
+        alert(data.message || "Login failed");
+      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      alert("Error connecting to server");
+    }
   };
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
+      {/* Background Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] animate-pulse delay-1000"></div>
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="text"
-          placeholder="Username"
-          required
-        />
+      <div className="glass-card p-8 rounded-3xl w-full max-w-md relative z-10 animate-fade-in">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-muted-foreground">Sign in to manage your events</p>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          required
-        />
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium ml-1">Username</label>
+            <input
+              type="text"
+              placeholder="Enter your username"
+              className="glass-input"
+              required
+            />
+          </div>
 
-        <button type="submit">Login</button>
-      </form>
+          <div className="space-y-2">
+            <label className="text-sm font-medium ml-1">Password</label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              className="glass-input"
+              required
+            />
+          </div>
 
-      <p>
-        Don’t have an account?{" "}
-        <span onClick={() => navigate("/register")} className="link">
-          Register
-        </span>
-      </p>
+          <button type="submit" className="gradient-button w-full mt-4">
+            Sign In
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Don't have an account?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="text-primary hover:text-accent cursor-pointer font-semibold transition-colors"
+          >
+            Register
+          </span>
+        </p>
+      </div>
     </div>
   );
 }
