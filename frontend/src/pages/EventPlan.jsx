@@ -11,15 +11,20 @@ function EventPlan() {
     useEffect(() => {
         const fetchEvent = async () => {
             try {
-                const res = await fetch(`http://127.0.0.1:5000/api/events/${id}`);
+                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                const res = await fetch(`http://127.0.0.1:5000/api/events/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${userInfo?.token}`
+                    }
+                });
                 const data = await res.json();
                 if (res.ok) {
                     setEvent(data);
                 } else {
                     console.error("Event not found");
                 }
-            } catch (err) {
-                console.error("Failed to fetch event", err);
+            } catch (error) {
+                console.error("Failed to fetch event", error);
             } finally {
                 setLoading(false);
             }

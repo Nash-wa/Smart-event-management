@@ -22,7 +22,7 @@ const getVendors = asyncHandler(async (req, res) => {
 // @route   POST /api/vendors
 // @access  Private (Vendor)
 const createVendor = asyncHandler(async (req, res) => {
-    const { name, category, price, description, ownerId, portfolio } = req.body;
+    const { name, category, price, description, portfolio } = req.body;
 
     const vendor = await Vendor.create({
         name,
@@ -30,7 +30,7 @@ const createVendor = asyncHandler(async (req, res) => {
         price,
         description,
         portfolio: portfolio || [],
-        owner: ownerId, // Should ideally come from auth middleware
+        owner: req.user._id, // Secured: uses authenticated user ID
         isApproved: false // Always false on creation
     });
 

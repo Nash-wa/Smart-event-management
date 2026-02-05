@@ -10,12 +10,18 @@ function Services() {
     useEffect(() => {
         const fetchVendors = async () => {
             try {
-                const res = await fetch("http://localhost:5000/api/vendors");
+                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                const headers = { 'Content-Type': 'application/json' };
+                if (userInfo?.token) {
+                    headers['Authorization'] = `Bearer ${userInfo.token}`;
+                }
+
+                const res = await fetch("http://localhost:5000/api/vendors", { headers });
                 const data = await res.json();
                 setVendors(data);
                 setLoading(false);
-            } catch (err) {
-                console.error("Error fetching vendors:", err);
+            } catch (error) {
+                console.error("Error fetching vendors:", error);
                 setLoading(false);
             }
         };

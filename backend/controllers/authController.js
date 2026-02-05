@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
+const generateToken = require('../utils/generateToken');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -17,7 +18,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const user = await User.create({
         name,
         email,
-        password, // In a real app, hash this password!
+        password, // Hashed automatically by pre-save hook in userModel
         role: role === 'vendor' ? 'vendor' : 'user',
     });
 
@@ -27,6 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            token: generateToken(user._id),
         });
     } else {
         res.status(400);
@@ -39,20 +41,18 @@ const registerUser = asyncHandler(async (req, res) => {
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    console.log(`Login attempt for: ${email}`);
 
     const user = await User.findOne({ email });
 
-    if (user && user.password === password) { // Simple check for now
-        console.log(`Login successful for: ${email}`);
+    if (user && (await user.matchPassword(password))) {
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
+            token: generateToken(user._id),
         });
     } else {
-        console.log(`Login failed for: ${email}`);
         res.status(401);
         throw new Error('Invalid email or password');
     }

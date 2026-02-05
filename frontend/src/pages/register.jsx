@@ -12,7 +12,6 @@ function Register() {
     const email = e.target.email.value.trim();
     const password = e.target.password.value.trim();
 
-    // ✅ Basic validation
     if (!name || !email || !password) {
       alert("All fields are required");
       return;
@@ -28,15 +27,11 @@ function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Registration Successful!");
-        // Save user data for redirection logic
         localStorage.setItem('userInfo', JSON.stringify(data));
-
-        if (data.role === 'vendor') {
-          navigate("/vendor-dashboard");
-        } else {
-          navigate("/dashboard");
-        }
+        // Redirect based on role
+        if (data.role === 'admin') navigate("/admin-dashboard");
+        else if (data.role === 'vendor') navigate("/vendor-dashboard");
+        else navigate("/dashboard");
       } else {
         alert(data.message || "Registration failed");
       }

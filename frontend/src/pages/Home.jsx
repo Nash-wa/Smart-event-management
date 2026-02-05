@@ -8,6 +8,7 @@ function Home() {
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
     if (userInfo) {
+      // eslint-disable-next-line
       setUser(JSON.parse(userInfo));
     }
   }, []);

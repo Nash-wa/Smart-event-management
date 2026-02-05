@@ -57,11 +57,16 @@ function CreateEvent() {
     setCurrentCategory(category);
     setShowVendorModal(true);
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=${category}`);
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=${category}`, {
+        headers: {
+          'Authorization': `Bearer ${userInfo?.token}`
+        }
+      });
       const data = await res.json();
       setAvailableVendors(data);
-    } catch (err) {
-      console.error("Failed to fetch vendors", err);
+    } catch (error) {
+      console.error("Failed to fetch vendors", error);
     }
   };
 
@@ -320,13 +325,15 @@ function CreateEvent() {
 
                   const payload = {
                     ...formData,
-                    selectedVendors,
-                    user: userInfo._id || userInfo.id // Assuming _id or id is present
+                    selectedVendors
                   };
 
                   const response = await fetch('http://127.0.0.1:5000/api/events', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${userInfo?.token}`
+                    },
                     body: JSON.stringify(payload)
                   });
 

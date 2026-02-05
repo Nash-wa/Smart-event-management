@@ -11,6 +11,8 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
+const helmet = require('helmet');
+app.use(helmet());
 
 app.get('/', (req, res) => {
     res.send('API is running...');
@@ -20,6 +22,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/transactions', require('./routes/transactionRoutes'));
 
 // Error handling
 app.use((req, res, next) => {

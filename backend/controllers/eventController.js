@@ -22,7 +22,7 @@ const createEvent = asyncHandler(async (req, res) => {
     const plan = generateEventPlan({ name, category, budget, startDate });
 
     const event = await Event.create({
-        user: req.body.user, // Ideally get from auth middleware
+        user: req.user._id, // Secured: uses authenticated user ID
         name,
         description,
         category,
@@ -43,11 +43,11 @@ const createEvent = asyncHandler(async (req, res) => {
     res.status(201).json(event);
 });
 
-// @desc    Get all events
+// @desc    Get all events for logged in user
 // @route   GET /api/events
 // @access  Private
 const getEvents = asyncHandler(async (req, res) => {
-    const events = await Event.find({});
+    const events = await Event.find({ user: req.user._id }); // Filter by user
     res.json(events);
 });
 
@@ -58,6 +58,11 @@ const getEventById = asyncHandler(async (req, res) => {
     const event = await Event.findById(req.params.id);
 
     if (event) {
+        // Security check: ensure event belongs to user
+        if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            res.status(401);
+            throw new Error('User not authorized');
+        }
         res.json(event);
     } else {
         res.status(404);

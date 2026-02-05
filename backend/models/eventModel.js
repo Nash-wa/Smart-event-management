@@ -17,6 +17,9 @@ const eventSchema = mongoose.Schema({
     selectedVendors: { type: Map, of: Object }, // Store selected vendor details
     features: { type: Object },
     plan: { type: Object }, // To store generated plan (Timeline, Budget Breakdown, etc.)
+    paymentStatus: { type: String, enum: ['unpaid', 'partial', 'paid'], default: 'unpaid' },
+    totalPaid: { type: Number, default: 0 },
+    platformCommission: { type: Number, default: 0 }, // 10% commission
 }, {
     timestamps: true,
 });
