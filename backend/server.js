@@ -23,6 +23,8 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/spatial', require('./routes/spatialRoutes'));
 
 // Error handling
 app.use((req, res, next) => {

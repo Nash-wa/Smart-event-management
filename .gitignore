@@ -4,9 +4,4 @@ dist/
 build/
 coverage/
 .DS_Store
-node_modules/
-.env
-dist/
-coverage/
-.DS_Store
 *.log

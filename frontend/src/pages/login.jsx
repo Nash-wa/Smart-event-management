@@ -13,11 +13,7 @@ function Login() {
       const response = await api.post('/auth/login', { email, password });
       const data = response.data;
 
-<<<<<<< Updated upstream
-      const data = await response.json();
-=======
       console.log("Server Response:", data);
->>>>>>> Stashed changes
 
       if (response.status === 200) {
         localStorage.setItem('userInfo', JSON.stringify(data));

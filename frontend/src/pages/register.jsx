@@ -22,15 +22,9 @@ function Register() {
       const response = await api.post('/auth/register', { name, email, password, role });
       const data = response.data;
 
-<<<<<<< Updated upstream
-      const data = await response.json();
-
-      if (response.ok) {
-=======
       if (response.status === 200) {
         alert("Registration Successful!");
         // Save user data for redirection logic
->>>>>>> Stashed changes
         localStorage.setItem('userInfo', JSON.stringify(data));
         // Redirect based on role
         if (data.role === 'admin') navigate("/admin-dashboard");

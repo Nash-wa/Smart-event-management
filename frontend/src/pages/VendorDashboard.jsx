@@ -34,10 +34,6 @@ function VendorDashboard() {
 
             const combined = [...(Array.isArray(allData) ? allData : []), ...(Array.isArray(pData) ? pData : [])];
             setMyVendors(combined.filter(v => v.owner === user._id));
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
-
             // Aggregate reviews from my vendors
             const reviews = [];
             combined.filter(v => v.owner === user._id).forEach(v => {
@@ -46,11 +42,9 @@ function VendorDashboard() {
                 }
             });
             setMyReviews(reviews);
-
-            setLoading(false);
         } catch (err) {
             console.error(err);
-            setLoading(false);
+            // setLoading(false);
         }
     }, [user._id]);
 
