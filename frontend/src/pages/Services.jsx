@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+    const [sortBy, setSortBy] = useState("rating"); // new state
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchVendors = async () => {
             try {
+<<<<<<< Updated upstream
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
                 const headers = { 'Content-Type': 'application/json' };
                 if (userInfo?.token) {
@@ -19,6 +22,10 @@ function Services() {
                 const res = await fetch("http://localhost:5000/api/vendors", { headers });
                 const data = await res.json();
                 setVendors(data);
+=======
+                const res = await api.get(`/vendors?sort=${sortBy}`);
+                setVendors(res.data);
+>>>>>>> Stashed changes
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching vendors:", error);
@@ -26,7 +33,7 @@ function Services() {
             }
         };
         fetchVendors();
-    }, []);
+    }, [sortBy]); // Trigger on sort change
 
     const categories = ["Photography", "Catering", "Music/DJ", "Decoration", "Invitation", "Venue"];
 
@@ -50,7 +57,23 @@ function Services() {
             <div className="max-w-7xl mx-auto">
                 <div className="mb-12">
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Elite Partners</h1>
-                    <p className="text-muted-foreground text-lg">Browse professional teams across all departments.</p>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                        <p className="text-muted-foreground text-lg">Browse professional teams across all departments.</p>
+
+                        {/* Sort Dropdown */}
+                        <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1 border border-white/10">
+                            <span className="text-xs font-bold text-gray-500 px-2 uppercase">Sort By</span>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer"
+                            >
+                                <option value="rating" className="bg-black">Top Rated</option>
+                                <option value="price_low" className="bg-black">Price: Low to High</option>
+                                <option value="price_high" className="bg-black">Price: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -89,6 +112,11 @@ function Services() {
                                                 <p className="text-gray-400 text-sm mb-6 leading-relaxed line-clamp-3">
                                                     {vendor.description}
                                                 </p>
+
+                                                {/* Reviews Preview */}
+                                                <div className="mb-4">
+                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{vendor.reviews_count} Verified Reviews</p>
+                                                </div>
 
                                                 {/* Portfolio Preview */}
                                                 {vendor.portfolio && vendor.portfolio.length > 0 && (
