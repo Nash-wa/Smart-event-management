@@ -69,12 +69,23 @@ function CreateEvent() {
     setSelectedVendors({ ...selectedVendors, [vendor.category]: vendor });
     setShowVendorModal(false);
 
-    // Also enable the feature flag
-    const featureKey = vendor.category.toLowerCase().split('/')[0]; // simple mapping
-    setFormData(prev => ({
-      ...prev,
-      features: { ...prev.features, [featureKey]: true }
-    }));
+    // Map vendor category to feature key
+    const categoryMap = {
+      'Photography': 'photography',
+      'Catering': 'food',
+      'Music/DJ': 'music',
+      'Decoration': 'decoration',
+      'Invitation': 'invitations'
+    };
+
+    const featureKey = categoryMap[vendor.category];
+
+    if (featureKey) {
+      setFormData(prev => ({
+        ...prev,
+        features: { ...prev.features, [featureKey]: true }
+      }));
+    }
   };
 
   const handleCheckboxChange = (e) => {
@@ -84,6 +95,9 @@ function CreateEvent() {
       features: { ...formData.features, [name]: checked }
     });
   };
+
+  // AR Scan State
+  const [isScanning, setIsScanning] = useState(false);
 
   return (
     <div className="create-event-page">
@@ -275,10 +289,10 @@ function CreateEvent() {
                     ) : (
                       <button
                         className="px-3 py-1 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200"
+                        disabled={isScanning}
                         onClick={async (e) => {
                           e.preventDefault();
-                          const btn = e.target;
-                          btn.innerText = "Scanning Room...";
+                          setIsScanning(true);
 
                           // Mock Scan
                           setTimeout(async () => {
@@ -291,12 +305,13 @@ function CreateEvent() {
                             } catch (err) {
                               console.error(err);
                               alert("Scan failed. Is backend running?");
+                            } finally {
+                              setIsScanning(false);
                             }
-                            btn.innerText = "Scan Area";
                           }, 2000);
                         }}
                       >
-                        Scan Area
+                        {isScanning ? "Scanning Room..." : "Scan Area"}
                       </button>
                     )}
                   </div>
