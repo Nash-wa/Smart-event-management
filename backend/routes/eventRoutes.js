@@ -6,9 +6,12 @@ const {
     getEventById,
     updateEvent,
     deleteEvent,
-    getEventStats
+    getEventStats,
+    getPublicEvents
 } = require('../controllers/eventController');
 const { protect } = require('../middleware/authMiddleware');
+
+router.get('/public', getPublicEvents);
 
 router.route('/')
     .get(protect, getEvents)

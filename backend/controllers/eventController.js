@@ -75,7 +75,7 @@ const createEvent = asyncHandler(async (req, res) => {
 // @route   GET /api/events
 // @access  Private
 const getEvents = asyncHandler(async (req, res) => {
-    const { keyword, category, status } = req.query;
+    const { keyword, category, status, minBudget, maxBudget } = req.query;
 
     const query = { user: req.user._id };
 
@@ -97,11 +97,37 @@ const getEvents = asyncHandler(async (req, res) => {
         query.status = status;
     }
 
+    // Filter by budget range
+    if (minBudget || maxBudget) {
+        query.budget = {};
+        if (minBudget) query.budget.$gte = Number(minBudget);
+        if (maxBudget) query.budget.$lte = Number(maxBudget);
+    }
+
     // Filter by user and populate user details for "more details"
     const events = await Event.find(query)
         .populate('user', 'name email')
         .sort('-createdAt');
 
+    res.json(events);
+});
+
+// @desc    Get all public events for browsing
+// @route   GET /api/events/public
+// @access  Public
+const getPublicEvents = asyncHandler(async (req, res) => {
+    const { category, keyword } = req.query;
+    const query = { isPublic: true, status: 'published' };
+
+    if (category) query.category = category;
+    if (keyword) {
+        query.$or = [
+            { name: { $regex: keyword, $options: 'i' } },
+            { description: { $regex: keyword, $options: 'i' } }
+        ];
+    }
+
+    const events = await Event.find(query).populate('user', 'name email profilePic');
     res.json(events);
 });
 
@@ -214,5 +240,6 @@ module.exports = {
     getEventById,
     updateEvent,
     deleteEvent,
-    getEventStats
+    getEventStats,
+    getPublicEvents
 };

@@ -75,4 +75,26 @@ const getEventAttendees = asyncHandler(async (req, res) => {
     res.json(attendees);
 });
 
-module.exports = { registerForEvent, getMyRegistrations, getEventAttendees };
+// @desc    Check-in an attendee
+// @route   PUT /api/registrations/:id/checkin
+// @access  Private
+const checkInAttendee = asyncHandler(async (req, res) => {
+    const registration = await Registration.findById(req.params.id).populate('event');
+
+    if (registration) {
+        // Security: Only organizer or admin
+        if (registration.event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            res.status(401);
+            throw new Error('Not authorized to check-in');
+        }
+
+        registration.checkedIn = true;
+        const updatedRegistration = await registration.save();
+        res.json(updatedRegistration);
+    } else {
+        res.status(404);
+        throw new Error('Registration not found');
+    }
+});
+
+module.exports = { registerForEvent, getMyRegistrations, getEventAttendees, checkInAttendee };

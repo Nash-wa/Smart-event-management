@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerForEvent, getMyRegistrations, getEventAttendees } = require('../controllers/registrationController');
+const { registerForEvent, getMyRegistrations, getEventAttendees, checkInAttendee } = require('../controllers/registrationController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.route('/')
@@ -8,5 +8,6 @@ router.route('/')
 
 router.get('/me', protect, getMyRegistrations);
 router.get('/event/:eventId', protect, getEventAttendees);
+router.put('/:id/checkin', protect, checkInAttendee);
 
 module.exports = router;
