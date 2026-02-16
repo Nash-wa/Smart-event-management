@@ -1,6 +1,12 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 const generateToken = require('../utils/generateToken');
+const mongoose = require('mongoose');
+const storage = require('../utils/storage');
+const bcrypt = require('bcryptjs');
+
+// Helper to check if DB is connected
+const isDbConnected = () => mongoose.connection.readyState === 1;
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -8,8 +14,33 @@ const generateToken = require('../utils/generateToken');
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
 
-    const userExists = await User.findOne({ email });
+    if (!isDbConnected()) {
+        const userExists = storage.findOne('users', { email });
+        if (userExists) {
+            res.status(400);
+            throw new Error('User already exists');
+        }
 
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const user = storage.create('users', {
+            name,
+            email,
+            password: hashedPassword,
+            role: role === 'vendor' ? 'vendor' : 'user',
+        });
+
+        return res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            token: generateToken(user._id),
+        });
+    }
+
+    const userExists = await User.findOne({ email });
     if (userExists) {
         res.status(400);
         throw new Error('User already exists');
@@ -18,7 +49,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const user = await User.create({
         name,
         email,
-        password, // Hashed automatically by pre-save hook in userModel
+        password,
         role: role === 'vendor' ? 'vendor' : 'user',
     });
 
@@ -41,6 +72,22 @@ const registerUser = asyncHandler(async (req, res) => {
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+
+    if (!isDbConnected()) {
+        const user = storage.findOne('users', { email });
+        if (user && (await bcrypt.compare(password, user.password))) {
+            return res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                token: generateToken(user._id),
+            });
+        } else {
+            res.status(401);
+            throw new Error('Invalid email or password');
+        }
+    }
 
     const user = await User.findOne({ email });
 

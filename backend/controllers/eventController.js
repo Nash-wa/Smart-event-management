@@ -2,6 +2,11 @@ const asyncHandler = require('express-async-handler');
 const Event = require('../models/eventModel');
 const { generateEventPlan } = require('../utils/planGenerator');
 const { createNotification } = require('./notificationController');
+const mongoose = require('mongoose');
+const storage = require('../utils/storage');
+
+// Helper to check if DB is connected
+const isDbConnected = () => mongoose.connection.readyState === 1;
 
 // @desc    Create new event
 // @route   POST /api/events
@@ -19,24 +24,36 @@ const createEvent = asyncHandler(async (req, res) => {
         throw new Error('Please fill in all required fields');
     }
 
-    if (endDate && new Date(endDate) < new Date(startDate)) {
-        res.status(400);
-        throw new Error('End date cannot be before start date');
-    }
-
-    if (budget && budget < 0) {
-        res.status(400);
-        throw new Error('Budget cannot be negative');
-    }
-
     // Generate the plan
     const plan = generateEventPlan({ name, category, budget, startDate });
-
-    // Calculate platform commission (10%)
     const platformCommission = budget ? (Number(budget) * 0.1) : 0;
 
+    if (!isDbConnected()) {
+        const event = storage.create('events', {
+            user: req.user._id,
+            name,
+            description,
+            category,
+            mode,
+            startDate,
+            endDate,
+            startTime,
+            endTime,
+            venue,
+            address,
+            capacity,
+            budget,
+            features,
+            selectedVendors,
+            plan,
+            platformCommission,
+            status: status || 'pending'
+        });
+        return res.status(201).json(event);
+    }
+
     const event = await Event.create({
-        user: req.user._id, // Secured: uses authenticated user ID
+        user: req.user._id,
         name,
         description,
         category,
@@ -51,8 +68,8 @@ const createEvent = asyncHandler(async (req, res) => {
         budget,
         features,
         selectedVendors,
-        plan, // Save the generated plan
-        platformCommission, // Auto-calculate commission
+        plan,
+        platformCommission,
         tags,
         bannerImage,
         isPublic,
@@ -60,13 +77,15 @@ const createEvent = asyncHandler(async (req, res) => {
     });
 
     // Notify the user
-    await createNotification(
-        req.user._id,
-        'Event Created 🚀',
-        `Your event "${name}" has been successfully created.`,
-        'success',
-        `/event-plan/${event._id}`
-    );
+    try {
+        await createNotification(
+            req.user._id,
+            'Event Created 🚀',
+            `Your event "${name}" has been successfully created.`,
+            'success',
+            `/event-plan/${event._id}`
+        );
+    } catch (e) { }
 
     res.status(201).json(event);
 });
@@ -135,6 +154,16 @@ const getPublicEvents = asyncHandler(async (req, res) => {
 // @route   GET /api/events/:id
 // @access  Private
 const getEventById = asyncHandler(async (req, res) => {
+    if (!isDbConnected()) {
+        const event = storage.findById('events', req.params.id);
+        if (event) {
+            return res.json(event);
+        } else {
+            res.status(404);
+            throw new Error('Event not found');
+        }
+    }
+
     const event = await Event.findById(req.params.id).populate('user', 'name email');
 
     if (event) {

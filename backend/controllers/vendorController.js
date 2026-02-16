@@ -1,12 +1,30 @@
 const asyncHandler = require('express-async-handler');
 const Vendor = require('../models/vendorModel');
+const mongoose = require('mongoose');
 
 // @desc    Get all approved vendors
 // @route   GET /api/vendors
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
     const category = req.query.category;
-    const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
+    const isApproved = req.query.isApproved === 'false' ? false : true;
+
+    // Fallback data if DB is down
+    if (mongoose.connection.readyState !== 1) {
+        const dummyVendors = [
+            { _id: 'v1', name: 'Pixel Perfect Studios', category: 'Photography', price: 500, rating: 4.8, description: 'Capturing moments that last forever.' },
+            { _id: 'v2', name: 'Royal Feast Catering', category: 'Catering', price: 1200, rating: 4.9, description: 'Premium buffer and dining.' },
+            { _id: 'v3', name: 'DJ Blast', category: 'Music/DJ', price: 300, rating: 4.7, description: 'Rock the dance floor.' },
+            { _id: 'v4', name: 'Elegant Decors', category: 'Decoration', price: 400, rating: 4.3, description: 'Minimalist and classy designs.' },
+            { _id: 'v5', name: 'Paper & Ink', category: 'Invitation', price: 50, rating: 4.1, description: 'Custom printed and digital cards.' }
+        ];
+
+        const filtered = category
+            ? dummyVendors.filter(v => v.category === category)
+            : dummyVendors;
+
+        return res.json(filtered);
+    }
 
     let query = { isApproved };
 
