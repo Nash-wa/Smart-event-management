@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Event = require('../models/eventModel');
+const { createNotification } = require('./notificationController');
 
 // @desc    Process a simulated payment and split commission
 // @route   POST /api/transactions/pay
@@ -25,6 +26,14 @@ const processPayment = asyncHandler(async (req, res) => {
         }
 
         const updatedEvent = await event.save();
+
+        // Notify User
+        await createNotification(
+            event.user,
+            'Payment Received 💰',
+            `A payment of ₹${amount} was received for "${event.name}".`,
+            'success'
+        );
 
         res.json({
             success: true,

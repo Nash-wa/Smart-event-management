@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Event = require('../models/eventModel');
 const { generateEventPlan } = require('../utils/planGenerator');
+const { createNotification } = require('./notificationController');
 
 // @desc    Create new event
 // @route   POST /api/events
@@ -9,7 +10,7 @@ const createEvent = asyncHandler(async (req, res) => {
     const {
         name, category, startDate, endDate, startTime, endTime,
         description, mode, venue, address, capacity, budget,
-        features, selectedVendors
+        features, selectedVendors, tags, bannerImage, isPublic, status
     } = req.body;
 
     // Simple validation
@@ -51,18 +52,53 @@ const createEvent = asyncHandler(async (req, res) => {
         features,
         selectedVendors,
         plan, // Save the generated plan
-        platformCommission // Auto-calculate commission
+        platformCommission, // Auto-calculate commission
+        tags,
+        bannerImage,
+        isPublic,
+        status
     });
+
+    // Notify the user
+    await createNotification(
+        req.user._id,
+        'Event Created 🚀',
+        `Your event "${name}" has been successfully created.`,
+        'success',
+        `/event-plan/${event._id}`
+    );
 
     res.status(201).json(event);
 });
 
-// @desc    Get all events for logged in user
+// @desc    Get all events for logged in user (with Search & Filter)
 // @route   GET /api/events
 // @access  Private
 const getEvents = asyncHandler(async (req, res) => {
+    const { keyword, category, status } = req.query;
+
+    const query = { user: req.user._id };
+
+    // Search by keyword in name or description
+    if (keyword) {
+        query.$or = [
+            { name: { $regex: keyword, $options: 'i' } },
+            { description: { $regex: keyword, $options: 'i' } }
+        ];
+    }
+
+    // Filter by category
+    if (category) {
+        query.category = category;
+    }
+
+    // Filter by status
+    if (status) {
+        query.status = status;
+    }
+
     // Filter by user and populate user details for "more details"
-    const events = await Event.find({ user: req.user._id })
+    const events = await Event.find(query)
         .populate('user', 'name email')
         .sort('-createdAt');
 

@@ -25,6 +25,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/spatial', require('./routes/spatialRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Error handling
 app.use((req, res, next) => {

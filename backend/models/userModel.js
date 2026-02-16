@@ -6,6 +6,10 @@ const userSchema = mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['user', 'vendor', 'admin'], default: 'user' },
+    bio: { type: String, default: 'Organizing smart events!' },
+    profilePic: { type: String, default: 'https://ui-avatars.com/api/?background=random' },
+    phoneNumber: { type: String },
+    isVerified: { type: Boolean, default: false },
 }, {
     timestamps: true,
 });
