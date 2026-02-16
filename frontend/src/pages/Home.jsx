@@ -135,16 +135,16 @@ function Home() {
               color="from-pink-500/20 to-rose-500/20"
             />
             <FeatureCard
-              icon="🎤"
-              title="Corporate & Tech"
-              desc="Streamline Conferences, Workshops, and Hackathons with registration, ticketing, and live streaming tools."
-              color="from-blue-500/20 to-cyan-500/20"
+              icon="🧠"
+              title="Venture Advisor"
+              desc="Our proprietary Tactical Intelligence engine provides tailored advice for event ventures, maximizing ROI and efficiency."
+              color="from-primary/20 to-accent/20"
             />
             <FeatureCard
-              icon="🎨"
-              title="Creative Arts"
-              desc="Organize Concerts, Exhibitions, and Festivals. Handle verified entry and merchandise budgeting easily."
-              color="from-purple-500/20 to-indigo-500/20"
+              icon="👓"
+              title="AR Explorer"
+              desc="Revolutionary Augmented Reality venue navigation. Guide your guests through complex spaces with ease."
+              color="from-blue-500/20 to-cyan-500/20"
             />
           </div>
         </div>

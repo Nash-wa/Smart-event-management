@@ -142,14 +142,38 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Browse Services Extra Card */}
-          <div className="glass-card p-6 rounded-3xl group hovered-card cursor-pointer border-accent/20 bg-accent/5" onClick={() => navigate("/services")}>
+          {/* Smart Venture Advice */}
+          <div className="glass-card p-6 rounded-3xl group hovered-card cursor-pointer border-primary/20 bg-primary/5" onClick={() => navigate("/venture-advice")}>
+            <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <span className="text-2xl">🧠</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Venture Advisor</h3>
+            <p className="text-muted-foreground text-sm mb-4">Get AI-powered tactical advice for your event venture.</p>
+            <div className="flex items-center text-primary text-sm font-medium">
+              Get Advice <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </div>
+
+          {/* AR Navigation Card */}
+          <div className="glass-card p-6 rounded-3xl group hovered-card cursor-pointer border-accent/20 bg-accent/5" onClick={() => navigate("/ar-navigation")}>
             <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <span className="text-2xl">👓</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">AR Explorer</h3>
+            <p className="text-muted-foreground text-sm mb-4">Navigate venues using augmented reality guidance.</p>
+            <div className="flex items-center text-accent text-sm font-medium">
+              Launch AR <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </div>
+
+          {/* Browse Services Extra Card */}
+          <div className="glass-card p-6 rounded-3xl group hovered-card cursor-pointer border-white/5 bg-white/5" onClick={() => navigate("/services")}>
+            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="text-2xl">🏬</span>
             </div>
             <h3 className="text-xl font-semibold mb-2">Vendor Teams</h3>
             <p className="text-muted-foreground text-sm mb-4">Explore menus and work of all departments.</p>
-            <div className="flex items-center text-accent text-sm font-medium">
+            <div className="flex items-center text-gray-400 text-sm font-medium">
               Browse All <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
             </div>
           </div>

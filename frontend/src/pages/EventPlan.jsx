@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../css/eventplan.css";
 
+
 function EventPlan() {
     const { id } = useParams();
     const [event, setEvent] = useState(null);
@@ -12,12 +13,18 @@ function EventPlan() {
         const fetchEvent = async () => {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const res = await fetch(`http://127.0.0.1:5000/api/events/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${userInfo?.token}`
+
+                const res = await fetch(
+                    `http://127.0.0.1:5000/api/events/${id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${userInfo?.token}`
+                        }
                     }
-                });
+                );
+
                 const data = await res.json();
+
                 if (res.ok) {
                     setEvent(data);
                 } else {
@@ -29,6 +36,7 @@ function EventPlan() {
                 setLoading(false);
             }
         };
+
         fetchEvent();
     }, [id]);
 
@@ -44,7 +52,12 @@ function EventPlan() {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white">
                 <h1 className="text-3xl font-bold mb-4">Event Not Found</h1>
-                <button onClick={() => navigate("/dashboard")} className="px-6 py-2 bg-accent rounded-lg">Back to Dashboard</button>
+                <button
+                    onClick={() => navigate("/dashboard")}
+                    className="px-6 py-2 bg-accent rounded-lg"
+                >
+                    Back to Dashboard
+                </button>
             </div>
         );
     }
@@ -54,117 +67,159 @@ function EventPlan() {
     return (
         <div className="event-plan-page min-h-screen bg-black text-white p-6 md:p-12">
             <div className="max-w-6xl mx-auto">
-                {/* Header */}
+
+                {/* HEADER */}
                 <div className="flex justify-between items-end mb-12 border-b border-white/10 pb-8">
                     <div>
-                        <span className="text-accent font-mono uppercase tracking-widest text-sm mb-2 block">Ultimate Event Plan ✨</span>
+                        <span className="text-accent font-mono uppercase tracking-widest text-sm mb-2 block">
+                            Ultimate Event Plan ✨
+                        </span>
+
                         <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
                             {event.name}
                         </h1>
-                        <p className="text-gray-400 text-lg max-w-2xl">{event.description}</p>
+
+                        <p className="text-gray-400 text-lg max-w-2xl">
+                            {event.description}
+                        </p>
                     </div>
+
                     <div className="text-right">
-                        <p className="text-2xl font-bold">{new Date(event.startDate).toLocaleDateString()}</p>
+                        <p className="text-2xl font-bold">
+                            {new Date(event.startDate).toLocaleDateString()}
+                        </p>
                         <p className="text-gray-500">{event.venue || "TBD"}</p>
                     </div>
                 </div>
 
+                {/* CONTENT */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Plan Column */}
+
+                    {/* LEFT COLUMN */}
                     <div className="lg:col-span-2 space-y-8">
 
-                        {/* Timeline Section */}
+                        {/* VENTURE STRATEGY ADVICE */}
+                        <section className="glass-card p-10 rounded-[2.5rem] border-primary/20 bg-gradient-to-br from-primary/10 to-transparent backdrop-blur-3xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span className="text-8xl">💡</span>
+                            </div>
+                            <h2 className="text-xs font-bold text-accent uppercase tracking-[0.3em] mb-4">Venture Strategy Advisor</h2>
+                            <p className="text-2xl md:text-3xl font-medium leading-tight text-white/90">
+                                {(() => {
+                                    const cat = event.category?.toLowerCase() || "";
+                                    const budget = Number(event.budget) || 0;
+                                    const level = budget > 100000 ? 'high' : budget > 50000 ? 'medium' : 'low';
+
+                                    const advice = {
+                                        corporate: {
+                                            high: "Focus on multi-track streaming capabilities and VIP networking lounges.",
+                                            medium: "Prioritize seamless registration workflows and high-quality AV equipment.",
+                                            low: "Utilize digital programs and focus on interactive Q&A sessions."
+                                        },
+                                        wedding: {
+                                            high: "Explore immersive themed environments and personalized guest experiences.",
+                                            medium: "Focus on atmospheric lighting and curated music for a cohesive vibe.",
+                                            low: "Leverage unique local decor and community-focused dining."
+                                        },
+                                        conference: {
+                                            high: "Implement AI matching for attendees and high-end interactive exhibition zones.",
+                                            medium: "Ensure robust WiFi infrastructure and centralized networking hubs.",
+                                            low: "Focus on high-quality speaker content and digital-first networking."
+                                        }
+                                    };
+
+                                    // Default fallback
+                                    const type = cat.includes('wedding') ? 'wedding' : cat.includes('corporate') ? 'corporate' : 'conference';
+                                    return advice[type]?.[level] || "Focus on attendee engagement and clear communication of event goals.";
+                                })()}
+                            </p>
+                            <div className="mt-8 flex gap-3">
+                                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-gray-400">ANALYSIS: OPTIMAL</div>
+                                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-gray-400">ROI: HIGH</div>
+                            </div>
+                        </section>
+
+                        {/* TIMELINE */}
                         <section className="glass-card p-8 rounded-3xl border border-white/10 bg-white/5 shadow-2xl">
-                            <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-                                <span className="w-8 h-8 bg-blue-500/20 text-blue-400 rounded-lg flex items-center justify-center text-sm">📅</span>
-                                Planning Timeline
-                            </h2>
-                            <div className="space-y-8 relative before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-[2px] before:bg-white/10">
+                            <h2 className="text-2xl font-bold mb-8">📅 Planning Timeline</h2>
+                            <div className="space-y-8">
                                 {plan.timeline.map((step, index) => (
-                                    <div key={index} className="relative pl-10">
-                                        <div className={`absolute left-0 top-1 w-8 h-8 rounded-full border-4 border-black z-10 flex items-center justify-center ${step.status === 'Completed' ? 'bg-green-500' : 'bg-gray-700'}`}>
-                                            {step.status === 'Completed' && <span className="text-white text-xs">✓</span>}
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <h3 className="font-bold text-lg">{step.task}</h3>
-                                                <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded">{step.date}</span>
-                                            </div>
-                                            <p className="text-gray-400 text-sm">{step.description}</p>
-                                        </div>
+                                    <div key={index} className="relative pl-8 border-l border-white/10">
+                                        <div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                                        <h3 className="font-bold text-lg">{step.task}</h3>
+                                        <p className="text-gray-400 text-sm mt-1">{step.description}</p>
                                     </div>
                                 ))}
                             </div>
                         </section>
 
-                        {/* AI Suggestions */}
-                        <section className="glass-card p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-purple-500/10 to-blue-500/10 shadow-2xl">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-purple-400">
-                                <span className="animate-pulse">🤖</span> Smart Recommendations
-                            </h2>
-                            <div className="space-y-4">
-                                {plan.aiSuggestions.map((suggestion, index) => (
-                                    <div key={index} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-default">
-                                        <p className="text-gray-300">"{suggestion}"</p>
+                        {/* AI SUGGESTIONS */}
+                        <section className="glass-card p-8 rounded-3xl border border-white/10 bg-white/5">
+                            <h2 className="text-2xl font-bold mb-6">🤖 Smart Recommendations</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {plan.aiSuggestions.map((s, i) => (
+                                    <div key={i} className="p-4 bg-white/5 rounded-2xl border border-white/5 text-sm text-gray-300">
+                                        {s}
                                     </div>
                                 ))}
                             </div>
                         </section>
                     </div>
 
-                    {/* Sidebar Column */}
+                    {/* RIGHT COLUMN */}
                     <div className="space-y-8">
 
-                        {/* Budget Breakdown */}
+                        {/* BUDGET */}
                         <section className="glass-card p-6 rounded-3xl border border-white/10 bg-white/5">
-                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <span className="text-green-400">💰</span> Budget Allocation
-                            </h2>
-                            <div className="space-y-6">
-                                {plan.budgetBreakdown.map((item, index) => (
-                                    <div key={index}>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="text-gray-400">{item.category}</span>
-                                            <span className="font-mono">₹{item.amount.toLocaleString()}</span>
-                                        </div>
-                                        <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                                            <div
-                                                className="bg-accent h-full rounded-full transition-all duration-1000"
-                                                style={{ width: `${item.percentage}%` }}
-                                            ></div>
-                                        </div>
+                            <h2 className="text-xl font-bold mb-4">💰 Budget Allocation</h2>
+
+                            {plan.budgetBreakdown.map((item, index) => (
+                                <div key={index} className="mb-3">
+                                    <div className="flex justify-between">
+                                        <span>{item.category}</span>
+                                        <span>₹{item.amount}</span>
                                     </div>
-                                ))}
-                            </div>
-                            <div className="mt-8 pt-6 border-t border-white/10">
-                                <p className="text-center text-gray-500 text-sm">Estimated Total</p>
-                                <p className="text-center text-3xl font-extrabold text-white">₹{event.budget.toLocaleString()}</p>
-                            </div>
+                                </div>
+                            ))}
                         </section>
 
-                        {/* Checklist */}
+                        {/* CHECKLIST */}
                         <section className="glass-card p-6 rounded-3xl border border-white/10 bg-white/5">
-                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <span className="text-yellow-400">✅</span> Action Checklist
-                            </h2>
-                            <div className="space-y-4">
-                                {plan.checklist.map((task, index) => (
-                                    <label key={index} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 rounded border-white/20 bg-transparent text-accent focus:ring-accent" />
-                                        <span className="text-gray-300 text-sm">{task.item}</span>
-                                    </label>
-                                ))}
-                            </div>
+                            <h2 className="text-xl font-bold mb-4">✅ Action Checklist</h2>
+
+                            {plan.checklist.map((task, index) => (
+                                <div key={index}>{task.item}</div>
+                            ))}
                         </section>
 
                     </div>
                 </div>
 
+                {/* BUTTONS SECTION */}
                 <div className="mt-12 flex justify-center gap-4">
-                    <button onClick={() => navigate("/dashboard")} className="px-8 py-4 border border-white/10 rounded-2xl hover:bg-white/5 transition-all">Go to Dashboard</button>
-                    <button onClick={() => window.print()} className="px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-gray-200 transition-all flex items-center gap-2">
+
+                    <button
+                        onClick={() => navigate("/dashboard")}
+                        className="px-8 py-4 border border-white/10 rounded-2xl hover:bg-white/5"
+                    >
+                        Go to Dashboard
+                    </button>
+
+                    {/* ✅ NEW AR BUTTON */}
+                    <button
+                        onClick={() => navigate("/ar-navigation")}
+                        className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-glow hover:scale-105 transition-all"
+                    >
+                        Launch AR HUD 🧭
+                    </button>
+
+                    <button
+                        onClick={() => window.print()}
+                        className="px-8 py-4 bg-white text-black font-bold rounded-2xl"
+                    >
                         Download PDF Plan 📥
                     </button>
+
                 </div>
             </div>
         </div>

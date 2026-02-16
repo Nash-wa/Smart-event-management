@@ -15,6 +15,10 @@ import Services from "./pages/Services";
 import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EventPlan from "./pages/EventPlan";
+import ARNavigation from "./pages/ARNavigation";
+import VentureAdvice from "./pages/VentureAdvice";
+
+
 
 function App() {
   return (
@@ -35,6 +39,9 @@ function App() {
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/ar-navigation" element={<ARNavigation />} />
+        <Route path="/venture-advice" element={<VentureAdvice />} />
+
       </Routes>
     </BrowserRouter>
   );
