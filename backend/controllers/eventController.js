@@ -18,6 +18,16 @@ const createEvent = asyncHandler(async (req, res) => {
         throw new Error('Please fill in all required fields');
     }
 
+    if (endDate && new Date(endDate) < new Date(startDate)) {
+        res.status(400);
+        throw new Error('End date cannot be before start date');
+    }
+
+    if (budget && budget < 0) {
+        res.status(400);
+        throw new Error('Budget cannot be negative');
+    }
+
     // Generate the plan
     const plan = generateEventPlan({ name, category, budget, startDate });
 

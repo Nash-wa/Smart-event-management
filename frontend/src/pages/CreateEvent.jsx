@@ -99,6 +99,9 @@ function CreateEvent() {
   // AR Scan State
   const [isScanning, setIsScanning] = useState(false);
 
+  // Submission State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   return (
     <div className="create-event-page">
       <div className="wizard-header">
@@ -357,36 +360,52 @@ function CreateEvent() {
             )}
 
             <div className="wizard-actions">
-              <button className="btn-prev" onClick={handlePrev}>Back</button>
-              <button className="btn-submit" type="submit" onClick={async (e) => {
-                e.preventDefault();
-                try {
-                  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                  if (!userInfo) {
-                    alert("Please login first");
-                    navigate("/login");
+              <button className="btn-prev" onClick={handlePrev} disabled={isSubmitting}>Back</button>
+              <button
+                className="btn-submit"
+                type="submit"
+                disabled={isSubmitting}
+                onClick={async (e) => {
+                  e.preventDefault();
+
+                  // Basic Validation
+                  if (new Date(formData.endDate) < new Date(formData.startDate)) {
+                    alert("End date cannot be before start date!");
                     return;
                   }
 
-                  const payload = {
-                    ...formData,
-                    selectedVendors
-                  };
+                  try {
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                    if (!userInfo) {
+                      alert("Please login first");
+                      navigate("/login");
+                      return;
+                    }
 
-                  const response = await api.post('/events', payload);
-                  const data = response.data;
+                    setIsSubmitting(true); // Start loading
 
-                  if (response.status === 200) {
-                    navigate(`/event-plan/${data._id}`);
-                  } else {
-                    alert(data.message || "Failed to create event");
+                    const payload = {
+                      ...formData,
+                      selectedVendors
+                    };
+
+                    const response = await api.post('/events', payload);
+                    const data = response.data;
+
+                    if (response.status === 200 || response.status === 201) {
+                      navigate(`/event-plan/${data._id}`);
+                    } else {
+                      alert(data.message || "Failed to create event");
+                    }
+                  } catch (error) {
+                    console.error("Fetch error detail:", error);
+                    alert(`Connection error: ${error.message}. Make sure backend is running.`);
+                  } finally {
+                    setIsSubmitting(false); // Stop loading
                   }
-                } catch (error) {
-                  console.error("Fetch error detail:", error);
-                  alert(`Connection error: ${error.message}. Make sure backend is running.`);
-                }
-              }}>
-                🚀 Launch Event
+                }}
+              >
+                {isSubmitting ? "🚀 Launching..." : "🚀 Launch Event"}
               </button>
             </div>
           </div>
