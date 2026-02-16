@@ -90,4 +90,57 @@ const getVendorById = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { getVendors, createVendor, approveVendor, getVendorRequests, getVendorById };
+const Review = require('../models/reviewModel');
+
+// @desc    Add review for a vendor
+// @route   POST /api/vendors/:id/reviews
+// @access  Private
+const createVendorReview = asyncHandler(async (req, res) => {
+    const { rating, comment } = req.body;
+
+    const vendor = await Vendor.findById(req.params.id);
+
+    if (vendor) {
+        const alreadyReviewed = await Review.findOne({ vendor: req.params.id, user: req.user._id });
+
+        if (alreadyReviewed) {
+            res.status(400);
+            throw new Error('Vendor already reviewed');
+        }
+
+        const review = await Review.create({
+            vendor: req.params.id,
+            user: req.user._id,
+            rating: Number(rating),
+            comment,
+        });
+
+        // Update vendor average rating
+        const reviews = await Review.find({ vendor: req.params.id });
+        vendor.rating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+        await vendor.save();
+
+        res.status(201).json({ message: 'Review added' });
+    } else {
+        res.status(404);
+        throw new Error('Vendor not found');
+    }
+});
+
+// @desc    Get reviews for a vendor
+// @route   GET /api/vendors/:id/reviews
+// @access  Public
+const getVendorReviews = asyncHandler(async (req, res) => {
+    const reviews = await Review.find({ vendor: req.params.id }).populate('user', 'name profilePic');
+    res.json(reviews);
+});
+
+module.exports = {
+    getVendors,
+    createVendor,
+    approveVendor,
+    getVendorRequests,
+    getVendorById,
+    createVendorReview,
+    getVendorReviews
+};
