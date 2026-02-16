@@ -113,133 +113,170 @@ function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Sidebar: Configuration */}
-        <section className="lg:col-span-5 space-y-10">
-          <div className="animate-fade-in">
-            <h1 className="text-5xl font-black tracking-tight mb-4 leading-[1.1] text-slate-900">
-              Plan Local. <br /><span className="text-indigo-600">Scale Smart.</span>
-            </h1>
-            <p className="text-slate-500 text-lg leading-relaxed font-medium">
-              The only platform using real Google & Instagram data to match you with Thrissur's top-rated vendors within your budget.
-            </p>
-          </div>
-
-          <div className="p-8 bg-white/90 backdrop-blur-2xl border border-slate-200/80 rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] space-y-8 animate-fade-in delay-100">
-            {/* Event Selection */}
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Target Event Category</label>
-              <div className="flex flex-wrap gap-2">
-                {["Wedding", "Engagement", "Housewarming", "Tech Fest", "Corporate", "Ganamela"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-5 py-2.5 rounded-2xl text-xs font-bold border transition-all ${selectedCategory === cat
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200 -translate-y-[2px]"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-indigo-200"
-                      }`}
-                  >
-                    {cat === "Engagement" ? "Nischayam" : cat === "Housewarming" ? "Grihapravesham" : cat}
-                  </button>
-                ))}
+        <section className="lg:col-span-12 space-y-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-5 space-y-10">
+              <div className="animate-fade-in">
+                <h1 className="text-5xl font-black tracking-tight mb-4 leading-[1.1] text-slate-900">
+                  Plan Local. <br /><span className="text-indigo-600">Scale Smart.</span>
+                </h1>
+                <p className="text-slate-500 text-lg leading-relaxed font-medium">
+                  The only platform using real Google & Instagram data to match you with Thrissur's top-rated vendors within your budget.
+                </p>
               </div>
-            </div>
 
-            {/* Budget Slider */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Budget (₹)</label>
-                <span className="text-4xl font-black text-indigo-600 tracking-tighter">
-                  ₹{parseInt(budget).toLocaleString('en-IN')}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="30000"
-                max="2500000"
-                step="10000"
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-              />
-              <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                <span>Standard</span>
-                <span>Mid-Tier</span>
-                <span>Elite</span>
-              </div>
-            </div>
+              <div className="p-8 bg-white/90 backdrop-blur-2xl border border-slate-200/80 rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] space-y-8 animate-fade-in delay-100">
+                {/* Event Selection */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Target Event Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Wedding", "Engagement", "Housewarming", "Tech Fest", "Corporate", "Ganamela"].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-5 py-2.5 rounded-2xl text-xs font-bold border transition-all ${selectedCategory === cat
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200 -translate-y-[2px]"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-indigo-200"
+                          }`}
+                      >
+                        {cat === "Engagement" ? "Nischayam" : cat === "Housewarming" ? "Grihapravesham" : cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <button
-              onClick={generateStartupPlan}
-              disabled={isSyncing}
-              className="w-full py-6 bg-indigo-600 text-white font-black rounded-3xl shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 text-lg group disabled:opacity-75"
-            >
-              {isSyncing ? (
-                <>
-                  <span className="animate-spin">🌀</span> Syncing Real-Time Availability...
-                </>
-              ) : (
-                <>
-                  <span>⚡</span> Initialize AI Matching
-                </>
+                {/* Budget Slider */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Budget (₹)</label>
+                    <span className="text-4xl font-black text-indigo-600 tracking-tighter">
+                      ₹{parseInt(budget).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="30000"
+                    max="2500000"
+                    step="10000"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                  <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    <span>Standard</span>
+                    <span>Mid-Tier</span>
+                    <span>Elite</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={generateStartupPlan}
+                  disabled={isSyncing}
+                  className="w-full py-6 bg-indigo-600 text-white font-black rounded-3xl shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 text-lg group disabled:opacity-75"
+                >
+                  {isSyncing ? (
+                    <>
+                      <span className="animate-spin">🌀</span> Syncing Real-Time Availability...
+                    </>
+                  ) : (
+                    <>
+                      <span>⚡</span> Initialize AI Matching
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Reliability Box */}
+              {planGenerated && (
+                <div className="p-8 bg-slate-900 rounded-[40px] border border-slate-800 animate-pop shadow-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-ping"></div>
+                      <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em]">Agent Analysis</p>
+                    </div>
+                    <div className="text-white font-mono text-[10px] opacity-40">THR_V_4.2</div>
+                  </div>
+                  <p className="text-sm italic text-indigo-100 leading-relaxed font-medium">
+                    {aiTip}
+                  </p>
+                </div>
               )}
-            </button>
+            </div>
+
+            <section className="lg:col-span-7 space-y-10">
+              {!planGenerated ? (
+                <div className="h-full min-h-[500px] flex flex-col items-center justify-center py-20 text-slate-300 border-2 border-dashed border-slate-200 rounded-[48px] bg-slate-50/50">
+                  <div className="text-9xl mb-8 opacity-10">🚀</div>
+                  <p className="text-2xl font-black text-slate-400 tracking-tight">System Ready for Deployment</p>
+                  <p className="text-sm font-medium">Select parameters to see realistic vendor pairings.</p>
+                </div>
+              ) : (
+                <div className="space-y-12 animate-fade-in">
+                  {/* Chart */}
+                  <div className="p-10 relative overflow-hidden bg-white/90 backdrop-blur-2xl border border-slate-200/80 rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)]">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Resource Distribution Map</h3>
+                    <div className="relative w-full max-w-[480px] mx-auto h-[340px]">
+                      <canvas ref={canvasRef}></canvas>
+                    </div>
+                  </div>
+
+                  {/* Vendors */}
+                  <div>
+                    <div className="flex justify-between items-center mb-8">
+                      <h3 className="text-2xl font-black tracking-tight">Verified Matchmaking</h3>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Found in Thrissur Area</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {(vendorDataStore[selectedCategory] || vendorDataStore["Wedding"]).map((v, i) => (
+                        <VendorCard key={i} vendor={v} budget={budget} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
 
-          {/* Reliability Box */}
-          {planGenerated && (
-            <div className="p-8 bg-slate-900 rounded-[40px] border border-slate-800 animate-pop shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-ping"></div>
-                  <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em]">Agent Analysis</p>
-                </div>
-                <div className="text-white font-mono text-[10px] opacity-40">THR_V_4.2</div>
-              </div>
-              <p className="text-sm italic text-indigo-100 leading-relaxed font-medium">
-                {aiTip}
-              </p>
+          <div className="pt-20 border-t border-slate-100">
+            <h2 className="text-3xl font-black mb-12 text-center tracking-tight">Advanced Platform Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <FeatureCard
+                icon="🎂"
+                title="Social Events"
+                desc="Perfect for Birthdays, Anniversaries, and Weddings. Manage guest lists, catering, and invitations effortlessly."
+                color="from-pink-500/20 to-rose-500/20"
+              />
+              <FeatureCard
+                icon="🧠"
+                title="Venture Advisor"
+                desc="Our proprietary Tactical Intelligence engine provides tailored advice for event ventures, maximizing ROI and efficiency."
+                color="from-indigo-500/20 to-purple-500/20"
+              />
+              <FeatureCard
+                icon="👓"
+                title="AR Explorer"
+                desc="Revolutionary Augmented Reality venue navigation. Guide your guests through complex spaces with ease."
+                color="from-blue-500/20 to-cyan-500/20"
+              />
             </div>
-          )}
-        </section>
-
-        {/* Main Workspace: Results */}
-        <section className="lg:col-span-7 space-y-10">
-          {!planGenerated ? (
-            <div className="h-full min-h-[500px] flex flex-col items-center justify-center py-20 text-slate-300 border-2 border-dashed border-slate-200 rounded-[48px] bg-slate-50/50">
-              <div className="text-9xl mb-8 opacity-10">🚀</div>
-              <p className="text-2xl font-black text-slate-400 tracking-tight">System Ready for Deployment</p>
-              <p className="text-sm font-medium">Select parameters to see realistic vendor pairings.</p>
-            </div>
-          ) : (
-            <div className="space-y-12 animate-fade-in">
-              {/* Chart */}
-              <div className="p-10 relative overflow-hidden bg-white/90 backdrop-blur-2xl border border-slate-200/80 rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)]">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-10">Resource Distribution Map</h3>
-                <div className="relative w-full max-w-[480px] mx-auto h-[340px]">
-                  <canvas ref={canvasRef}></canvas>
-                </div>
-              </div>
-
-              {/* Vendors */}
-              <div>
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black tracking-tight">Verified Matchmaking</h3>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Found in Thrissur Area</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {(vendorDataStore[selectedCategory] || vendorDataStore["Wedding"]).map((v, i) => (
-                    <VendorCard key={i} vendor={v} budget={budget} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-slate-100 text-center text-slate-400 relative z-10 bg-white">
+      <footer className="py-12 border-t border-slate-100 text-center text-slate-400 relative z-10 bg-white mt-20">
         <p className="font-bold text-sm">© 2026 UtsavAI. Crafted for Kerala's Startup Ecosystem.</p>
       </footer>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, desc, color }) {
+  return (
+    <div className={`p-8 bg-gradient-to-br ${color} border border-slate-100 rounded-[32px] transition-all hover:shadow-xl hover:-translate-y-1`}>
+      <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-3xl mb-6 shadow-sm">{icon}</div>
+      <h3 className="text-xl font-black mb-3 text-slate-900 tracking-tight">{title}</h3>
+      <p className="text-slate-500 font-medium leading-relaxed">{desc}</p>
     </div>
   );
 }
