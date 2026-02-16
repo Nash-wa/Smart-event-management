@@ -76,4 +76,18 @@ const getVendorRequests = asyncHandler(async (req, res) => {
     res.json(requests);
 });
 
-module.exports = { getVendors, createVendor, approveVendor, getVendorRequests };
+// @desc    Get vendor by ID
+// @route   GET /api/vendors/:id
+// @access  Public
+const getVendorById = asyncHandler(async (req, res) => {
+    const vendor = await Vendor.findById(req.params.id);
+
+    if (vendor) {
+        res.json(vendor);
+    } else {
+        res.status(404);
+        throw new Error('Vendor not found');
+    }
+});
+
+module.exports = { getVendors, createVendor, approveVendor, getVendorRequests, getVendorById };
