@@ -11,6 +11,10 @@ const vendorSchema = mongoose.Schema({
     rating: { type: Number, default: 0 },
     district: { type: String, required: true },
     address: { type: String },
+    location: {
+        lat: { type: Number },
+        lng: { type: Number }
+    },
     description: { type: String },
     image: { type: String }, // URL or placeholder
     portfolio: [{ type: String }], // Array of previous work URLs

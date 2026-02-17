@@ -65,6 +65,10 @@ const fetchVenuesForDistrict = async (district) => {
             category: 'Venue',
             district: district,
             address: el.tags['addr:full'] || el.tags['addr:street'] || `Located in ${district}`,
+            location: {
+                lat: el.lat || el.center?.lat,
+                lng: el.lon || el.center?.lon
+            },
             rating: parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
             price: Math.floor(Math.random() * (150000 - 20000) + 20000),
             isApproved: true

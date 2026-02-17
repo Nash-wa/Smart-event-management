@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/createevent.css";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const KERALA_DISTRICTS = [
   "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
@@ -98,6 +109,9 @@ function CreateEvent() {
   };
 
   const [venues, setVenues] = useState([]);
+  const [mapCenter, setMapCenter] = useState([10.8505, 76.2711]); // Default Kerala
+  const [zoom, setZoom] = useState(7);
+  const mapRef = useRef();
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -235,11 +249,25 @@ function CreateEvent() {
             <div className="form-row">
               <div className="form-group">
                 <label>Start Time</label>
-                <input name="startTime" type="time" value={formData.startTime} onChange={handleInputChange} />
+                <input
+                  name="startTime"
+                  type="time"
+                  value={formData.startTime}
+                  onChange={handleInputChange}
+                  onClick={(e) => e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
               <div className="form-group">
                 <label>End Time</label>
-                <input name="endTime" type="time" value={formData.endTime} onChange={handleInputChange} />
+                <input
+                  name="endTime"
+                  type="time"
+                  value={formData.endTime}
+                  onChange={handleInputChange}
+                  onClick={(e) => e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
             </div>
 
@@ -262,6 +290,14 @@ function CreateEvent() {
                     venue: e.target.value,
                     address: selectedVenue ? selectedVenue.address : ""
                   });
+                  if (selectedVenue && selectedVenue.location && selectedVenue.location.lat) {
+                    const newCenter = [selectedVenue.location.lat, selectedVenue.location.lng];
+                    setMapCenter(newCenter);
+                    setZoom(15);
+                    if (mapRef.current) {
+                      mapRef.current.setView(newCenter, 15);
+                    }
+                  }
                 }}
               >
                 {venues.map(v => (
@@ -283,6 +319,30 @@ function CreateEvent() {
                 onChange={handleInputChange}
                 readOnly
               />
+            </div>
+
+            {/* Map Section */}
+            <div className="form-group slide-in" style={{ height: '300px', marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <label style={{ marginBottom: '10px', display: 'block' }}>Venue Location Map</label>
+              <MapContainer
+                center={mapCenter}
+                zoom={zoom}
+                style={{ height: '100%', width: '100%' }}
+                ref={mapRef}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {formData.venue && mapCenter[0] !== 10.8505 && (
+                  <Marker position={mapCenter}>
+                    <Popup>
+                      <strong>{formData.venue}</strong><br />
+                      {formData.address}
+                    </Popup>
+                  </Marker>
+                )}
+              </MapContainer>
             </div>
 
             <div className="wizard-actions">
