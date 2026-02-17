@@ -1,0 +1,23 @@
+.home-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.home-container h1 {
+  color: #38bdf8;
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.home-container a {
+  text-decoration: none;
+  background: #38bdf8;
+  color: #0f172a;
+  padding: 12px 24px;
+  border-radius: 8px;
+  margin: 8px;
+  font-weight: bold;
+}
