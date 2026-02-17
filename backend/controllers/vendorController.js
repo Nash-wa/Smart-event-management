@@ -6,6 +6,7 @@ const Vendor = require('../models/vendorModel');
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
     const district = req.query.district;
+    const category = req.query.category;
     const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
 
     let query = { isApproved };
