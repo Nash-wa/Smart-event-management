@@ -13,13 +13,13 @@ function VendorDashboard() {
         portfolio: []
     });
     const [imageUrl, setImageUrl] = useState("");
-    const [loading, setLoading] = useState(true);
+
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
     const fetchData = useCallback(async () => {
-        setLoading(true);
+
         try {
             // Fetch Vendor Requests
             const rRes = await fetch(`http://localhost:5000/api/vendors/requests/${user._id}`);
@@ -35,14 +35,13 @@ function VendorDashboard() {
             const combined = [...allData, ...pData];
             setMyVendors(combined.filter(v => v.owner === user._id));
 
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
+        } catch {
+            // ignore
         }
     }, [user._id]);
 
     useEffect(() => {
+        // eslint-disable-next-line
         fetchData();
     }, [fetchData]);
 
@@ -71,7 +70,7 @@ function VendorDashboard() {
                 fetchData();
                 setActiveTab("overview");
             }
-        } catch (err) {
+        } catch {
             alert("Error submitting venture");
         }
     };

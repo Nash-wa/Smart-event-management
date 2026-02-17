@@ -7,11 +7,11 @@ function AdminDashboard() {
     const [allUsers, setAllUsers] = useState([]);
     const [allEvents, setAllEvents] = useState([]);
     const [stats, setStats] = useState({ users: 0, events: 0, vendors: 0, pending: 0 });
-    const [loading, setLoading] = useState(true);
+
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
-        setLoading(true);
+
         try {
             const vRes = await fetch('http://localhost:5000/api/vendors?isApproved=false');
             const vData = await vRes.json();
@@ -29,14 +29,14 @@ function AdminDashboard() {
             const sData = await sRes.json();
             setStats(sData);
 
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
+
+        } catch {
+            // ignore
         }
     }, []);
 
     useEffect(() => {
+        // eslint-disable-next-line
         fetchData();
     }, [fetchData]);
 
@@ -49,7 +49,7 @@ function AdminDashboard() {
                 alert("Venture Approved! ✅");
                 fetchData();
             }
-        } catch (err) {
+        } catch {
             alert("Error approving");
         }
     };
@@ -67,7 +67,7 @@ function AdminDashboard() {
                 const data = await res.json();
                 alert(data.message || "Delete failed");
             }
-        } catch (err) {
+        } catch {
             alert("Error deleting user");
         }
     };
