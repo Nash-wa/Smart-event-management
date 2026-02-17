@@ -8,7 +8,19 @@ const vendorSchema = mongoose.Schema({
         enum: ['Photography', 'Catering', 'Music/DJ', 'Decoration', 'Venue', 'Invitation']
     },
     price: { type: Number, required: true },
+    location: {
+        lat: { type: Number },
+        lng: { type: Number },
+        address: { type: String }
+    },
+    reliabilityScore: { type: Number, default: 0 }, // 0-100 scale
+    performanceMetrics: {
+        responsiveness: { type: Number, default: 0 },
+        punctuality: { type: Number, default: 0 },
+        quality: { type: Number, default: 0 }
+    },
     rating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
     description: { type: String },
     image: { type: String }, // URL or placeholder
     portfolio: [{ type: String }], // Array of previous work URLs

@@ -11,24 +11,28 @@ function AdminDashboard() {
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
-
         try {
-            const vRes = await fetch('http://localhost:5000/api/vendors?isApproved=false');
-            const vData = await vRes.json();
-            setPendingVendors(vData);
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userInfo?.token}`
+            };
 
-            const uRes = await fetch('http://localhost:5000/api/admin/users');
+            const vRes = await fetch('http://localhost:5000/api/vendors?isApproved=false', { headers });
+            const vData = await vRes.json();
+            setPendingVendors(Array.isArray(vData) ? vData : []);
+
+            const uRes = await fetch('http://localhost:5000/api/admin/users', { headers });
             const uData = await uRes.json();
             setAllUsers(uData);
 
-            const eRes = await fetch('http://localhost:5000/api/events');
+            const eRes = await fetch('http://localhost:5000/api/events', { headers });
             const eData = await eRes.json();
             setAllEvents(eData);
 
-            const sRes = await fetch('http://localhost:5000/api/admin/stats');
+            const sRes = await fetch('http://localhost:5000/api/admin/stats', { headers });
             const sData = await sRes.json();
             setStats(sData);
-
 
         } catch {
             // ignore
@@ -38,12 +42,18 @@ function AdminDashboard() {
     useEffect(() => {
         // eslint-disable-next-line
         fetchData();
-    }, [fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleApprove = async (id) => {
         try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const res = await fetch(`http://localhost:5000/api/vendors/${id}/approve`, {
-                method: 'PUT'
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userInfo?.token}`
+                }
             });
             if (res.ok) {
                 alert("Venture Approved! ✅");
@@ -57,8 +67,12 @@ function AdminDashboard() {
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
         try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${userInfo?.token}`
+                }
             });
             if (res.ok) {
                 alert("User deleted 🗑️");

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 function VendorDashboard() {
@@ -16,23 +16,29 @@ function VendorDashboard() {
 
 
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    const user = useMemo(() => JSON.parse(localStorage.getItem('userInfo') || '{}'), []);
 
     const fetchData = useCallback(async () => {
 
         try {
-            // Fetch Vendor Requests
-            const rRes = await fetch(`http://localhost:5000/api/vendors/requests/${user._id}`);
-            const rData = await rRes.json();
-            setRequests(rData);
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userInfo?.token}`
+            };
 
-            // Fetch ALL vendors and filter for OWNED ones (approved or not)
-            const allRes = await fetch(`http://localhost:5000/api/vendors?isApproved=true`);
+            // Fetch Vendor Requests
+            const rRes = await fetch(`http://localhost:5000/api/vendors/requests/${user._id}`, { headers });
+            const rData = await rRes.json();
+            setRequests(Array.isArray(rData) ? rData : []);
+
+            // Fetch ALL vendors and filter for OWNED ones
+            const allRes = await fetch(`http://localhost:5000/api/vendors?isApproved=true`, { headers });
             const allData = await allRes.json();
-            const pRes = await fetch(`http://localhost:5000/api/vendors?isApproved=false`);
+            const pRes = await fetch(`http://localhost:5000/api/vendors?isApproved=false`, { headers });
             const pData = await pRes.json();
 
-            const combined = [...allData, ...pData];
+            const combined = [...(Array.isArray(allData) ? allData : []), ...(Array.isArray(pData) ? pData : [])];
             setMyVendors(combined.filter(v => v.owner === user._id));
 
         } catch {
@@ -43,7 +49,8 @@ function VendorDashboard() {
     useEffect(() => {
         // eslint-disable-next-line
         fetchData();
-    }, [fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const addImage = () => {
         if (imageUrl && !formData.portfolio.includes(imageUrl)) {
@@ -59,10 +66,14 @@ function VendorDashboard() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const res = await fetch('http://localhost:5000/api/vendors', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, ownerId: user._id })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userInfo?.token}`
+                },
+                body: JSON.stringify(formData) // ownerId added by backend token logic
             });
             if (res.ok) {
                 alert("Venture submitted! Waiting for Admin approval. ✨");

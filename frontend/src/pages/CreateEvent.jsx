@@ -57,11 +57,16 @@ function CreateEvent() {
     setCurrentCategory(category);
     setShowVendorModal(true);
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=${category}`);
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const res = await fetch(`http://localhost:5000/api/vendors?category=${category}`, {
+        headers: {
+          'Authorization': `Bearer ${userInfo?.token}`
+        }
+      });
       const data = await res.json();
       setAvailableVendors(data);
-    } catch (err) {
-      console.error("Failed to fetch vendors", err);
+    } catch (error) {
+      console.error("Failed to fetch vendors", error);
     }
   };
 
@@ -87,9 +92,9 @@ function CreateEvent() {
 
   return (
     <div className="create-event-page">
-      <div className="wizard-header">
-        <h1 className="page-title">Create New Event {step === 3 ? "🚀" : "✨"}</h1>
-        <p className="page-subtitle">Step {step} of 3 • {step === 1 ? "Basic Details" : step === 2 ? "Time & Place" : "Features"}</p>
+      <div className="wizard-header text-center mb-12">
+        <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">New Event Deployment</h1>
+        <p className="text-primary font-mono text-[10px] tracking-[0.3em] uppercase">Configuration Phase: {step} of 3 • {step === 1 ? "Strategic Objectives" : step === 2 ? "Logistics & Venue" : "Resource Allocation"}</p>
 
         {/* Progress Bar */}
         <div className="progress-container">
@@ -106,7 +111,7 @@ function CreateEvent() {
         {/* STEP 1: Basic Info */}
         {step === 1 && (
           <div className="form-step slide-in">
-            <h2>📌 Event Basics</h2>
+            <h2 className="text-xl font-bold mb-6 text-white/90">Section 01: Strategic Context</h2>
 
             <div className="form-group">
               <label>Event Name</label>
@@ -142,6 +147,7 @@ function CreateEvent() {
                   <option>Workshop</option>
                   <option>Social Gathering</option>
                   <option>Festival</option>
+                  <option>Hackathons</option>
                 </select>
               </div>
 
@@ -164,7 +170,7 @@ function CreateEvent() {
         {/* STEP 2: Date & Location */}
         {step === 2 && (
           <div className="form-step slide-in">
-            <h2>📅 Date & Location</h2>
+            <h2 className="text-xl font-bold mb-6 text-white/90">Section 02: Logistics & Environmental Data</h2>
 
             <div className="form-row">
               <div className="form-group">
@@ -208,7 +214,7 @@ function CreateEvent() {
         {/* STEP 3: Features & Budget */}
         {step === 3 && (
           <div className="form-step slide-in">
-            <h2>💰 Capacity, Budget & Features</h2>
+            <h2 className="text-xl font-bold mb-6 text-white/90">Section 03: Resource & Financial Controls</h2>
 
             <div className="form-row">
               <div className="form-group">
@@ -221,9 +227,9 @@ function CreateEvent() {
               </div>
             </div>
 
-            <div className="features-section">
-              <h3>✨ Customize Your Event</h3>
-              <p className="text-sm text-gray-400 mb-4">Select service providers to add to your package.</p>
+            <div className="features-section mt-8">
+              <h3 className="text-lg font-bold mb-4">Operational Modules</h3>
+              <p className="text-sm text-gray-500 mb-6 font-medium">Select primary service modules for this venture.</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {['Photography', 'Catering', 'Music/DJ', 'Decoration', 'Invitation'].map((cat) => (
@@ -320,13 +326,15 @@ function CreateEvent() {
 
                   const payload = {
                     ...formData,
-                    selectedVendors,
-                    user: userInfo._id || userInfo.id // Assuming _id or id is present
+                    selectedVendors
                   };
 
-                  const response = await fetch('http://127.0.0.1:5000/api/events', {
+                  const response = await fetch('http://localhost:5000/api/events', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${userInfo?.token}`
+                    },
                     body: JSON.stringify(payload)
                   });
 

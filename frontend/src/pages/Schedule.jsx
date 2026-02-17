@@ -2,9 +2,9 @@ function Schedule() {
     const events = [
         { time: "09:00 AM", title: "Registrations & Breakfast", icon: "🥐" },
         { time: "10:00 AM", title: "Opening Ceremony", icon: "🎤" },
-        { time: "11:00 AM", title: "Keynote Speech: AI Future", icon: "🤖" },
-        { time: "01:00 PM", title: "Networking Lunch", icon: "🥗" },
-        { time: "02:30 PM", title: "Workshop: Building with LLMs", icon: "💻" },
+        { time: "11:00 AM", title: "Strategic Planning Workshop", icon: "📊" },
+        { time: "01:00 PM", title: "Networking & Lunch", icon: "🥗" },
+        { time: "02:30 PM", title: "Operations Control Systems", icon: "💻" },
     ];
 
     return (

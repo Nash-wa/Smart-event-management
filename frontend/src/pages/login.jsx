@@ -5,12 +5,8 @@ function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const email = e.target[0].value;
-    const password = e.target[1].value;
-
-    console.log("--- Login Attempt ---");
-    console.log("Email:", email);
-    console.log("Password:", password);
+    const email = e.target.email.value;
+    const password = e.target.password.value;
 
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -20,22 +16,18 @@ function Login() {
       });
 
       const data = await response.json();
-      console.log("Server Response:", data);
 
       if (response.ok) {
         localStorage.setItem('userInfo', JSON.stringify(data));
-        if (data.role === 'admin') {
-          navigate("/admin-dashboard");
-        } else if (data.role === 'vendor') {
-          navigate("/vendor-dashboard");
-        } else {
-          navigate("/dashboard");
-        }
+        // Redirect based on role
+        if (data.role === 'admin') navigate("/admin-dashboard");
+        else if (data.role === 'vendor') navigate("/vendor-dashboard");
+        else navigate("/dashboard");
       } else {
         alert(data.message || "Login failed");
       }
-    } catch (err) {
-      console.error("Login Error:", err);
+    } catch (error) {
+      console.error("Login Error:", error);
       alert("Error connecting to server");
     }
   };
@@ -56,10 +48,11 @@ function Login() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium ml-1">Username</label>
+            <label className="text-sm font-medium ml-1">Email Address</label>
             <input
-              type="text"
-              placeholder="Enter your username"
+              name="email"
+              type="email"
+              placeholder="Enter your email"
               className="glass-input"
               required
             />
@@ -68,6 +61,7 @@ function Login() {
           <div className="space-y-2">
             <label className="text-sm font-medium ml-1">Password</label>
             <input
+              name="password"
               type="password"
               placeholder="Enter your password"
               className="glass-input"
