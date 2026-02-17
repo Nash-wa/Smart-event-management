@@ -20,7 +20,7 @@ const RadarMap = ({ currentStep, totalSteps }) => {
                 />
                 <div className="w-2 h-2 bg-primary rounded-full" />
             </div>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-mono text-primary/60 rotate-[45deg]">RADAR ALPHA-V</div>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-mono text-primary/60 rotate-[45deg]">OPS NAV ALPHA-V</div>
         </div>
     );
 };
@@ -33,10 +33,10 @@ const ARHUD = ({ label, distance, isLast, mousePos, currentStep, totalSteps }) =
         {/* Scanning Lines Effect */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(255,255,255,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] z-10 opacity-30" />
 
-        {/* Neural Objective Tracker */}
+        {/* Operational Objective Tracker */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 glass-card px-8 py-2 rounded-full border-primary/20 flex items-center gap-6 backdrop-blur-xl">
             <div className="flex flex-col items-center">
-                <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">Objective Status</span>
+                <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">Deployment Status</span>
                 <div className="flex gap-1">
                     {Array.from({ length: totalSteps }).map((_, i) => (
                         <div key={i} className={`w-3 h-1 rounded-full ${i <= currentStep ? 'bg-primary' : 'bg-white/10'}`} />
@@ -45,7 +45,7 @@ const ARHUD = ({ label, distance, isLast, mousePos, currentStep, totalSteps }) =
             </div>
             <div className="h-6 w-px bg-white/10" />
             <div className="font-mono text-sm font-bold text-white uppercase italic">
-                {isLast ? "Target Reached" : `ETA: ${(totalSteps - currentStep) * 15}s`}
+                {isLast ? "Point Reached" : `TRANSIT: ${(totalSteps - currentStep) * 15}s`}
             </div>
         </div>
 
@@ -218,8 +218,8 @@ const ARNavigation = () => {
         },
         {
             image: imgStep2,
-            instruction: "Approaching Systems wing",
-            label: "Systems Core Laboratory",
+            instruction: "Approaching Operations wing",
+            label: "Venue Control Center",
             distance: "4m"
         },
         {
@@ -235,7 +235,7 @@ const ARNavigation = () => {
         },
         {
             image: imgStep5,
-            instruction: "Arrival at destination",
+            instruction: "Destination reached",
             distance: "0m",
             isLast: true
         }
@@ -272,9 +272,9 @@ const ARNavigation = () => {
                 <div onClick={() => navigate('/dashboard')} className="cursor-pointer group flex flex-col">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary" />
-                        <h1 className="text-4xl font-black text-white tracking-tight italic group-hover:text-primary transition-colors uppercase">Hyper-AR v8.0</h1>
+                        <h1 className="text-3xl font-black text-white tracking-tight italic group-hover:text-primary transition-colors uppercase">Venue Navigator V8</h1>
                     </div>
-                    <span className="text-zinc-600 text-[10px] font-mono tracking-[0.4em] mt-1">ENVIRONMENT_SYNC: 100% // ENCRYPTED_FEED</span>
+                    <span className="text-zinc-600 text-[10px] font-mono tracking-[0.4em] mt-1">LOCATION_SYNC: ACTIVE // OPERATIONAL_FEED</span>
                 </div>
                 <div className="flex gap-4">
                     <button

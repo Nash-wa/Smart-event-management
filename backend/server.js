@@ -25,6 +25,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/registrations', require('./routes/registrationRoutes'));
 app.use('/api/ar-layout', require('./routes/arRoutes'));
+app.use('/api/participants', require('./routes/participantRoutes'));
 
 // Error handling
 app.use((req, res, next) => {

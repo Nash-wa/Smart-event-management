@@ -28,6 +28,8 @@ const connectDB = async () => {
         console.log(`✅ MongoDB Connected (In-Memory): ${conn.connection.host}`);
         console.log('📝 Note: Using temporary database. Data will be lost on restart.');
 
+        const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/smart-event');
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error(`❌ MongoDB Error: ${error.message}`);
         console.log('⚠️  Server running without database. Some features may not work.');

@@ -10,20 +10,16 @@ const getAllUsers = asyncHandler(async (req, res) => {
     res.json(users);
 });
 
-// @desc    Get admin stats
+// @desc    Get dashboard stats
 // @route   GET /api/admin/stats
 // @access  Private/Admin
 const getStats = asyncHandler(async (req, res) => {
     const userCount = await User.countDocuments();
     const eventCount = await Event.countDocuments();
-
-    // Count vendors specifically
-    const vendorCount = await User.countDocuments({ role: 'vendor' });
-
     res.json({
-        userCount,
-        eventCount,
-        vendorCount
+        users: userCount,
+        events: eventCount,
+        revenue: 125000 // mock for now
     });
 });
 
@@ -32,7 +28,6 @@ const getStats = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteUser = asyncHandler(async (req, res) => {
     const user = await User.findById(req.params.id);
-
     if (user) {
         await user.deleteOne();
         res.json({ message: 'User removed' });
@@ -45,5 +40,5 @@ const deleteUser = asyncHandler(async (req, res) => {
 module.exports = {
     getAllUsers,
     getStats,
-    deleteUser
+    deleteUser,
 };

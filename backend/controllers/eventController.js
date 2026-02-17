@@ -2,52 +2,39 @@ const asyncHandler = require('express-async-handler');
 const Event = require('../models/eventModel');
 const { generateEventPlan } = require('../utils/planGenerator');
 
-// @desc    Create new event
+// @desc    Create a new event
 // @route   POST /api/events
 // @access  Private
 const createEvent = asyncHandler(async (req, res) => {
-    const {
-        name, category, startDate, endDate, startTime, endTime,
-        description, mode, venue, address, capacity, budget,
-        features, selectedVendors
-    } = req.body;
+    const { name, startDate } = req.body;
 
-    // Simple validation
-    if (!name || !category || !startDate) {
+    if (!name || !startDate) {
         res.status(400);
-        throw new Error('Please fill in all required fields');
+        throw new Error('Please provide all required fields (name, startDate)');
     }
 
-    // Generate the plan
-    const plan = generateEventPlan({ name, category, budget, startDate });
+    // Generate AI Plan automatically
+    const aiPlan = generateEventPlan(req.body);
 
     const event = await Event.create({
-        user: req.user._id, // Secured: uses authenticated user ID
-        name,
-        description,
-        category,
-        mode,
-        startDate,
-        endDate,
-        startTime,
-        endTime,
-        venue,
-        address,
-        capacity,
-        budget,
-        features,
-        selectedVendors,
-        plan // Save the generated plan
+        ...req.body,
+        user: req.user._id,
+        plan: aiPlan
     });
 
-    res.status(201).json(event);
+    if (event) {
+        res.status(201).json(event);
+    } else {
+        res.status(400);
+        throw new Error('Invalid event data');
+    }
 });
 
 // @desc    Get all events for logged in user
 // @route   GET /api/events
 // @access  Private
 const getEvents = asyncHandler(async (req, res) => {
-    const events = await Event.find({ user: req.user._id }); // Filter by user
+    const events = await Event.find({ user: req.user._id });
     res.json(events);
 });
 
@@ -58,11 +45,6 @@ const getEventById = asyncHandler(async (req, res) => {
     const event = await Event.findById(req.params.id);
 
     if (event) {
-        // Security check: ensure event belongs to user
-        if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-            res.status(401);
-            throw new Error('User not authorized');
-        }
         res.json(event);
     } else {
         res.status(404);
@@ -70,4 +52,50 @@ const getEventById = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { createEvent, getEvents, getEventById };
+// @desc    Update event
+// @route   PUT /api/events/:id
+// @access  Private
+const updateEvent = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id);
+
+    if (event) {
+        // Ensure only the owner can update the event
+        if (event.user.toString() !== req.user._id.toString()) {
+            res.status(401);
+            throw new Error('User not authorized');
+        }
+
+        const updatedEvent = await Event.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+
+        res.json(updatedEvent);
+    } else {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+});
+
+// @desc    Get public event details (for RSVP)
+// @route   GET /api/events/public/:id
+// @access  Public
+const getPublicEventById = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id).select('name startDate venue category capacity');
+
+    if (event) {
+        res.json(event);
+    } else {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+});
+
+module.exports = {
+    createEvent,
+    getEvents,
+    getEventById,
+    updateEvent,
+    getPublicEventById
+};

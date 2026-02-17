@@ -1,13 +1,12 @@
 /**
- * Generates a structured plan for an event based on its category, budget, and timing.
- * Synchronized with frontend/src/utils/planningEngine.js
+ * Smart Planning Engine
+ * Data-driven calculations for professional event operations.
  */
-const generateEventPlan = (eventData) => {
-    const { category, budget, startDate, capacity, venueType } = eventData;
-    const start = new Date(startDate);
-    const normalizedCategory = (category || 'default').toLowerCase();
 
-    // 1. Timeline Generation Templates
+export const calculateTimeline = (startDate, category) => {
+    const start = new Date(startDate);
+    const timeline = [];
+
     const categories = {
         corporate: [
             { task: "Initial Strategy & Goal Setting", daysBefore: 90, priority: "High" },
@@ -34,15 +33,16 @@ const generateEventPlan = (eventData) => {
         ]
     };
 
-    // Category Robust Mapping
+    const normalizedCategory = category.toLowerCase();
     let tasks = categories.default;
+
     if (normalizedCategory.includes('wedding')) {
         tasks = categories.wedding;
     } else if (normalizedCategory.includes('corporate') || normalizedCategory.includes('conference') || normalizedCategory.includes('workshop')) {
         tasks = categories.corporate;
     }
 
-    const timeline = tasks.map(t => {
+    return tasks.map(t => {
         const date = new Date(start);
         date.setDate(date.getDate() - t.daysBefore);
         return {
@@ -51,8 +51,9 @@ const generateEventPlan = (eventData) => {
             status: "Pending"
         };
     }).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+};
 
-    // 2. Budget Allocation
+export const calculateBudgetAllocation = (totalBudget, category) => {
     const allocations = {
         corporate: [
             { category: "Venue & AV", percentage: 0.4 },
@@ -75,38 +76,37 @@ const generateEventPlan = (eventData) => {
         ]
     };
 
+    const normalizedCategory = category.toLowerCase();
     let rules = allocations.default;
+
     if (normalizedCategory.includes('wedding')) {
         rules = allocations.wedding;
     } else if (normalizedCategory.includes('corporate') || normalizedCategory.includes('conference') || normalizedCategory.includes('workshop')) {
         rules = allocations.corporate;
     }
 
-    const budgetVal = Number(budget) || 0;
-    const budgetAllocation = rules.map(r => ({
+    return rules.map(r => ({
         category: r.category,
-        amount: Math.round(budgetVal * r.percentage),
+        amount: Math.round(totalBudget * r.percentage),
         percentage: r.percentage * 100
     }));
+};
 
-    // 3. Resource Estimation
-    const attendees = Number(capacity) || 100;
-    const staffRatio = (venueType || '').toLowerCase() === 'outdoor' ? 15 : 20;
+export const estimateResources = (attendees, venueType) => {
+    // Basic heuristics for resource estimation
+    const staffRatio = venueType?.toLowerCase() === 'outdoor' ? 15 : 20; // 1 staff per X attendees
     const securityRatio = 50;
 
-    const resources = [
+    return [
         { resource: "Event Staff", quantity: Math.ceil(attendees / staffRatio), unit: "Personnel" },
         { resource: "Security", quantity: Math.ceil(attendees / securityRatio), unit: "Personnel" },
         { resource: "AV Technicians", quantity: Math.max(2, Math.ceil(attendees / 100)), unit: "Personnel" },
         { resource: "Check-in Points", quantity: Math.ceil(attendees / 150), unit: "Stations" }
     ];
-
-    return {
-        timeline,
-        budget: budgetAllocation,
-        resources,
-        readinessScore: 0
-    };
 };
 
-module.exports = { generateEventPlan };
+export const calculateReadinessScore = (tasks) => {
+    if (!tasks || tasks.length === 0) return 0;
+    const completed = tasks.filter(t => t.status === "Completed").length;
+    return Math.round((completed / tasks.length) * 100);
+};

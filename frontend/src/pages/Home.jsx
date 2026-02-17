@@ -85,7 +85,7 @@ function Home() {
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8 animate-fade-in-up">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <span className="text-sm font-medium text-gray-300">AI-Powered Event Management</span>
+            <span className="text-sm font-medium text-gray-300">Data-Driven Event Operations</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight">
@@ -97,7 +97,7 @@ function Home() {
 
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
             From intimate birthday parties to grand corporate summits.
-            Plan, organize, and execute any event with our intelligent platform.
+            Plan, organize, and execute any event with our production-ready smart planning engine.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -135,9 +135,9 @@ function Home() {
               color="from-pink-500/20 to-rose-500/20"
             />
             <FeatureCard
-              icon="🧠"
-              title="Venture Advisor"
-              desc="Our proprietary Tactical Intelligence engine provides tailored advice for event ventures, maximizing ROI and efficiency."
+              icon="📊"
+              title="Operations Hub"
+              desc="Real-time control panel for budgets, timelines, and resource allocation. Professional tools for serious event organizers."
               color="from-primary/20 to-accent/20"
             />
             <FeatureCard
