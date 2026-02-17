@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getSuggestedRoles } from "../utils/planningEngine";
 
 function Participants() {
   const { eventId } = useParams();
@@ -8,6 +9,7 @@ function Participants() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [event, setEvent] = useState(null);
   const [newGuest, setNewGuest] = useState({ name: '', email: '', role: 'Attendee' });
 
   useEffect(() => {
@@ -28,7 +30,19 @@ function Participants() {
       }
     };
 
+    const fetchEvent = async () => {
+      try {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        const res = await fetch(`http://127.0.0.1:5000/api/events/public/${eventId}`);
+        const data = await res.json();
+        if (res.ok) setEvent(data);
+      } catch (error) {
+        console.error("Failed to fetch event", error);
+      }
+    };
+
     fetchParticipants();
+    fetchEvent();
   }, [eventId]);
 
   const handleAddGuest = async (e) => {
@@ -249,7 +263,7 @@ function Participants() {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Strategic Role</label>
                 <select
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary transition-colors outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary transition-colors outline-none cursor-pointer"
                   value={newGuest.role}
                   onChange={(e) => setNewGuest({ ...newGuest, role: e.target.value })}
                 >
@@ -257,7 +271,24 @@ function Participants() {
                   <option className="bg-zinc-900" value="Speaker">Speaker</option>
                   <option className="bg-zinc-900" value="VIP">VIP</option>
                   <option className="bg-zinc-900" value="Staff">Staff</option>
+                  {event && getSuggestedRoles(event.category).map((role, i) => (
+                    <option key={i} className="bg-zinc-900" value={role}>{role}</option>
+                  ))}
                 </select>
+                {event && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {getSuggestedRoles(event.category).map((role, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setNewGuest({ ...newGuest, role })}
+                        className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[8px] font-black text-gray-500 uppercase tracking-widest hover:border-primary/50 transition-all"
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-4 pt-4">
                 <button

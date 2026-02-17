@@ -58,7 +58,7 @@ function CreateEvent() {
     setShowVendorModal(true);
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=${category}`, {
+      const res = await fetch(`http://localhost:5000/api/vendors?category=${category}`, {
         headers: {
           'Authorization': `Bearer ${userInfo?.token}`
         }
@@ -147,6 +147,7 @@ function CreateEvent() {
                   <option>Workshop</option>
                   <option>Social Gathering</option>
                   <option>Festival</option>
+                  <option>Hackathons</option>
                 </select>
               </div>
 
@@ -328,7 +329,7 @@ function CreateEvent() {
                     selectedVendors
                   };
 
-                  const response = await fetch('http://127.0.0.1:5000/api/events', {
+                  const response = await fetch('http://localhost:5000/api/events', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',

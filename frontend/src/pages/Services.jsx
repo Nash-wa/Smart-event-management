@@ -1,14 +1,16 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
+    const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const navigate = useNavigate();
+    const { eventId } = useParams();
 
     useEffect(() => {
-        const fetchVendors = async () => {
+        const fetchEventAndVendors = async () => {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
                 const headers = { 'Content-Type': 'application/json' };
@@ -16,17 +18,33 @@ function Services() {
                     headers['Authorization'] = `Bearer ${userInfo.token}`;
                 }
 
-                const res = await fetch("http://localhost:5000/api/vendors", { headers });
+                let lat, lng;
+                if (eventId) {
+                    const eventRes = await fetch(`http://localhost:5000/api/events/${eventId}`, { headers });
+                    const eventData = await eventRes.json();
+                    if (eventRes.ok && eventData.location) {
+                        setEvent(eventData);
+                        lat = eventData.location.lat;
+                        lng = eventData.location.lng;
+                    }
+                }
+
+                let url = "http://localhost:5000/api/vendors";
+                if (lat && lng) {
+                    url += `?lat=${lat}&lng=${lng}`;
+                }
+
+                const res = await fetch(url, { headers });
                 const data = await res.json();
-                setVendors(data);
+                setVendors(Array.isArray(data) ? data : []);
                 setLoading(false);
             } catch (error) {
-                console.error("Error fetching vendors:", error);
+                console.error("Error fetching data:", error);
                 setLoading(false);
             }
         };
-        fetchVendors();
-    }, []);
+        fetchEventAndVendors();
+    }, [eventId]);
 
     const categories = ["Photography", "Catering", "Music/DJ", "Decoration", "Invitation", "Venue"];
 
@@ -77,11 +95,23 @@ function Services() {
                                                 className="glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group flex flex-col"
                                             >
                                                 <div className="flex justify-between items-start mb-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                                                        {cat === "Photography" ? "📷" : cat === "Catering" ? "🍽️" : cat === "Music/DJ" ? "🎵" : cat === "Decoration" ? "✨" : cat === "Venue" ? "🏛️" : "💌"}
+                                                    <div className="flex flex-col">
+                                                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform mb-2">
+                                                            {cat === "Photography" ? "📷" : cat === "Catering" ? "🍽️" : cat === "Music/DJ" ? "🎵" : cat === "Decoration" ? "✨" : cat === "Venue" ? "🏛️" : "💌"}
+                                                        </div>
+                                                        {vendor.distance && vendor.distance !== Infinity && (
+                                                            <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-2 py-1 rounded-lg self-start">
+                                                                📍 {vendor.distance.toFixed(1)} km away
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-yellow-400/10 text-yellow-500 text-sm font-bold">
-                                                        ★ {vendor.rating || '5.0'}
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-yellow-400/10 text-yellow-500 text-sm font-bold">
+                                                            ★ {vendor.rating || '5.0'}
+                                                        </div>
+                                                        <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                                                            Reliability: {vendor.reliabilityScore || 100}%
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -106,10 +136,45 @@ function Services() {
                                                         <p className="text-2xl font-bold text-accent">₹{vendor.price.toLocaleString()}</p>
                                                     </div>
                                                     <button
-                                                        onClick={() => navigate("/create-event")}
+                                                        onClick={async () => {
+                                                            if (eventId) {
+                                                                try {
+                                                                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                                                                    // Get current event to update it
+                                                                    const eventRes = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+                                                                        headers: { Authorization: `Bearer ${userInfo?.token}` }
+                                                                    });
+                                                                    const eventData = await eventRes.json();
+
+                                                                    const updatedVendors = {
+                                                                        ...(eventData.selectedVendors || {}),
+                                                                        [vendor.category]: {
+                                                                            _id: vendor._id,
+                                                                            name: vendor.name,
+                                                                            price: vendor.price,
+                                                                            status: 'Selected'
+                                                                        }
+                                                                    };
+
+                                                                    await fetch(`http://localhost:5000/api/events/${eventId}`, {
+                                                                        method: 'PUT',
+                                                                        headers: {
+                                                                            'Content-Type': 'application/json',
+                                                                            Authorization: `Bearer ${userInfo?.token}`
+                                                                        },
+                                                                        body: JSON.stringify({ selectedVendors: updatedVendors })
+                                                                    });
+                                                                    navigate(`/event-plan/${eventId}`);
+                                                                } catch (err) {
+                                                                    console.error("Selection failed", err);
+                                                                }
+                                                            } else {
+                                                                navigate("/create-event");
+                                                            }
+                                                        }}
                                                         className="bg-white text-black px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors"
                                                     >
-                                                        Book
+                                                        {eventId ? 'Select Team' : 'Book Now'}
                                                     </button>
                                                 </div>
                                             </div>

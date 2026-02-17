@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import imgStep1 from '../assets/step1.jpg';
 import imgStep2 from '../assets/step2.jpg';
 import imgStep3 from '../assets/step3.jpg';
@@ -206,9 +205,29 @@ const NavigationStep = ({ image, instruction, distance, nextStep, prevStep, isLa
 
 const ARNavigation = () => {
     const [step, setStep] = useState(0);
+    const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { eventId } = useParams();
 
-    const steps = [
+    useEffect(() => {
+        const fetchEvent = async () => {
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
+                const data = await res.json();
+                if (res.ok) setEvent(data);
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch event for AR", error);
+                setLoading(false);
+            }
+        };
+        if (eventId) fetchEvent();
+        else setLoading(false);
+    }, [eventId]);
+
+    const defaultSteps = [
         {
             image: imgStep1,
             instruction: "Proceed into the main hall",
@@ -226,18 +245,22 @@ const ARNavigation = () => {
             distance: "18m"
         },
         {
-            image: imgStep4,
-            instruction: "Safety exit detected",
-            label: "Fire Safety Point 04",
-            distance: "2m"
-        },
-        {
             image: imgStep5,
             instruction: "Destination reached",
             distance: "0m",
             isLast: true
         }
     ];
+
+    const steps = (event?.arPoints && event.arPoints.length > 0)
+        ? event.arPoints.map((pt, i) => ({
+            instruction: `Head towards ${pt.label}`,
+            label: pt.label,
+            distance: "Calculating...",
+            isLast: i === event.arPoints.length - 1,
+            image: [imgStep1, imgStep2, imgStep3, imgStep4][i % 4] // Cycle images as fallbacks
+        }))
+        : defaultSteps;
 
     const handleNext = () => step < steps.length - 1 && setStep(step + 1);
     const handlePrev = () => step > 0 && setStep(step - 1);
@@ -254,7 +277,7 @@ const ARNavigation = () => {
                 </div>
                 <div className="flex gap-4">
                     <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-end">
-                        <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Vector Index</span>
+                        <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Target Point</span>
                         <span className="text-primary font-black text-xl italic font-mono leading-none">{step + 1} / {steps.length}</span>
                     </div>
                 </div>
