@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/createevent.css";
+import "../css/createevent.css";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -110,15 +111,43 @@ function CreateEvent() {
 
   const [venues, setVenues] = useState([]);
   const [mapCenter, setMapCenter] = useState([10.8505, 76.2711]); // Default Kerala
+  const [userLocation, setUserLocation] = useState(null);
   const [zoom, setZoom] = useState(7);
   const mapRef = useRef();
+
+  // Get User Location on Mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const userPos = [latitude, longitude];
+          setUserLocation(userPos);
+          setMapCenter(userPos);
+          setZoom(11); // Closer zoom when user location is found
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=Venue&district=${formData.district}`);
+        let url = `http://127.0.0.1:5000/api/vendors?category=Venue&district=${formData.district}`;
+        // If user location exists, pass it to sort by distance
+        if (userLocation) {
+          url += `&lat=${userLocation[0]}&lng=${userLocation[1]}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
-        const sortedVenues = data.sort((a, b) => b.rating - a.rating);
+
+        // Data is already sorted by distance if lat/lng were provided
+        // Otherwise, fallback to rating sort
+        const sortedVenues = userLocation ? data : data.sort((a, b) => b.rating - a.rating);
         setVenues(sortedVenues);
 
         // Auto-select first venue if available
@@ -128,6 +157,16 @@ function CreateEvent() {
             venue: sortedVenues[0].name,
             address: sortedVenues[0].address || ""
           }));
+
+          // If sorting by distance, auto-center on the closest venue (first one)
+          if (userLocation && sortedVenues[0].location && sortedVenues[0].location.lat) {
+            const venueLoc = [sortedVenues[0].location.lat, sortedVenues[0].location.lng];
+            // Optional: keep map on user or move to venue? 
+            // "show the map locations" -> maybe show both? 
+            // Let's stick to centering on the venue as that's the "selection"
+            setMapCenter(venueLoc);
+            setZoom(14);
+          }
         } else {
           setFormData(prev => ({ ...prev, venue: "", address: "" }));
         }
@@ -138,7 +177,7 @@ function CreateEvent() {
     if (formData.district && step === 2) {
       fetchVenues();
     }
-  }, [formData.district, step]);
+  }, [formData.district, step, userLocation]);
 
   return (
     <div className="create-event-page">
@@ -335,6 +374,17 @@ function CreateEvent() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+
+                {/* User Location Marker */}
+                {userLocation && (
+                  <Marker position={userLocation}>
+                    <Popup>
+                      <strong>You are here</strong>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Selected Venue Marker */}
                 {formData.venue && mapCenter[0] !== 10.8505 && (
                   <Marker position={mapCenter}>
                     <Popup>
