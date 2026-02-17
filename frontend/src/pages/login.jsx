@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function Login() {
   const navigate = useNavigate();
@@ -9,15 +10,10 @@ function Login() {
     const password = e.target.password.value;
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      const response = await api.post('/auth/login', { email, password });
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200) {
         localStorage.setItem('userInfo', JSON.stringify(data));
         // Redirect based on role
         if (data.role === 'admin') navigate("/admin-dashboard");

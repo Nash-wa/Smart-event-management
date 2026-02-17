@@ -17,14 +17,14 @@ import AdminDashboard from "./pages/AdminDashboard";
 import EventPlan from "./pages/EventPlan";
 import ARNavigation from "./pages/ARNavigation";
 import VentureAdvice from "./pages/VentureAdvice";
-
-
+import Chatbot from "./components/Chatbot";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -43,6 +43,7 @@ function App() {
         <Route path="/venture-advice" element={<VentureAdvice />} />
 
       </Routes>
+      <Chatbot />
     </BrowserRouter>
   );
 }

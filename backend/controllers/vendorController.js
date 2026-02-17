@@ -22,7 +22,7 @@ const getVendors = asyncHandler(async (req, res) => {
 // @route   POST /api/vendors
 // @access  Private (Vendor)
 const createVendor = asyncHandler(async (req, res) => {
-    const { name, category, price, description, portfolio } = req.body;
+    const { name, category, price, description, portfolio, googleReviewsUrl, instagramUrl } = req.body;
 
     const vendor = await Vendor.create({
         name,
@@ -30,11 +30,39 @@ const createVendor = asyncHandler(async (req, res) => {
         price,
         description,
         portfolio: portfolio || [],
-        owner: req.user._id, // Secured: uses authenticated user ID
-        isApproved: false // Always false on creation
+        googleReviewsUrl,
+        instagramUrl,
+        owner: req.user._id,
+        isApproved: false
     });
 
     res.status(201).json(vendor);
+});
+
+// @desc    Add review to vendor
+// @route   POST /api/vendors/:id/reviews
+// @access  Private
+const createVendorReview = asyncHandler(async (req, res) => {
+    const { rating, comment } = req.body;
+    const vendor = await Vendor.findById(req.params.id);
+
+    if (vendor) {
+        const review = {
+            name: req.user.name,
+            rating: Number(rating),
+            comment,
+            user: req.user._id,
+        };
+
+        vendor.reviews.push(review);
+        vendor.rating = vendor.reviews.reduce((acc, item) => item.rating + acc, 0) / vendor.reviews.length;
+
+        await vendor.save();
+        res.status(201).json({ message: 'Review added' });
+    } else {
+        res.status(404);
+        throw new Error('Vendor not found');
+    }
 });
 
 // @desc    Approve a vendor
@@ -76,4 +104,4 @@ const getVendorRequests = asyncHandler(async (req, res) => {
     res.json(requests);
 });
 
-module.exports = { getVendors, createVendor, approveVendor, getVendorRequests };
+module.exports = { getVendors, createVendor, approveVendor, getVendorRequests, createVendorReview };

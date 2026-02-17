@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import imgStep1 from '../assets/step1.jpg';
-import imgStep2 from '../assets/step2.jpg';
-import imgStep3 from '../assets/step3.jpg';
-import imgStep4 from '../assets/step4.jpg';
-import imgStep5 from '../assets/step5.jpg';
+import api from '../api';
+import imgStep1 from '../assets/ar/IMG_8777.JPG.jpeg';
+import imgStep2 from '../assets/ar/IMG_8778.JPG.jpeg';
+import imgStep3 from '../assets/ar/IMG_8779.JPG.jpeg';
+import imgStep4 from '../assets/ar/IMG_8780.JPG.jpeg';
+import imgStep5 from '../assets/ar/IMG_8781.JPG.jpeg';
 
 const RadarMap = ({ currentStep, totalSteps }) => {
     const angle = (currentStep / (totalSteps - 1)) * 180 - 90;
@@ -206,6 +207,7 @@ const NavigationStep = ({ image, instruction, distance, nextStep, prevStep, isLa
 
 const ARNavigation = () => {
     const [step, setStep] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
 
     const steps = [
@@ -239,6 +241,28 @@ const ARNavigation = () => {
         }
     ];
 
+    const saveLayout = async () => {
+        setIsSaving(true);
+        try {
+            const layoutData = {
+                completedSteps: step,
+                totalSteps: steps.length,
+                lastPosition: steps[step].instruction
+            };
+            // Dynamic event ID would come from URL or Context in real app
+            await api.post('/ar-layout', {
+                event_id: "65d000000000000000000001",
+                layoutData
+            });
+            alert("AR Layout Blueprint Saved to Cloud! 🚀");
+        } catch (err) {
+            console.error("Save failed", err);
+            alert("Failed to save layout.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleNext = () => step < steps.length - 1 && setStep(step + 1);
     const handlePrev = () => step > 0 && setStep(step - 1);
 
@@ -253,6 +277,16 @@ const ARNavigation = () => {
                     <span className="text-zinc-600 text-[10px] font-mono tracking-[0.4em] mt-1">ENVIRONMENT_SYNC: 100% // ENCRYPTED_FEED</span>
                 </div>
                 <div className="flex gap-4">
+                    <button
+                        onClick={saveLayout}
+                        disabled={isSaving}
+                        className="glass-card px-6 py-3 rounded-2xl border-primary/20 bg-primary/10 flex items-center gap-2 hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        <span className="text-lg">{isSaving ? '⌛' : '💾'}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            {isSaving ? 'Saving...' : 'Save Blueprint'}
+                        </span>
+                    </button>
                     <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-end">
                         <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Vector Index</span>
                         <span className="text-primary font-black text-xl italic font-mono leading-none">{step + 1} / {steps.length}</span>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
@@ -10,15 +11,8 @@ function Services() {
     useEffect(() => {
         const fetchVendors = async () => {
             try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const headers = { 'Content-Type': 'application/json' };
-                if (userInfo?.token) {
-                    headers['Authorization'] = `Bearer ${userInfo.token}`;
-                }
-
-                const res = await fetch("http://localhost:5000/api/vendors", { headers });
-                const data = await res.json();
-                setVendors(data);
+                const res = await api.get("/vendors");
+                setVendors(res.data);
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching vendors:", error);
@@ -94,11 +88,34 @@ function Services() {
                                                 {vendor.portfolio && vendor.portfolio.length > 0 && (
                                                     <button
                                                         onClick={() => setSelectedPortfolio(vendor)}
-                                                        className="mb-8 w-full p-2 rounded-2xl bg-white/5 border border-white/5 hover:border-accent/50 transition-all text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white flex items-center justify-center gap-2"
+                                                        className="mb-4 w-full p-2 rounded-2xl bg-white/5 border border-white/5 hover:border-accent/50 transition-all text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white flex items-center justify-center gap-2"
                                                     >
                                                         🖼️ View Portfolio ({vendor.portfolio.length} works)
                                                     </button>
                                                 )}
+
+                                                <div className="flex gap-2 mb-8">
+                                                    {vendor.googleReviewsUrl && (
+                                                        <a
+                                                            href={vendor.googleReviewsUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex-1 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold uppercase tracking-widest text-blue-400 hover:bg-blue-500/20 transition-all text-center"
+                                                        >
+                                                            🌐 Google Reviews
+                                                        </a>
+                                                    )}
+                                                    {vendor.instagramUrl && (
+                                                        <a
+                                                            href={vendor.instagramUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex-1 py-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-[9px] font-bold uppercase tracking-widest text-pink-400 hover:bg-pink-500/20 transition-all text-center"
+                                                        >
+                                                            📸 Instagram
+                                                        </a>
+                                                    )}
+                                                </div>
 
                                                 <div className="flex justify-between items-center mt-auto border-t border-white/10 pt-4">
                                                     <div>

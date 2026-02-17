@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function Register() {
   const navigate = useNavigate();
@@ -18,15 +19,10 @@ function Register() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role })
-      });
+      const response = await api.post('/auth/register', { name, email, password, role });
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 201) {
         localStorage.setItem('userInfo', JSON.stringify(data));
         // Redirect based on role
         if (data.role === 'admin') navigate("/admin-dashboard");

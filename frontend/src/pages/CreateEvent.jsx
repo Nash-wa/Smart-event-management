@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 import "../css/createevent.css";
 
 function CreateEvent() {
@@ -57,14 +58,8 @@ function CreateEvent() {
     setCurrentCategory(category);
     setShowVendorModal(true);
     try {
-      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=${category}`, {
-        headers: {
-          'Authorization': `Bearer ${userInfo?.token}`
-        }
-      });
-      const data = await res.json();
-      setAvailableVendors(data);
+      const res = await api.get(`/vendors?category=${category}`);
+      setAvailableVendors(res.data);
     } catch (error) {
       console.error("Failed to fetch vendors", error);
     }
@@ -316,37 +311,21 @@ function CreateEvent() {
               <button className="btn-submit" type="submit" onClick={async (e) => {
                 e.preventDefault();
                 try {
-                  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                  if (!userInfo) {
-                    alert("Please login first");
-                    navigate("/login");
-                    return;
-                  }
-
                   const payload = {
                     ...formData,
                     selectedVendors
                   };
 
-                  const response = await fetch('http://127.0.0.1:5000/api/events', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${userInfo?.token}`
-                    },
-                    body: JSON.stringify(payload)
-                  });
+                  const res = await api.post('/events', payload);
 
-                  const data = await response.json();
-
-                  if (response.ok) {
-                    navigate(`/event-plan/${data._id}`);
+                  if (res.status === 201) {
+                    navigate(`/event-plan/${res.data._id}`);
                   } else {
-                    alert(data.message || "Failed to create event");
+                    alert("Failed to create event");
                   }
                 } catch (error) {
-                  console.error("Fetch error detail:", error);
-                  alert(`Connection error: ${error.message}. Make sure backend is running.`);
+                  console.error("Post error detail:", error);
+                  alert(`Connection error: ${error.response?.data?.message || error.message}. Make sure backend is running.`);
                 }
               }}>
                 🚀 Launch Event
