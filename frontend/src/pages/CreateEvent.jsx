@@ -1,6 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/createevent.css";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const KERALA_DISTRICTS = [
+  "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
+  "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad",
+  "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"
+];
 
 function CreateEvent() {
   const [step, setStep] = useState(1);
@@ -14,6 +31,7 @@ function CreateEvent() {
     endDate: "",
     startTime: "",
     endTime: "",
+    district: "Thiruvananthapuram",
     venue: "",
     address: "",
     capacity: "",
@@ -89,6 +107,38 @@ function CreateEvent() {
       features: { ...formData.features, [name]: checked }
     });
   };
+
+  const [venues, setVenues] = useState([]);
+  const [mapCenter, setMapCenter] = useState([10.8505, 76.2711]); // Default Kerala
+  const [zoom, setZoom] = useState(7);
+  const mapRef = useRef();
+
+  useEffect(() => {
+    const fetchVenues = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=Venue&district=${formData.district}`);
+        const data = await res.json();
+        const sortedVenues = data.sort((a, b) => b.rating - a.rating);
+        setVenues(sortedVenues);
+
+        // Auto-select first venue if available
+        if (sortedVenues.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            venue: sortedVenues[0].name,
+            address: sortedVenues[0].address || ""
+          }));
+        } else {
+          setFormData(prev => ({ ...prev, venue: "", address: "" }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch venues", error);
+      }
+    };
+    if (formData.district && step === 2) {
+      fetchVenues();
+    }
+  }, [formData.district, step]);
 
   return (
     <div className="create-event-page">
@@ -175,33 +225,125 @@ function CreateEvent() {
             <div className="form-row">
               <div className="form-group">
                 <label>Start Date</label>
-                <input name="startDate" type="date" value={formData.startDate} onChange={handleInputChange} />
+                <input
+                  name="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={handleInputChange}
+                  onClick={(e) => e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
               <div className="form-group">
                 <label>End Date</label>
-                <input name="endDate" type="date" value={formData.endDate} onChange={handleInputChange} />
+                <input
+                  name="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={handleInputChange}
+                  onClick={(e) => e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label>Start Time</label>
-                <input name="startTime" type="time" value={formData.startTime} onChange={handleInputChange} />
+                <input
+                  name="startTime"
+                  type="time"
+                  value={formData.startTime}
+                  onChange={handleInputChange}
+                  onClick={(e) => e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
               <div className="form-group">
                 <label>End Time</label>
-                <input name="endTime" type="time" value={formData.endTime} onChange={handleInputChange} />
+                <input
+                  name="endTime"
+                  type="time"
+                  value={formData.endTime}
+                  onChange={handleInputChange}
+                  onClick={(e) => e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
             </div>
 
             <div className="form-group">
-              <label>Venue Name</label>
-              <input name="venue" type="text" placeholder="Auditorium / Online Link" value={formData.venue} onChange={handleInputChange} />
+              <label>District (Kerala)</label>
+              <select name="district" value={formData.district} onChange={handleInputChange}>
+                {KERALA_DISTRICTS.map(d => <option key={d}>{d}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
-              <label>Address / URL</label>
-              <input name="address" type="text" placeholder="Full address" value={formData.address} onChange={handleInputChange} />
+              <label>Venue (Sorted by Rating)</label>
+              <select
+                name="venue"
+                value={formData.venue}
+                onChange={(e) => {
+                  const selectedVenue = venues.find(v => v.name === e.target.value);
+                  setFormData({
+                    ...formData,
+                    venue: e.target.value,
+                    address: selectedVenue ? selectedVenue.address : ""
+                  });
+                  if (selectedVenue && selectedVenue.location && selectedVenue.location.lat) {
+                    const newCenter = [selectedVenue.location.lat, selectedVenue.location.lng];
+                    setMapCenter(newCenter);
+                    setZoom(15);
+                    if (mapRef.current) {
+                      mapRef.current.setView(newCenter, 15);
+                    }
+                  }
+                }}
+              >
+                {venues.map(v => (
+                  <option key={v._id} value={v.name}>
+                    {v.name} (★ {v.rating})
+                  </option>
+                ))}
+                {venues.length === 0 && <option value="">No venues found in this district</option>}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Address</label>
+              <input
+                name="address"
+                type="text"
+                placeholder="Full address"
+                value={formData.address}
+                onChange={handleInputChange}
+                readOnly
+              />
+            </div>
+
+            {/* Map Section */}
+            <div className="form-group slide-in" style={{ height: '300px', marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <label style={{ marginBottom: '10px', display: 'block' }}>Venue Location Map</label>
+              <MapContainer
+                center={mapCenter}
+                zoom={zoom}
+                style={{ height: '100%', width: '100%' }}
+                ref={mapRef}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {formData.venue && mapCenter[0] !== 10.8505 && (
+                  <Marker position={mapCenter}>
+                    <Popup>
+                      <strong>{formData.venue}</strong><br />
+                      {formData.address}
+                    </Popup>
+                  </Marker>
+                )}
+              </MapContainer>
             </div>
 
             <div className="wizard-actions">

@@ -10,6 +10,7 @@ const eventSchema = mongoose.Schema({
     endDate: { type: Date },
     startTime: { type: String },
     endTime: { type: String },
+    district: { type: String, required: true },
     venue: { type: String },
     address: { type: String },
     capacity: { type: Number },

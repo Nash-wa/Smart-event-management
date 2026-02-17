@@ -5,6 +5,7 @@ const Vendor = require('../models/vendorModel');
 // @route   GET /api/vendors
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
+    const district = req.query.district;
     const category = req.query.category;
     const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
 
@@ -14,6 +15,10 @@ const getVendors = asyncHandler(async (req, res) => {
 
     if (category) {
         query.category = category;
+    }
+
+    if (district) {
+        query.district = district;
     }
 
     let vendors = await Vendor.find(query);
@@ -31,7 +36,6 @@ const getVendors = asyncHandler(async (req, res) => {
             return { ...v, distance: Infinity };
         }).sort((a, b) => a.distance - b.distance);
     }
-
     res.json(vendors);
 });
 
