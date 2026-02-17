@@ -6,28 +6,32 @@ const { generateEventPlan } = require('../utils/planGenerator');
 // @route   POST /api/events
 // @access  Private
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate } = req.body;
+    const { name, description, category, startDate, venue, budget, capacity, address, location, arPoints } = req.body;
 
-    if (!name || !startDate) {
+    if (!name || !category || !startDate) {
         res.status(400);
-        throw new Error('Please provide all required fields (name, startDate)');
+        throw new Error('Please provide all required fields');
     }
 
-    // Generate AI Plan automatically
-    const aiPlan = generateEventPlan(req.body);
+    // Use our plan generator to create the initial state
+    const generatedPlan = generateEventPlan({ category, budget, startDate, capacity, venueType: venue });
 
     const event = await Event.create({
-        ...req.body,
         user: req.user._id,
-        plan: aiPlan
+        name,
+        description,
+        category,
+        startDate,
+        venue,
+        budget,
+        capacity,
+        address,
+        location,
+        arPoints,
+        plan: generatedPlan
     });
 
-    if (event) {
-        res.status(201).json(event);
-    } else {
-        res.status(400);
-        throw new Error('Invalid event data');
-    }
+    res.status(201).json(event);
 });
 
 // @desc    Get all events for logged in user
@@ -65,12 +69,17 @@ const updateEvent = asyncHandler(async (req, res) => {
             throw new Error('User not authorized');
         }
 
-        const updatedEvent = await Event.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
+        event.name = req.body.name || event.name;
+        event.description = req.body.description || event.description;
+        event.category = req.body.category || event.category;
+        event.venue = req.body.venue || event.venue;
+        event.budget = req.body.budget || event.budget;
+        event.plan = req.body.plan || event.plan;
+        event.location = req.body.location || event.location;
+        event.arPoints = req.body.arPoints || event.arPoints;
+        event.readinessScore = req.body.readinessScore || event.readinessScore;
 
+        const updatedEvent = await event.save();
         res.json(updatedEvent);
     } else {
         res.status(404);

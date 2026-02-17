@@ -15,6 +15,18 @@ const eventSchema = mongoose.Schema({
     address: { type: String },
     capacity: { type: Number },
     budget: { type: Number },
+    location: {
+        lat: { type: Number },
+        lng: { type: Number },
+        displayAddress: { type: String }
+    },
+    readinessScore: { type: Number, default: 0 },
+    arPoints: [{
+        label: { type: String },
+        lat: { type: Number },
+        lng: { type: Number },
+        pointType: { type: String, enum: ['Entrance', 'Stage', 'Restroom', 'Exit', 'HelpDesk', 'Other'] }
+    }],
     selectedVendors: { type: Map, of: Object }, // Store selected vendor details
     features: { type: Object },
     plan: { type: Object }, // To store generated plan (Timeline, Budget Breakdown, etc.)

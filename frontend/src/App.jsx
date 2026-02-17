@@ -38,8 +38,8 @@ function App() {
         <Route path="/budget" element={<Budget />} />
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/notifications/:eventId" element={<Notifications />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/ar-navigation" element={<ARNavigation />} />
+        <Route path="/services/:eventId?" element={<Services />} />
+        <Route path="/ar-navigation/:eventId?" element={<ARNavigation />} />
         <Route path="/rsvp/:eventId" element={<RsvpPage />} />
 
       </Routes>

@@ -4,7 +4,8 @@ import {
     calculateTimeline,
     calculateBudgetAllocation,
     estimateResources,
-    calculateReadinessScore
+    calculateReadinessScore,
+    getSuggestedRoles
 } from "../utils/planningEngine";
 import "../css/eventplan.css";
 
@@ -22,7 +23,7 @@ function EventPlan() {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
                 const res = await fetch(
-                    `http://127.0.0.1:5000/api/events/${id}`,
+                    `http://localhost:5000/api/events/${id}`,
                     {
                         headers: {
                             Authorization: `Bearer ${userInfo?.token}`
@@ -36,7 +37,7 @@ function EventPlan() {
                     setEvent(data);
 
                     // Fetch actual participants
-                    const pRes = await fetch(`http://127.0.0.1:5000/api/participants/${id}`, {
+                    const pRes = await fetch(`http://localhost:5000/api/participants/${id}`, {
                         headers: { Authorization: `Bearer ${userInfo?.token}` }
                     });
                     if (pRes.ok) {
@@ -63,7 +64,7 @@ function EventPlan() {
                         setPlanningData(newPlan);
 
                         // Persist the initialized plan to backend
-                        await fetch(`http://127.0.0.1:5000/api/events/${id}`, {
+                        await fetch(`http://localhost:5000/api/events/${id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -86,32 +87,34 @@ function EventPlan() {
         fetchEvent();
     }, [id]);
 
-    const handleTaskStatusChange = async (taskId, newStatus) => {
-        const updatedTimeline = planningData.timeline.map(t =>
-            t.task === taskId ? { ...t, status: newStatus } : t
-        );
+    const updateTaskStatus = async (taskIndex, newStatus) => {
+        const updatedTimeline = [...planningData.timeline];
+        updatedTimeline[taskIndex].status = newStatus;
 
-        const updatedPlan = {
-            ...planningData,
-            timeline: updatedTimeline,
-            readinessScore: calculateReadinessScore(updatedTimeline)
+        const newReadiness = calculateReadinessScore(updatedTimeline, event.selectedVendors);
+
+        const updatedEvent = {
+            ...event,
+            plan: { ...planningData, timeline: updatedTimeline, readinessScore: newReadiness },
+            readinessScore: newReadiness
         };
 
-        setPlanningData(updatedPlan);
-
-        // Persist update to backend
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            await fetch(`http://127.0.0.1:5000/api/events/${id}`, {
+            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userInfo?.token}`
+                    'Authorization': `Bearer ${userInfo?.token}`
                 },
-                body: JSON.stringify({ plan: updatedPlan })
+                body: JSON.stringify(updatedEvent)
             });
+            if (res.ok) {
+                setEvent(updatedEvent);
+                setPlanningData(updatedEvent.plan); // Update planningData state as well
+            }
         } catch (error) {
-            console.error("Failed to sync plan update", error);
+            console.error("Failed to update status", error);
         }
     };
 
@@ -176,12 +179,34 @@ function EventPlan() {
                     <div className="flex items-center gap-8 bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-xl">
                         <div className="text-center">
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">Readiness</p>
-                            <p className="text-3xl font-black text-white">{planningData.readinessScore}%</p>
+                            <p className="text-3xl font-black text-white">{event.readinessScore || planningData.readinessScore}%</p>
                         </div>
                         <div className="w-px h-10 bg-white/10" />
                         <div className="text-center">
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">Confirmed Guests</p>
                             <p className="text-3xl font-black text-white">{participants.filter(p => p.status === 'Confirmed').length} / {event.capacity || 0}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-card p-10 rounded-[3rem] border-white/10 bg-white/5 flex flex-col md:flex-row gap-12 items-center">
+                    <div className="flex-1 w-full">
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-black rounded-lg uppercase tracking-widest">Live Context</span>
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">Operational Overview</h2>
+                        </div>
+                        <p className="text-gray-400 font-medium leading-relaxed mb-8">
+                            Deploying resources for <span className="text-white font-bold">{event.name}</span>.
+                            The system has calibrated <span className="text-white font-bold">{planningData.timeline.length} milestones</span> and
+                            allocated <span className="text-white font-bold">₹{event.budget.toLocaleString()}</span> across critical operational nodes.
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                            {getSuggestedRoles(event.category).map((role, i) => (
+                                <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black text-gray-500 uppercase tracking-widest">
+                                    Suggested: {role}
+                                </span>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -270,7 +295,73 @@ function EventPlan() {
                     </div>
 
                     {/* SIDE COLUMN: BUDGET & CHECKLIST */}
-                    <div className="space-y-8">
+                    {/* VENDOR OPERATIONS */}
+                    <div className="lg:col-span-1 space-y-8">
+                        <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">Service Deployment</h3>
+                                <button
+                                    onClick={() => navigate(`/services/${id}`)}
+                                    className="text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-widest"
+                                >
+                                    Add Team +
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                {event.selectedVendors && Object.entries(event.selectedVendors).map(([cat, vendor]) => (
+                                    <div key={cat} className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{cat}</p>
+                                                <p className="text-xs font-bold text-white uppercase">{vendor.name}</p>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${vendor.status === 'Confirmed' ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'
+                                                }`}>
+                                                {vendor.status || 'Selected'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-gray-400">
+                                            <span>₹{vendor.price.toLocaleString()}</span>
+                                            <div className="flex gap-2 text-primary">
+                                                <button className="hover:underline">Track</button>
+                                                <span>•</span>
+                                                <button
+                                                    onClick={() => alert(`Review System: Verification of ${vendor.name} deployment...`)}
+                                                    className="hover:underline text-accent"
+                                                >
+                                                    Review
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!event.selectedVendors || Object.keys(event.selectedVendors).length === 0) && (
+                                    <div className="text-center py-6">
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4">No services deployed</p>
+                                        <button
+                                            onClick={() => navigate(`/services/${id}`)}
+                                            className="gradient-button w-full text-[10px]"
+                                        >
+                                            Source Nearby Vendors
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* RESOURCE ESTIMATION */}
+                        <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-6">Resource Allocation</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {planningData.resources.map((res, i) => (
+                                    <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-tight mb-1">{res.resource}</p>
+                                        <p className="text-xl font-bold text-white">{res.quantity}</p>
+                                        <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{res.unit}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
 
                         {/* BUDGET ALLOCATION */}
                         <section className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
@@ -306,7 +397,7 @@ function EventPlan() {
                                 {planningData.timeline.map((task, index) => (
                                     <div
                                         key={index}
-                                        onClick={() => handleTaskStatusChange(task.task, task.status === 'Completed' ? 'Pending' : 'Completed')}
+                                        onClick={() => updateTaskStatus(index, task.status === 'Completed' ? 'Pending' : 'Completed')}
                                         className={`group cursor-pointer p-4 rounded-2xl border transition-all flex items-center justify-between ${task.status === 'Completed'
                                             ? 'bg-accent/10 border-accent/20'
                                             : 'bg-white/5 border-white/5 hover:border-white/20'
