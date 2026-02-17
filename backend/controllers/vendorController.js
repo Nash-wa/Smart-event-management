@@ -5,13 +5,17 @@ const Vendor = require('../models/vendorModel');
 // @route   GET /api/vendors
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
-    const category = req.query.category;
+    const district = req.query.district;
     const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
 
     let query = { isApproved };
 
     if (category) {
         query.category = category;
+    }
+
+    if (district) {
+        query.district = district;
     }
 
     const vendors = await Vendor.find(query);

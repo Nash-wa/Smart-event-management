@@ -9,6 +9,8 @@ const vendorSchema = mongoose.Schema({
     },
     price: { type: Number, required: true },
     rating: { type: Number, default: 0 },
+    district: { type: String, required: true },
+    address: { type: String },
     description: { type: String },
     image: { type: String }, // URL or placeholder
     portfolio: [{ type: String }], // Array of previous work URLs
