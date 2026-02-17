@@ -106,6 +106,30 @@ function Services() {
                                                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{vendor.reviews_count} Verified Reviews</p>
                                                 </div>
 
+                                                {/* Suggestions & External Data */}
+                                                <div className="flex gap-2 mb-4">
+                                                    {vendor.googleReviewsUrl && (
+                                                        <a
+                                                            href={vendor.googleReviewsUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex-1 p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-center"
+                                                        >
+                                                            🌐 Google Reviews
+                                                        </a>
+                                                    )}
+                                                    {vendor.instagramUrl && (
+                                                        <a
+                                                            href={vendor.instagramUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex-1 p-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-[10px] font-bold text-pink-400 hover:bg-pink-500 hover:text-white transition-all text-center"
+                                                        >
+                                                            📸 Instagram
+                                                        </a>
+                                                    )}
+                                                </div>
+
                                                 {/* Portfolio Preview */}
                                                 {vendor.portfolio && vendor.portfolio.length > 0 && (
                                                     <button

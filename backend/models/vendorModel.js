@@ -14,6 +14,8 @@ const vendorSchema = mongoose.Schema({
     portfolio: [{ type: String }], // Array of previous work URLs
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     isApproved: { type: Boolean, default: false },
+    googleReviewsUrl: { type: String },
+    instagramUrl: { type: String },
 }, {
     timestamps: true,
 });

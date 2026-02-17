@@ -62,11 +62,43 @@ function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 relative z-10">
-        <div className="mb-10">
-          <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-            Dashboard
-          </h2>
-          <p className="text-muted-foreground">Welcome back, {user.name || 'User'} 👋</p>
+        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+              Dashboard
+            </h2>
+            <p className="text-muted-foreground">Welcome back, {user.name || 'User'} 👋</p>
+          </div>
+          <div className="flex gap-4">
+            <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-center">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Events</span>
+              <span className="text-2xl font-black text-white">12</span>
+            </div>
+            <div className="glass-card px-6 py-3 rounded-2xl border-primary/20 bg-primary/5 flex flex-col items-center">
+              <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Exp. Growth</span>
+              <span className="text-2xl font-black text-white">+24%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Analytics Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          {[
+            { label: 'Upcoming', val: '4', icon: '🚀', color: 'blue' },
+            { label: 'Completed', val: '8', icon: '✅', color: 'emerald' },
+            { label: 'Vendors', val: '32', icon: '🤝', color: 'purple' },
+            { label: 'Budgets', val: '₹4.2L', icon: '💎', color: 'amber' }
+          ].map((stat, i) => (
+            <div key={i} className="glass-card p-4 rounded-3xl border-white/5 bg-white/5 flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center text-xl`}>
+                {stat.icon}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-gray-500 uppercase">{stat.label}</span>
+                <span className="text-lg font-black text-white leading-none">{stat.val}</span>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
