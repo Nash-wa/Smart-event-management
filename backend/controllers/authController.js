@@ -18,8 +18,8 @@ const registerUser = asyncHandler(async (req, res) => {
     const user = await User.create({
         name,
         email,
-        password, // Hashed automatically by pre-save hook in userModel
-        role: role === 'vendor' ? 'vendor' : 'user',
+        password,
+        role: role || 'user',
     });
 
     if (user) {
@@ -58,4 +58,7 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { registerUser, loginUser };
+module.exports = {
+    registerUser,
+    loginUser,
+};

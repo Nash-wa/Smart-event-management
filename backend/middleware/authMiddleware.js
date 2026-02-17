@@ -2,21 +2,14 @@ const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 
-// Middleware to protect routes & verify JWT
 const protect = asyncHandler(async (req, res, next) => {
     let token;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            // Get token from header
             token = req.headers.authorization.split(' ')[1];
-
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smart_event_secret_123');
-
-            // Get user from the token (exclude password)
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey123');
             req.user = await User.findById(decoded.id).select('-password');
-
             next();
         } catch (error) {
             console.error(error);
@@ -31,7 +24,6 @@ const protect = asyncHandler(async (req, res, next) => {
     }
 });
 
-// Middleware to check if user is admin
 const adminOnly = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -41,7 +33,6 @@ const adminOnly = (req, res, next) => {
     }
 };
 
-// Middleware to check if user is vendor
 const vendorOnly = (req, res, next) => {
     if (req.user && (req.user.role === 'vendor' || req.user.role === 'admin')) {
         next();

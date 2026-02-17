@@ -16,7 +16,7 @@ import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EventPlan from "./pages/EventPlan";
 import ARNavigation from "./pages/ARNavigation";
-import VentureAdvice from "./pages/VentureAdvice";
+import RsvpPage from "./pages/RsvpPage";
 
 
 
@@ -34,13 +34,13 @@ function App() {
         <Route path="/event-plan/:id" element={<EventPlan />} />
         <Route path="/my-events" element={<MyEvents />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/participants" element={<Participants />} />
+        <Route path="/participants/:eventId" element={<Participants />} />
         <Route path="/budget" element={<Budget />} />
         <Route path="/schedule" element={<Schedule />} />
-        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/notifications/:eventId" element={<Notifications />} />
         <Route path="/services" element={<Services />} />
         <Route path="/ar-navigation" element={<ARNavigation />} />
-        <Route path="/venture-advice" element={<VentureAdvice />} />
+        <Route path="/rsvp/:eventId" element={<RsvpPage />} />
 
       </Routes>
     </BrowserRouter>
