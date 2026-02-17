@@ -7,26 +7,38 @@ const connectDB = async () => {
     try {
         let uri = process.env.MONGO_URI;
 
-        // Try to connect to local MongoDB first
-        if (uri && (uri.includes('127.0.0.1') || uri.includes('localhost'))) {
-            try {
-                const conn = await mongoose.connect(uri, {
-                    serverSelectionTimeoutMS: 3000
-                });
-                console.log(`✅ MongoDB Connected (Local): ${conn.connection.host}`);
-                return;
-            } catch (localError) {
-                console.log('⚠️  No local MongoDB detected. Starting In-Memory Database...');
-            }
+        if (!uri) {
+            throw new Error('MONGO_URI not defined in environment variables');
         }
 
-        // Fallback to MongoMemoryServer for instant demo
-        mongoServer = await MongoMemoryServer.create();
-        uri = mongoServer.getUri();
+        // Try to connect to MongoDB (local or Atlas)
+        try {
+            const conn = await mongoose.connect(uri, {
+                serverSelectionTimeoutMS: 5000
+            });
 
-        const conn = await mongoose.connect(uri);
-        console.log(`✅ MongoDB Connected (In-Memory): ${conn.connection.host}`);
-        console.log('📝 Note: Using temporary database. Data will be lost on restart.');
+            // Determine connection type
+            if (uri.includes('mongodb+srv://') || uri.includes('mongodb.net')) {
+                console.log(`✅ MongoDB Connected (Atlas Cloud): ${conn.connection.host}`);
+                console.log('💾 Data will persist permanently in the cloud!');
+            } else if (uri.includes('127.0.0.1') || uri.includes('localhost')) {
+                console.log(`✅ MongoDB Connected (Local): ${conn.connection.host}`);
+            } else {
+                console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+            }
+            return;
+        } catch (connectionError) {
+            console.log(`⚠️  MongoDB connection failed: ${connectionError.message}`);
+            console.log('⚠️  Falling back to In-Memory Database...');
+
+            // Fallback to MongoMemoryServer for instant demo
+            mongoServer = await MongoMemoryServer.create();
+            uri = mongoServer.getUri();
+
+            const conn = await mongoose.connect(uri);
+            console.log(`✅ MongoDB Connected (In-Memory): ${conn.connection.host}`);
+            console.log('📝 Note: Using temporary database. Data will be lost on restart.');
+        }
 
         const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/smart-event');
         console.log(`MongoDB Connected: ${conn.connection.host}`);

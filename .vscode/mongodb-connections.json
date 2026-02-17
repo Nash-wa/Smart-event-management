@@ -1,0 +1,16 @@
+{
+    "mdb.connectionSaving.hideOptionToChooseWhereToSaveNewConnections": false,
+    "mdb.defaultLimit": 100,
+    "mdb.confirmRunAll": true,
+    "mdb.sendTelemetry": false,
+    "mdb.connections": [
+        {
+            "id": "smart-event-atlas",
+            "name": "Smart Event Management - Atlas",
+            "connectionString": "mongodb+srv://admin:project123@cluster0.7xwslgo.mongodb.net/smart-event-management?retryWrites=true&w=majority",
+            "connectionOptions": {
+                "appName": "Smart Event Management"
+            }
+        }
+    ]
+}
