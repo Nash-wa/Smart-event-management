@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-<<<<<<< HEAD
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api';
 import imgStep1 from '../assets/ar/IMG_8777.JPG.jpeg';
@@ -7,15 +6,6 @@ import imgStep2 from '../assets/ar/IMG_8778.JPG.jpeg';
 import imgStep3 from '../assets/ar/IMG_8779.JPG.jpeg';
 import imgStep4 from '../assets/ar/IMG_8780.JPG.jpeg';
 import imgStep5 from '../assets/ar/IMG_8781.JPG.jpeg';
-=======
-import { useNavigate } from 'react-router-dom';
-import api from '../api';
-import img1 from '../assets/ar/IMG_8777.JPG.jpeg';
-import img2 from '../assets/ar/IMG_8778.JPG.jpeg';
-import img3 from '../assets/ar/IMG_8779.JPG.jpeg';
-import img4 from '../assets/ar/IMG_8780.JPG.jpeg';
-import img5 from '../assets/ar/IMG_8781.JPG.jpeg';
->>>>>>> origin/nashwa
 
 const RadarMap = ({ currentStep, totalSteps }) => {
     const angle = (currentStep / (totalSteps - 1)) * 180 - 90;
@@ -218,11 +208,8 @@ const NavigationStep = ({ image, instruction, distance, nextStep, prevStep, isLa
 const ARNavigation = () => {
     const [step, setStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
-<<<<<<< HEAD
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
-=======
->>>>>>> origin/nashwa
     const navigate = useNavigate();
     const { eventId } = useParams();
 
@@ -254,15 +241,9 @@ const ARNavigation = () => {
             distance: "12m"
         },
         {
-<<<<<<< HEAD
             image: imgStep2,
             instruction: "Approaching Operations wing",
             label: "Venue Control Center",
-=======
-            image: img2,
-            instruction: "Approaching Systems wing",
-            label: "Systems Core Laboratory",
->>>>>>> origin/nashwa
             distance: "4m"
         },
         {
@@ -277,19 +258,13 @@ const ARNavigation = () => {
             distance: "2m"
         },
         {
-<<<<<<< HEAD
             image: imgStep5,
             instruction: "Destination reached",
-=======
-            image: img5,
-            instruction: "Arrival at destination",
->>>>>>> origin/nashwa
             distance: "0m",
             isLast: true
         }
     ];
 
-<<<<<<< HEAD
     // Determine which steps to use: Dynamic (if available) or Default (Local)
     // Note: We use the uploaded images as fallbacks for dynamic points too, to ensure visuals work
     const uploadedImages = [imgStep1, imgStep2, imgStep3, imgStep4, imgStep5];
@@ -321,21 +296,6 @@ const ARNavigation = () => {
             };
 
             await api.post('/ar-layout', payload);
-=======
-    const saveLayout = async () => {
-        setIsSaving(true);
-        try {
-            // Mocking layout data from current navigation state
-            const layoutData = {
-                completedSteps: step,
-                totalSteps: steps.length,
-                lastPosition: steps[step].instruction
-            };
-            await api.post('/ar-layout', {
-                event_id: "65d000000000000000000001", // Placeholder or dynamic if available
-                layoutData
-            });
->>>>>>> origin/nashwa
             alert("AR Layout Blueprint Saved to Cloud! 🚀");
         } catch (err) {
             console.error("Save failed", err);
@@ -362,18 +322,12 @@ const ARNavigation = () => {
                     <button
                         onClick={saveLayout}
                         disabled={isSaving}
-<<<<<<< HEAD
                         className="glass-card px-6 py-3 rounded-2xl border-primary/20 bg-primary/10 flex items-center gap-2 hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50"
                     >
                         <span className="text-lg">{isSaving ? '⌛' : '💾'}</span>
                         <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                             {isSaving ? 'Saving...' : 'Save Blueprint'}
                         </span>
-=======
-                        className="glass-card px-6 py-3 rounded-2xl border-primary/40 bg-primary/10 text-primary font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2"
-                    >
-                        {isSaving ? "Saving..." : "💾 Save Blueprint"}
->>>>>>> origin/nashwa
                     </button>
                     <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-end">
                         <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Target Point</span>
