@@ -203,75 +203,6 @@ function Home() {
               )}
             </div>
 
-<<<<<<< HEAD
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8 animate-fade-in-up">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <span className="text-sm font-medium text-gray-300">Data-Driven Event Operations</span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight">
-            Craft Unforgettable <br />
-            <span className="bg-gradient-to-r from-primary via-accent to-purple-500 bg-clip-text text-transparent">
-              Moments & Memories
-            </span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-            From intimate birthday parties to grand corporate summits.
-            Plan, organize, and execute any event with our production-ready smart planning engine.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button
-              onClick={() => navigate("/register")}
-              className="gradient-button text-lg px-10 py-4 h-auto min-w-[200px]"
-            >
-              Start Planning Free
-            </button>
-            <button
-              onClick={() => navigate("/services")}
-              className="px-10 py-4 rounded-2xl glass-button text-lg font-medium hover:bg-white/10 transition-all min-w-[200px]"
-            >
-              Explore Teams
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section id="features" className="py-32 px-6 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Designed for Every Occasion</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Whether it's a personal celebration or a professional gathering, we have the tools you need.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon="🎂"
-              title="Social Events"
-              desc="Perfect for Birthdays, Anniversaries, and Weddings. Manage guest lists, catering, and invitations effortlessly."
-              color="from-pink-500/20 to-rose-500/20"
-            />
-            <FeatureCard
-              icon="📊"
-              title="Operations Hub"
-              desc="Real-time control panel for budgets, timelines, and resource allocation. Professional tools for serious event organizers."
-              color="from-primary/20 to-accent/20"
-            />
-            <FeatureCard
-              icon="👓"
-              title="AR Explorer"
-              desc="Revolutionary Augmented Reality venue navigation. Guide your guests through complex spaces with ease."
-              color="from-blue-500/20 to-cyan-500/20"
-            />
-          </div>
-        </div>
-      </section>
-=======
             <section className="lg:col-span-7 space-y-10">
               {!planGenerated ? (
                 <div className="h-full min-h-[500px] flex flex-col items-center justify-center py-20 text-slate-300 border-2 border-dashed border-slate-200 rounded-[48px] bg-slate-50/50">
@@ -331,7 +262,6 @@ function Home() {
           </div>
         </section>
       </main>
->>>>>>> origin/nashwa
 
       {/* Footer */}
       <footer className="py-12 border-t border-slate-100 text-center text-slate-400 relative z-10 bg-white mt-20">
