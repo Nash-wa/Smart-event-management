@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api';
 import imgStep1 from '../assets/ar/IMG_8777.JPG.jpeg';
 import imgStep2 from '../assets/ar/IMG_8778.JPG.jpeg';
@@ -208,9 +208,33 @@ const NavigationStep = ({ image, instruction, distance, nextStep, prevStep, isLa
 const ARNavigation = () => {
     const [step, setStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { eventId } = useParams();
 
-    const steps = [
+    // Fetch dynamic event data if eventId is present
+    useEffect(() => {
+        const fetchEvent = async () => {
+            if (!eventId) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
+                const data = await res.json();
+                if (res.ok) setEvent(data);
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch event for AR", error);
+                setLoading(false);
+            }
+        };
+        fetchEvent();
+    }, [eventId]);
+
+    // Standard steps using local assets (uploaded images)
+    const defaultSteps = [
         {
             image: imgStep1,
             instruction: "Proceed into the main hall",
@@ -241,19 +265,37 @@ const ARNavigation = () => {
         }
     ];
 
+    // Determine which steps to use: Dynamic (if available) or Default (Local)
+    // Note: We use the uploaded images as fallbacks for dynamic points too, to ensure visuals work
+    const uploadedImages = [imgStep1, imgStep2, imgStep3, imgStep4, imgStep5];
+
+    const steps = (event?.arPoints && event.arPoints.length > 0)
+        ? event.arPoints.map((pt, i) => ({
+            instruction: `Head towards ${pt.label}`,
+            label: pt.label,
+            distance: "Calculating...",
+            isLast: i === event.arPoints.length - 1,
+            image: uploadedImages[i % uploadedImages.length] // Cycle real images
+        }))
+        : defaultSteps;
+
     const saveLayout = async () => {
         setIsSaving(true);
         try {
             const layoutData = {
                 completedSteps: step,
                 totalSteps: steps.length,
-                lastPosition: steps[step].instruction
+                lastPosition: steps[step].instruction,
+                timestamp: new Date().toISOString()
             };
-            // Dynamic event ID would come from URL or Context in real app
-            await api.post('/ar-layout', {
-                event_id: "65d000000000000000000001",
+
+            // If we have an event ID, link it, otherwise generic save
+            const payload = {
+                event_id: eventId || "65d000000000000000000001",
                 layoutData
-            });
+            };
+
+            await api.post('/ar-layout', payload);
             alert("AR Layout Blueprint Saved to Cloud! 🚀");
         } catch (err) {
             console.error("Save failed", err);
@@ -288,7 +330,7 @@ const ARNavigation = () => {
                         </span>
                     </button>
                     <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-end">
-                        <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Vector Index</span>
+                        <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Target Point</span>
                         <span className="text-primary font-black text-xl italic font-mono leading-none">{step + 1} / {steps.length}</span>
                     </div>
                 </div>

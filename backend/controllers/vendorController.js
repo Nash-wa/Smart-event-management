@@ -5,8 +5,11 @@ const Vendor = require('../models/vendorModel');
 // @route   GET /api/vendors
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
+    const district = req.query.district;
     const category = req.query.category;
     const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
+
+    const { lat, lng } = req.query;
 
     let query = { isApproved };
 
@@ -14,15 +17,50 @@ const getVendors = asyncHandler(async (req, res) => {
         query.category = category;
     }
 
-    const vendors = await Vendor.find(query);
+    if (district) {
+        query.district = district;
+    }
+
+    let vendors = await Vendor.find(query);
+
+    if (lat && lng) {
+        const userLat = parseFloat(lat);
+        const userLng = parseFloat(lng);
+
+        vendors = vendors.map(vendor => {
+            const v = vendor.toObject();
+            if (v.location && v.location.lat && v.location.lng) {
+                const distance = calculateDistance(userLat, userLng, v.location.lat, v.location.lng);
+                return { ...v, distance };
+            }
+            return { ...v, distance: Infinity };
+        }).sort((a, b) => a.distance - b.distance);
+    }
     res.json(vendors);
 });
+
+// Helper: Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+}
 
 // @desc    Create a new vendor (requires approval)
 // @route   POST /api/vendors
 // @access  Private (Vendor)
 const createVendor = asyncHandler(async (req, res) => {
-    const { name, category, price, description, portfolio, googleReviewsUrl, instagramUrl } = req.body;
+    const { name, category, price, description, portfolio, googleReviewsUrl, instagramUrl, location } = req.body;
 
     const vendor = await Vendor.create({
         name,
@@ -32,8 +70,9 @@ const createVendor = asyncHandler(async (req, res) => {
         portfolio: portfolio || [],
         googleReviewsUrl,
         instagramUrl,
-        owner: req.user._id,
-        isApproved: false
+        location,
+        owner: req.user._id, // Secured: uses authenticated user ID
+        isApproved: false // Always false on creation
     });
 
     res.status(201).json(vendor);
