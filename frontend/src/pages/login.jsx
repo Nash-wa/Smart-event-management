@@ -13,6 +13,7 @@ function Login() {
       const response = await api.post('/auth/login', { email, password });
       const data = response.data;
 
+      console.log("Server Response:", data);
       if (response.status === 200) {
         localStorage.setItem('userInfo', JSON.stringify(data));
         // Redirect based on role

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function VendorDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
     const [requests, setRequests] = useState([]);
     const [myVendors, setMyVendors] = useState([]);
+    const [myReviews, setMyReviews] = useState([]); // New State
     const [formData, setFormData] = useState({
         name: "",
         category: "Photography",
@@ -19,27 +21,30 @@ function VendorDashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userInfo?.token}`
-            };
-
             // Fetch Vendor Requests
-            const rRes = await fetch(`http://localhost:5000/api/vendors/requests/${user._id}`, { headers });
-            const rData = await rRes.json();
-            setRequests(Array.isArray(rData) ? rData : []);
+            const rRes = await api.get(`/vendors/requests/${user._id}`);
+            const rData = rRes.data;
+            setRequests(rData);
 
-            // Fetch ALL vendors and filter for OWNED ones
-            const allRes = await fetch(`http://localhost:5000/api/vendors?isApproved=true`, { headers });
-            const allData = await allRes.json();
-            const pRes = await fetch(`http://localhost:5000/api/vendors?isApproved=false`, { headers });
-            const pData = await pRes.json();
+            // Fetch ALL vendors and filter for OWNED ones (approved or not)
+            const allRes = await api.get(`/vendors?isApproved=true`);
+            const allData = allRes.data;
+            const pRes = await api.get(`/vendors?isApproved=false`);
+            const pData = pRes.data;
 
             const combined = [...(Array.isArray(allData) ? allData : []), ...(Array.isArray(pData) ? pData : [])];
             setMyVendors(combined.filter(v => v.owner === user._id));
-        } catch (error) {
-            console.error(error);
+            // Aggregate reviews from my vendors
+            const reviews = [];
+            combined.filter(v => v.owner === user._id).forEach(v => {
+                if (v.reviews) {
+                    v.reviews.forEach(r => reviews.push({ ...r, vendorName: v.name, date: new Date().toISOString() }));
+                }
+            });
+            setMyReviews(reviews);
+        } catch (err) {
+            console.error(err);
+            // setLoading(false);
         }
     }, [user._id]);
 
@@ -62,16 +67,8 @@ function VendorDashboard() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch('http://localhost:5000/api/vendors', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo?.token}`
-                },
-                body: JSON.stringify(formData) // ownerId added by backend token logic
-            });
-            if (res.ok) {
+            const res = await api.post('/vendors', { ...formData, ownerId: user._id });
+            if (res.status === 200) {
                 alert("Venture submitted! Waiting for Admin approval. ✨");
                 setFormData({ name: "", category: "Photography", price: "", description: "", portfolio: [] });
                 fetchData();
@@ -97,6 +94,7 @@ function VendorDashboard() {
                     <TabButton id="overview" label="Dashboard" icon="📊" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="requests" label="Bookings" icon="🔔" active={activeTab} onClick={setActiveTab} count={requests.length} />
                     <TabButton id="listings" label="Add Venture" icon="➕" active={activeTab} onClick={setActiveTab} />
+                    <TabButton id="reviews" label="Reviews" icon="⭐" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="creations" label="My Work" icon="🖼️" active={activeTab} onClick={setActiveTab} />
                 </nav>
 
@@ -144,6 +142,12 @@ function VendorDashboard() {
                             <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-purple-500/5 to-transparent">
                                 <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Growth Tier</span>
                                 <p className="text-4xl md:text-5xl font-bold mt-2 tracking-tighter">SILVER</p>
+                            </div>
+                            <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-yellow-500/5 to-transparent">
+                                <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Client Rating</span>
+                                <p className="text-4xl md:text-5xl font-bold mt-2 tracking-tighter text-yellow-500">
+                                    {myReviews.length > 0 ? (myReviews.reduce((acc, r) => acc + parseFloat(r.rating), 0) / myReviews.length).toFixed(1) : 'N/A'}
+                                </p>
                             </div>
                         </div>
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import "../css/createevent.css";
-import "../css/createevent.css";
+
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -44,7 +44,7 @@ function CreateEvent() {
       food: false,
       speakers: false,
       streaming: false,
-      ar: false,
+      arScan: false,
       photography: false,
       music: false,
       decoration: false,
@@ -94,12 +94,23 @@ function CreateEvent() {
     setSelectedVendors({ ...selectedVendors, [vendor.category]: vendor });
     setShowVendorModal(false);
 
-    // Also enable the feature flag
-    const featureKey = vendor.category.toLowerCase().split('/')[0]; // simple mapping
-    setFormData(prev => ({
-      ...prev,
-      features: { ...prev.features, [featureKey]: true }
-    }));
+    // Map vendor category to feature key
+    const categoryMap = {
+      'Photography': 'photography',
+      'Catering': 'food',
+      'Music/DJ': 'music',
+      'Decoration': 'decoration',
+      'Invitation': 'invitations'
+    };
+
+    const featureKey = categoryMap[vendor.category];
+
+    if (featureKey) {
+      setFormData(prev => ({
+        ...prev,
+        features: { ...prev.features, [featureKey]: true }
+      }));
+    }
   };
 
   const handleCheckboxChange = (e) => {
@@ -115,6 +126,11 @@ function CreateEvent() {
   const [userLocation, setUserLocation] = useState(null);
   const [zoom, setZoom] = useState(7);
   const mapRef = useRef();
+
+  // AR Scan State
+  const [isScanning, setIsScanning] = useState(false);
+  // Submission State
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get User Location on Mount
   useEffect(() => {
@@ -137,7 +153,7 @@ function CreateEvent() {
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        let url = `http://127.0.0.1:5000/api/vendors?category=Venue&district=${formData.district}`;
+        let url = `http://localhost:5000/api/vendors?category=Venue&district=${formData.district}`;
         // If user location exists, pass it to sort by distance
         if (userLocation) {
           url += `&lat=${userLocation[0]}&lng=${userLocation[1]}`;
@@ -162,9 +178,6 @@ function CreateEvent() {
           // If sorting by distance, auto-center on the closest venue (first one)
           if (userLocation && sortedVenues[0].location && sortedVenues[0].location.lat) {
             const venueLoc = [sortedVenues[0].location.lat, sortedVenues[0].location.lng];
-            // Optional: keep map on user or move to venue? 
-            // "show the map locations" -> maybe show both? 
-            // Let's stick to centering on the venue as that's the "selection"
             setMapCenter(venueLoc);
             setZoom(14);
           }
@@ -466,6 +479,42 @@ function CreateEvent() {
                   <span className="checkmark"></span>
                   Registration
                 </label>
+                <div className="glass-card p-4 rounded-xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold flex items-center gap-2">📱 AR Spatial Scan <span className="text-[10px] bg-accent px-2 rounded-full text-white">NEW</span></span>
+                    {formData.features.arScan ? (
+                      <span className="text-green-400 text-sm font-bold">✓ Scanned</span>
+                    ) : (
+                      <button
+                        className="px-3 py-1 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200"
+                        disabled={isScanning}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          setIsScanning(true);
+
+                          // Mock Scan
+                          setTimeout(async () => {
+                            try {
+                              const res = await api.post("/spatial/save-scan", { coordinates: "10.5276, 76.2144 (Thrissur)" });
+                              if (res.status === 200) {
+                                setFormData(prev => ({ ...prev, features: { ...prev.features, arScan: true } }));
+                                alert("Room scanned successfully! Dimensions saved.");
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              alert("Scan failed. Is backend running?");
+                            } finally {
+                              setIsScanning(false);
+                            }
+                          }, 2000);
+                        }}
+                      >
+                        {isScanning ? "Scanning Room..." : "Scan Area"}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">Use camera to map venue dimensions automatically.</p>
+                </div>
                 <label className="custom-checkbox">
                   <input type="checkbox" name="streaming" checked={formData.features.streaming} onChange={handleCheckboxChange} />
                   <span className="checkmark"></span>
@@ -506,37 +555,59 @@ function CreateEvent() {
             )}
 
             <div className="wizard-actions">
-              <button className="btn-prev" onClick={handlePrev}>Back</button>
-              <button className="btn-submit" type="submit" onClick={async (e) => {
-                e.preventDefault();
-                try {
-                  const payload = {
-                    ...formData,
-                    selectedVendors
-                  };
+              <button className="btn-prev" onClick={handlePrev} disabled={isSubmitting}>Back</button>
+              <button
+                className="btn-submit"
+                type="submit"
+                disabled={isSubmitting}
+                onClick={async (e) => {
+                  e.preventDefault();
 
-                  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                  const res = await fetch('http://localhost:5000/api/events', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${userInfo?.token}`
-                    },
-                    body: JSON.stringify(payload)
-                  });
-                  const data = await res.json();
-
-                  if (res.ok) {
-                    navigate(`/event-plan/${data._id}`);
-                  } else {
-                    alert("Failed to create event");
+                  // Basic Validation
+                  if (new Date(formData.endDate) < new Date(formData.startDate)) {
+                    alert("End date cannot be before start date!");
+                    return;
                   }
-                } catch (error) {
-                  console.error("Post error detail:", error);
-                  alert(`Connection error: ${error.response?.data?.message || error.message}. Make sure backend is running.`);
-                }
-              }}>
-                🚀 Launch Event
+
+                  try {
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                    if (!userInfo) {
+                      alert("Please login first");
+                      navigate("/login");
+                      return;
+                    }
+
+                    setIsSubmitting(true); // Start loading
+
+                    const payload = {
+                      ...formData,
+                      selectedVendors
+                    };
+
+                    const res = await fetch('http://localhost:5000/api/events', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userInfo?.token}`
+                      },
+                      body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                      navigate(`/event-plan/${data._id}`);
+                    } else {
+                      alert(data.message || "Failed to create event");
+                    }
+                  } catch (error) {
+                    console.error("Fetch error detail:", error);
+                    alert(`Connection error: ${error.message}. Make sure backend is running.`);
+                  } finally {
+                    setIsSubmitting(false); // Stop loading
+                  }
+                }}
+              >
+                {isSubmitting ? "🚀 Launching..." : "🚀 Launch Event"}
               </button>
             </div>
           </div>

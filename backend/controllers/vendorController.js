@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Vendor = require('../models/vendorModel');
+const mongoose = require('mongoose');
 
 // @desc    Get all approved vendors
 // @route   GET /api/vendors
@@ -8,8 +9,6 @@ const getVendors = asyncHandler(async (req, res) => {
     const district = req.query.district;
     const category = req.query.category;
     const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
-
-    const { lat, lng } = req.query;
 
     let query = { isApproved };
 
@@ -60,7 +59,7 @@ function deg2rad(deg) {
 // @route   POST /api/vendors
 // @access  Private (Vendor)
 const createVendor = asyncHandler(async (req, res) => {
-    const { name, category, price, description, portfolio, googleReviewsUrl, instagramUrl, location } = req.body;
+    const { name, category, price, description, portfolio } = req.body;
 
     const vendor = await Vendor.create({
         name,
@@ -68,9 +67,6 @@ const createVendor = asyncHandler(async (req, res) => {
         price,
         description,
         portfolio: portfolio || [],
-        googleReviewsUrl,
-        instagramUrl,
-        location,
         owner: req.user._id, // Secured: uses authenticated user ID
         isApproved: false // Always false on creation
     });
@@ -143,4 +139,4 @@ const getVendorRequests = asyncHandler(async (req, res) => {
     res.json(requests);
 });
 
-module.exports = { getVendors, createVendor, approveVendor, getVendorRequests, createVendorReview };
+module.exports = { getVendors, createVendor, approveVendor, getVendorRequests };

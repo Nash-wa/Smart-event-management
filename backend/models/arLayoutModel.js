@@ -11,7 +11,7 @@ const arLayoutSchema = mongoose.Schema({
         required: true
     },
     screenshot: {
-        type: String
+        type: String // URL to a screenshot if applicable
     }
 }, {
     timestamps: true

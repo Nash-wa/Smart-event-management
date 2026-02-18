@@ -13,6 +13,7 @@ const vendorSchema = mongoose.Schema({
     portfolio: [{ type: String }], // Array of previous work URLs
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     isApproved: { type: Boolean, default: false },
+<<<<<<< HEAD
 
     // Social & Reviews (from HEAD)
     googleReviewsUrl: { type: String },
@@ -36,6 +37,10 @@ const vendorSchema = mongoose.Schema({
         punctuality: { type: Number, default: 0 },
         quality: { type: Number, default: 0 }
     }
+=======
+    googleReviewsUrl: { type: String },
+    instagramUrl: { type: String },
+>>>>>>> origin/nashwa
 }, {
     timestamps: true,
 });

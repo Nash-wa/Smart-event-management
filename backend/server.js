@@ -23,10 +23,18 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
+<<<<<<< HEAD
 app.use('/api/registrations', require('./routes/registrationRoutes'));
 app.use('/api/ar-layout', require('./routes/arRoutes'));
 app.use('/api/participants', require('./routes/participantRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
+=======
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/spatial', require('./routes/spatialRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/registrations', require('./routes/registrationRoutes'));
+app.use('/api/ar-layout', require('./routes/arRoutes'));
+>>>>>>> origin/nashwa
 
 // Error handling
 app.use((req, res, next) => {
