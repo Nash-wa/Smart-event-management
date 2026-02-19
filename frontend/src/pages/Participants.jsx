@@ -32,7 +32,7 @@ function Participants() {
 
     const fetchEvent = async () => {
       try {
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
         const res = await fetch(`http://127.0.0.1:5000/api/events/public/${eventId}`);
         const data = await res.json();
         if (res.ok) setEvent(data);
@@ -123,11 +123,10 @@ function Participants() {
   const handleDeleteParticipant = async (id) => {
     if (!window.confirm("Are you sure you want to remove this participant?")) return;
     try {
-      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const res = await fetch(`http://127.0.0.1:5000/api/participants/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${userInfo?.token}`
+          Authorization: `Bearer ${JSON.parse(localStorage.getItem('userInfo'))?.token}`
         }
       });
       if (res.ok) {

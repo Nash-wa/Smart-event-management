@@ -14,10 +14,12 @@ function VendorDashboard() {
     });
     const [imageUrl, setImageUrl] = useState("");
 
+
     const navigate = useNavigate();
     const user = useMemo(() => JSON.parse(localStorage.getItem('userInfo') || '{}'), []);
 
     const fetchData = useCallback(async () => {
+
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const headers = {
@@ -38,15 +40,15 @@ function VendorDashboard() {
 
             const combined = [...(Array.isArray(allData) ? allData : []), ...(Array.isArray(pData) ? pData : [])];
             setMyVendors(combined.filter(v => v.owner === user._id));
-        } catch (error) {
-            console.error(error);
+
+        } catch {
+            // ignore
         }
     }, [user._id]);
 
     useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setTimeout(() => fetchData(), 0);
+    }, [fetchData]);
 
     const addImage = () => {
         if (imageUrl && !formData.portfolio.includes(imageUrl)) {

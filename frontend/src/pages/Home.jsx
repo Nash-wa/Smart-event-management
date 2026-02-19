@@ -1,17 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function Home() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
+  const [user] = useState(() => {
     const userInfo = localStorage.getItem('userInfo');
-    if (userInfo) {
-      // eslint-disable-next-line
-      setUser(JSON.parse(userInfo));
-    }
-  }, []);
+    return userInfo ? JSON.parse(userInfo) : null;
+  });
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-white selection:bg-accent selection:text-white">

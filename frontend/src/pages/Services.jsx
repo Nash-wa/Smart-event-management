@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
-    const [event, setEvent] = useState(null);
+
     const [loading, setLoading] = useState(true);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const navigate = useNavigate();
@@ -23,7 +23,7 @@ function Services() {
                     const eventRes = await fetch(`http://localhost:5000/api/events/${eventId}`, { headers });
                     const eventData = await eventRes.json();
                     if (eventRes.ok && eventData.location) {
-                        setEvent(eventData);
+
                         lat = eventData.location.lat;
                         lng = eventData.location.lng;
                     }
