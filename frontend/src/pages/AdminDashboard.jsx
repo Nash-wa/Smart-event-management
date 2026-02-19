@@ -7,6 +7,7 @@ function AdminDashboard() {
     const [allUsers, setAllUsers] = useState([]);
     const [allEvents, setAllEvents] = useState([]);
     const [stats, setStats] = useState({ users: 0, events: 0, vendors: 0, pending: 0 });
+
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
@@ -32,15 +33,15 @@ function AdminDashboard() {
             const sRes = await fetch('http://localhost:5000/api/admin/stats', { headers });
             const sData = await sRes.json();
             setStats(sData);
-        } catch (error) {
-            console.error(error);
+
+        } catch {
+            // ignore
         }
     }, []);
 
     useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setTimeout(() => fetchData(), 0);
+    }, [fetchData]);
 
     const handleApprove = async (id) => {
         try {

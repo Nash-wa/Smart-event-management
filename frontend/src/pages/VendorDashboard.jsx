@@ -16,10 +16,12 @@ function VendorDashboard() {
     });
     const [imageUrl, setImageUrl] = useState("");
 
+
     const navigate = useNavigate();
     const user = useMemo(() => JSON.parse(localStorage.getItem('userInfo') || '{}'), []);
 
     const fetchData = useCallback(async () => {
+
         try {
             // Fetch Vendor Requests
             const rRes = await api.get(`/vendors/requests/${user._id}`);
@@ -34,24 +36,14 @@ function VendorDashboard() {
 
             const combined = [...(Array.isArray(allData) ? allData : []), ...(Array.isArray(pData) ? pData : [])];
             setMyVendors(combined.filter(v => v.owner === user._id));
-            // Aggregate reviews from my vendors
-            const reviews = [];
-            combined.filter(v => v.owner === user._id).forEach(v => {
-                if (v.reviews) {
-                    v.reviews.forEach(r => reviews.push({ ...r, vendorName: v.name, date: new Date().toISOString() }));
-                }
-            });
-            setMyReviews(reviews);
-        } catch (err) {
-            console.error(err);
-            // setLoading(false);
+        } catch (error) {
+            console.error(error);
         }
     }, [user._id]);
 
     useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setTimeout(() => fetchData(), 0);
+    }, [fetchData]);
 
     const addImage = () => {
         if (imageUrl && !formData.portfolio.includes(imageUrl)) {

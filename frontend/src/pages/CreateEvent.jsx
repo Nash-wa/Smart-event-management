@@ -2,10 +2,37 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import "../css/createevent.css";
-
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
+const DISTRICT_COORDINATES = {
+  "Alappuzha": [9.4981, 76.3388],
+  "Ernakulam": [9.9800, 76.2800],
+  "Idukki": [9.8420, 76.9387],
+  "Kannur": [11.8689, 75.3555],
+  "Kasaragod": [12.5076, 74.9882],
+  "Kollam": [8.8811, 76.5847],
+  "Kottayam": [9.5914, 76.5222],
+  "Kozhikode": [11.2588, 75.7804],
+  "Malappuram": [11.0720, 76.0740],
+  "Palakkad": [10.7744, 76.6563],
+  "Pathanamthitta": [9.2648, 76.7870],
+  "Thiruvananthapuram": [8.5241, 76.9366],
+  "Thrissur": [10.5167, 76.2167],
+  "Wayanad": [11.6106, 76.0822]
+};
+
+// Helper component to handle map centering
+function MapRecenter({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center && map) {
+      map.flyTo(center, zoom, { duration: 1.5 });
+    }
+  }, [center, zoom, map]);
+  return null;
+}
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -65,6 +92,12 @@ function CreateEvent() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Handle map centering when district changes
+    if (name === "district" && DISTRICT_COORDINATES[value]) {
+      setMapCenter(DISTRICT_COORDINATES[value]);
+      setZoom(11);
+    }
   };
 
   // Vendor State
@@ -175,14 +208,19 @@ function CreateEvent() {
             address: sortedVenues[0].address || ""
           }));
 
-          // If sorting by distance, auto-center on the closest venue (first one)
-          if (userLocation && sortedVenues[0].location && sortedVenues[0].location.lat) {
+          // Auto-center on the first venue
+          if (sortedVenues[0].location && sortedVenues[0].location.lat) {
             const venueLoc = [sortedVenues[0].location.lat, sortedVenues[0].location.lng];
             setMapCenter(venueLoc);
-            setZoom(14);
+            setZoom(15);
           }
         } else {
           setFormData(prev => ({ ...prev, venue: "", address: "" }));
+          // Fallback to district center if no venues
+          if (DISTRICT_COORDINATES[formData.district]) {
+            setMapCenter(DISTRICT_COORDINATES[formData.district]);
+            setZoom(11);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch venues", error);
@@ -388,6 +426,7 @@ function CreateEvent() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <MapRecenter center={mapCenter} zoom={zoom} />
 
                 {/* User Location Marker */}
                 {userLocation && (

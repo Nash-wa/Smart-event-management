@@ -100,10 +100,9 @@ const ARHUD = ({ label, distance, isLast, mousePos, currentStep, totalSteps }) =
 const NavigationStep = ({ image, instruction, distance, nextStep, prevStep, isLast, label, currentStep, totalSteps }) => {
     const [imageError, setImageError] = useState(false);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-    const [glitch, setGlitch] = useState(false);
+    const [glitch, setGlitch] = useState(true);
 
     useEffect(() => {
-        setGlitch(true);
         const timer = setTimeout(() => setGlitch(false), 500);
         return () => clearTimeout(timer);
     }, [currentStep]);
@@ -209,7 +208,7 @@ const ARNavigation = () => {
     const [step, setStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [event, setEvent] = useState(null);
-    const [loading, setLoading] = useState(true);
+
     const navigate = useNavigate();
     const { eventId } = useParams();
 
@@ -221,13 +220,12 @@ const ARNavigation = () => {
                 return;
             }
             try {
+
                 const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
                 const data = await res.json();
                 if (res.ok) setEvent(data);
-                setLoading(false);
             } catch (error) {
                 console.error("Failed to fetch event for AR", error);
-                setLoading(false);
             }
         };
         fetchEvent();
