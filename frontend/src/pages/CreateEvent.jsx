@@ -1,9 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/createevent.css";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import "../css/createevent.css";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
+const DISTRICT_COORDINATES = {
+  "Alappuzha": [9.4981, 76.3388],
+  "Ernakulam": [9.9800, 76.2800],
+  "Idukki": [9.8420, 76.9387],
+  "Kannur": [11.8689, 75.3555],
+  "Kasaragod": [12.5076, 74.9882],
+  "Kollam": [8.8811, 76.5847],
+  "Kottayam": [9.5914, 76.5222],
+  "Kozhikode": [11.2588, 75.7804],
+  "Malappuram": [11.0720, 76.0740],
+  "Palakkad": [10.7744, 76.6563],
+  "Pathanamthitta": [9.2648, 76.7870],
+  "Thiruvananthapuram": [8.5241, 76.9366],
+  "Thrissur": [10.5167, 76.2167],
+  "Wayanad": [11.6106, 76.0822]
+};
+
+// Helper component to handle map centering
+function MapRecenter({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center && map) {
+      map.flyTo(center, zoom, { duration: 1.5 });
+    }
+  }, [center, zoom, map]);
+  return null;
+}
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -63,6 +92,12 @@ function CreateEvent() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Handle map centering when district changes
+    if (name === "district" && DISTRICT_COORDINATES[value]) {
+      setMapCenter(DISTRICT_COORDINATES[value]);
+      setZoom(11);
+    }
   };
 
   // Vendor State
@@ -110,15 +145,43 @@ function CreateEvent() {
 
   const [venues, setVenues] = useState([]);
   const [mapCenter, setMapCenter] = useState([10.8505, 76.2711]); // Default Kerala
+  const [userLocation, setUserLocation] = useState(null);
   const [zoom, setZoom] = useState(7);
   const mapRef = useRef();
+
+  // Get User Location on Mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const userPos = [latitude, longitude];
+          setUserLocation(userPos);
+          setMapCenter(userPos);
+          setZoom(11); // Closer zoom when user location is found
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:5000/api/vendors?category=Venue&district=${formData.district}`);
+        let url = `http://127.0.0.1:5000/api/vendors?category=Venue&district=${formData.district}`;
+        // If user location exists, pass it to sort by distance
+        if (userLocation) {
+          url += `&lat=${userLocation[0]}&lng=${userLocation[1]}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
-        const sortedVenues = data.sort((a, b) => b.rating - a.rating);
+
+        // Data is already sorted by distance if lat/lng were provided
+        // Otherwise, fallback to rating sort
+        const sortedVenues = userLocation ? data : data.sort((a, b) => b.rating - a.rating);
         setVenues(sortedVenues);
 
         // Auto-select first venue if available
@@ -128,8 +191,20 @@ function CreateEvent() {
             venue: sortedVenues[0].name,
             address: sortedVenues[0].address || ""
           }));
+
+          // Auto-center on the first venue
+          if (sortedVenues[0].location && sortedVenues[0].location.lat) {
+            const venueLoc = [sortedVenues[0].location.lat, sortedVenues[0].location.lng];
+            setMapCenter(venueLoc);
+            setZoom(15);
+          }
         } else {
           setFormData(prev => ({ ...prev, venue: "", address: "" }));
+          // Fallback to district center if no venues
+          if (DISTRICT_COORDINATES[formData.district]) {
+            setMapCenter(DISTRICT_COORDINATES[formData.district]);
+            setZoom(11);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch venues", error);
@@ -138,7 +213,7 @@ function CreateEvent() {
     if (formData.district && step === 2) {
       fetchVenues();
     }
-  }, [formData.district, step]);
+  }, [formData.district, step, userLocation]);
 
   return (
     <div className="create-event-page">
@@ -335,6 +410,18 @@ function CreateEvent() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <MapRecenter center={mapCenter} zoom={zoom} />
+
+                {/* User Location Marker */}
+                {userLocation && (
+                  <Marker position={userLocation}>
+                    <Popup>
+                      <strong>You are here</strong>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Selected Venue Marker */}
                 {formData.venue && mapCenter[0] !== 10.8505 && (
                   <Marker position={mapCenter}>
                     <Popup>

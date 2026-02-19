@@ -5,7 +5,7 @@
 
 export const calculateTimeline = (startDate, category) => {
     const start = new Date(startDate);
-    const timeline = [];
+
 
     const categories = {
         corporate: [

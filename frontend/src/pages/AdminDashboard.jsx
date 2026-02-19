@@ -40,10 +40,8 @@ function AdminDashboard() {
     }, []);
 
     useEffect(() => {
-        // eslint-disable-next-line
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setTimeout(() => fetchData(), 0);
+    }, [fetchData]);
 
     const handleApprove = async (id) => {
         try {

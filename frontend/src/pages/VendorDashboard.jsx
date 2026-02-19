@@ -47,10 +47,8 @@ function VendorDashboard() {
     }, [user._id]);
 
     useEffect(() => {
-        // eslint-disable-next-line
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setTimeout(() => fetchData(), 0);
+    }, [fetchData]);
 
     const addImage = () => {
         if (imageUrl && !formData.portfolio.includes(imageUrl)) {
