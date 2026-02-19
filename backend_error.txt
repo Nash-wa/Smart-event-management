@@ -1,0 +1,68 @@
+﻿[dotenv@17.2.3] injecting env (0) from .env -- tip: ­ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+node : ÔÜá´©Å MONGO_URI not 
+defined in environment 
+variables
+At line:1 char:1
++ node backend/server.js 
+2>&1 | Out-File -Encoding 
+utf8 backend_error.t ...
++ 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (ÔÜá´©  
+  Å MONGO_UR...nment vari   
+ ables:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+C:\Users\nachu pc\Smart-even
+t-management\Smart-event-man
+agement\backend\node_modules
+\router\lib\route.js:228
+        throw new 
+TypeError('argument handler 
+must be a function')
+        ^
+
+TypeError: argument handler 
+must be a function
+    at Route.<computed> [as 
+get] (C:\Users\nachu pc\Smar
+t-event-management\Smart-eve
+nt-management\backend\node_m
+odules\router\lib\route.js:2
+28:15)
+    at Object.<anonymous> 
+(C:\Users\nachu pc\Smart-eve
+nt-management\Smart-event-ma
+nagement\backend\routes\vend
+orRoutes.js:23:6)
+    at Module._compile (node
+:internal/modules/cjs/loader
+:1364:14)
+    at 
+Module._extensions..js (node
+:internal/modules/cjs/loader
+:1422:10)
+    at Module.load (node:int
+ernal/modules/cjs/loader:120
+3:32)
+    at Module._load (node:in
+ternal/modules/cjs/loader:10
+19:12)
+    at Module.require (node:
+internal/modules/cjs/loader:
+1231:19)
+    at require (node:interna
+l/modules/helpers:177:18)
+    at Object.<anonymous> 
+(C:\Users\nachu pc\Smart-eve
+nt-management\Smart-event-ma
+nagement\backend\server.js:2
+3:25)
+    at Module._compile (node
+:internal/modules/cjs/loader
+:1364:14)
+
+Node.js v18.20.8
