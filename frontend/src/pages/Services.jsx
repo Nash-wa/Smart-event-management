@@ -23,7 +23,7 @@ function Services() {
                 let lat, lng;
                 // If accessed via /event-plan/:id/services, fetch event location to filter vendors
                 if (eventId) {
-                    const eventRes = await fetch(`http://localhost:5000/api/events/${eventId}`, { headers });
+                    const eventRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, { headers });
                     const eventData = await eventRes.json();
                     if (eventRes.ok && eventData.location) {
 
@@ -32,7 +32,7 @@ function Services() {
                     }
                 }
 
-                let url = `http://localhost:5000/api/vendors?sort=${sortBy}`;
+                let url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?sort=${sortBy}`;
                 if (lat && lng) {
                     url += `&lat=${lat}&lng=${lng}`;
                 }
@@ -189,7 +189,7 @@ function Services() {
                                                                 try {
                                                                     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
                                                                     // Get current event to update it
-                                                                    const eventRes = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+                                                                    const eventRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, {
                                                                         headers: { Authorization: `Bearer ${userInfo?.token}` }
                                                                     });
                                                                     const eventData = await eventRes.json();
@@ -204,7 +204,7 @@ function Services() {
                                                                         }
                                                                     };
 
-                                                                    await fetch(`http://localhost:5000/api/events/${eventId}`, {
+                                                                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, {
                                                                         method: 'PUT',
                                                                         headers: {
                                                                             'Content-Type': 'application/json',
@@ -236,50 +236,52 @@ function Services() {
             </div>
 
             {/* Portfolio Modal */}
-            {selectedPortfolio && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedPortfolio(null)}></div>
-                    <div className="relative glass-card max-w-5xl w-full max-h-[90vh] overflow-y-auto rounded-[40px] border-white/10 p-8 md:p-12 animate-fade-in-up">
-                        <button
-                            onClick={() => setSelectedPortfolio(null)}
-                            className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all text-xl"
-                        >
-                            ✕
-                        </button>
-
-                        <div className="mb-10 text-center">
-                            <span className="text-accent font-bold uppercase tracking-[0.2em] text-[10px]">{selectedPortfolio.category} Masters</span>
-                            <h2 className="text-4xl font-bold mt-2">{selectedPortfolio.name} Portfolio</h2>
-                            <p className="text-gray-500 mt-2">A showcase of previous excellence and craftsmanship.</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {selectedPortfolio.portfolio.map((img, i) => (
-                                <div key={i} className="group relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-                                    <img src={img} alt="Portfolio" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                                        <p className="text-white font-medium text-sm">Previous Project #{i + 1}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="mt-12 text-center border-t border-white/10 pt-8">
+            {
+                selectedPortfolio && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedPortfolio(null)}></div>
+                        <div className="relative glass-card max-w-5xl w-full max-h-[90vh] overflow-y-auto rounded-[40px] border-white/10 p-8 md:p-12 animate-fade-in-up">
                             <button
-                                onClick={() => navigate("/create-event")}
-                                className="gradient-button px-10 py-4 h-auto text-lg font-bold"
+                                onClick={() => setSelectedPortfolio(null)}
+                                className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all text-xl"
                             >
-                                Book {selectedPortfolio.name} Now
+                                ✕
                             </button>
+
+                            <div className="mb-10 text-center">
+                                <span className="text-accent font-bold uppercase tracking-[0.2em] text-[10px]">{selectedPortfolio.category} Masters</span>
+                                <h2 className="text-4xl font-bold mt-2">{selectedPortfolio.name} Portfolio</h2>
+                                <p className="text-gray-500 mt-2">A showcase of previous excellence and craftsmanship.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {selectedPortfolio.portfolio.map((img, i) => (
+                                    <div key={i} className="group relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+                                        <img src={img} alt="Portfolio" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                                            <p className="text-white font-medium text-sm">Previous Project #{i + 1}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-12 text-center border-t border-white/10 pt-8">
+                                <button
+                                    onClick={() => navigate("/create-event")}
+                                    className="gradient-button px-10 py-4 h-auto text-lg font-bold"
+                                >
+                                    Book {selectedPortfolio.name} Now
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <footer className="mt-20 py-12 border-t border-white/10 text-center text-muted-foreground">
                 <p>© 2026 Smart Event Management. All vendor works verified.</p>
             </footer>
-        </div>
+        </div >
     );
 }
 

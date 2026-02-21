@@ -23,7 +23,7 @@ function EventPlan() {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
                 const res = await fetch(
-                    `http://localhost:5000/api/events/${id}`,
+                    `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`,
                     {
                         headers: {
                             Authorization: `Bearer ${userInfo?.token}`
@@ -37,7 +37,7 @@ function EventPlan() {
                     setEvent(data);
 
                     // Fetch actual participants
-                    const pRes = await fetch(`http://localhost:5000/api/participants/${id}`, {
+                    const pRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/${id}`, {
                         headers: { Authorization: `Bearer ${userInfo?.token}` }
                     });
                     if (pRes.ok) {
@@ -64,7 +64,7 @@ function EventPlan() {
                         setPlanningData(newPlan);
 
                         // Persist the initialized plan to backend
-                        await fetch(`http://localhost:5000/api/events/${id}`, {
+                        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ function EventPlan() {
 
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
