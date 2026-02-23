@@ -33,9 +33,13 @@ const OVERPASS_NAMES = {
     "Ernakulam": "Ernakulam District"
 };
 
-const fetchVenuesForDistrict = async (district) => {
+const fetchVenuesForDistrict = async (district, retryCount = 0) => {
     const searchName = OVERPASS_NAMES[district] || district;
-    console.log(`Fetching venues for ${district} (Query: ${searchName})...`);
+    if (retryCount === 0) {
+        console.log(`Fetching venues for ${district} (Query: ${searchName})...`);
+    } else {
+        console.log(`♻️ Retry #${retryCount} for ${district}...`);
+    }
 
     const query = `
     [out:json][timeout:60];
@@ -53,10 +57,21 @@ const fetchVenuesForDistrict = async (district) => {
 
     try {
         const response = await fetch(url);
+
+        if (response.status === 429 || response.status >= 500) {
+            if (retryCount < 2) {
+                const waitTime = (retryCount + 1) * 5000;
+                console.warn(`⚠️ API Error ${response.status} for ${district}. Retrying in ${waitTime / 1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                return fetchVenuesForDistrict(district, retryCount + 1);
+            }
+        }
+
         if (!response.ok) {
-            console.warn(`API Error for ${district}: ${response.statusText}`);
+            console.warn(`❌ API persistent error for ${district}: ${response.statusText}`);
             return [];
         }
+
         const data = await response.json();
         if (!data.elements) return [];
 
@@ -74,7 +89,12 @@ const fetchVenuesForDistrict = async (district) => {
             isApproved: true
         })).filter(v => v.name && !v.name.startsWith('Unnamed'));
     } catch (error) {
-        console.error(`Error fetching for ${district}:`, error.message);
+        if (retryCount < 2) {
+            console.warn(`⚠️ Connection error for ${district}: ${error.message}. Retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            return fetchVenuesForDistrict(district, retryCount + 1);
+        }
+        console.error(`❌ Max retries reached for ${district}:`, error.message);
         return [];
     }
 };
@@ -94,14 +114,34 @@ const seedOverpassData = async () => {
             // Fallback logic for reliability
             if (venues.length < 5 && MANUAL_FALLBACKS[district]) {
                 console.log(`⚠️ Low API results for ${district}. Applying fallback data.`);
-                const fallbacks = MANUAL_FALLBACKS[district].map(fb => ({
-                    ...fb,
-                    category: 'Venue',
-                    district: district,
-                    rating: parseFloat((Math.random() * (5 - 4.0) + 4.0).toFixed(1)),
-                    price: Math.floor(Math.random() * (150000 - 20000) + 20000),
-                    isApproved: true
-                }));
+
+                // Coordinates for fallback centers (approximate)
+                const DISTRICT_COORDS = {
+                    "Alappuzha": [9.4981, 76.3388], "Ernakulam": [9.9312, 76.2673],
+                    "Idukki": [9.8500, 76.9700], "Kannur": [11.8745, 75.3704],
+                    "Kasaragod": [12.4996, 74.9869], "Kollam": [8.8932, 76.6141],
+                    "Kottayam": [9.5916, 76.5221], "Kozhikode": [11.2588, 75.7804],
+                    "Malappuram": [11.0735, 76.0740], "Palakkad": [10.7867, 76.6547],
+                    "Pathanamthitta": [9.2648, 76.7870], "Thiruvananthapuram": [8.5241, 76.9366],
+                    "Thrissur": [10.5276, 76.2144], "Wayanad": [11.6854, 76.1320]
+                };
+
+                const fallbacks = MANUAL_FALLBACKS[district].map(fb => {
+                    const center = DISTRICT_COORDS[district] || [10.8505, 76.2711];
+                    // Add a tiny bit of random spread (±0.02 deg ~ 2km)
+                    const lat = fb.location?.lat || (center[0] + (Math.random() - 0.5) * 0.04);
+                    const lng = fb.location?.lng || (center[1] + (Math.random() - 0.5) * 0.04);
+
+                    return {
+                        ...fb,
+                        category: 'Venue',
+                        district: district,
+                        location: { lat, lng },
+                        rating: parseFloat((Math.random() * (5 - 4.0) + 4.0).toFixed(1)),
+                        price: Math.floor(Math.random() * (150000 - 20000) + 20000),
+                        isApproved: true
+                    };
+                });
 
                 const existingNames = new Set(venues.map(v => v.name));
                 const uniqueFallbacks = fallbacks.filter(fb => !existingNames.has(fb.name));
@@ -111,7 +151,8 @@ const seedOverpassData = async () => {
             console.log(`Found ${venues.length} venues in ${district}`);
             allVenues = allVenues.concat(venues);
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Wait 4 seconds between districts to respect rate limits
+            await new Promise(resolve => setTimeout(resolve, 4000));
         }
 
         if (allVenues.length > 0) {

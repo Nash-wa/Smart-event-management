@@ -4,6 +4,18 @@ import { useNavigate } from "react-router-dom";
 function Register() {
   const navigate = useNavigate();
   const [role, setRole] = useState("user");
+  const [emailError, setEmailError] = useState("");
+
+  const allowedDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'hotmail.com'];
+
+  const validateEmailDomain = (email) => {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (email && domain && !allowedDomains.includes(domain)) {
+      setEmailError("Please use a standard email (Gmail, Outlook, Yahoo etc)");
+    } else {
+      setEmailError("");
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -17,6 +29,11 @@ function Register() {
       return;
     }
 
+    if (emailError) {
+      alert(emailError);
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
@@ -27,11 +44,8 @@ function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        // Redirect based on role
-        if (data.role === 'admin') navigate("/admin-dashboard");
-        else if (data.role === 'vendor') navigate("/vendor-dashboard");
-        else navigate("/dashboard");
+        // Navigate to verification instead of direct login
+        navigate("/verify-otp", { state: { email } });
       } else {
         alert(data.message || "Registration failed");
       }
@@ -71,9 +85,11 @@ function Register() {
             <input
               name="email"
               type="email"
-              placeholder="john@example.com"
-              className="glass-input"
+              placeholder="john@gmail.com"
+              className={`glass-input ${emailError ? 'border-red-500/50' : ''}`}
+              onChange={(e) => validateEmailDomain(e.target.value)}
             />
+            {emailError && <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider ml-1">{emailError}</p>}
           </div>
 
           <div className="space-y-2">

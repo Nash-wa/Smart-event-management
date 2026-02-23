@@ -24,7 +24,8 @@ const addParticipant = asyncHandler(async (req, res) => {
         event,
         name,
         email,
-        role
+        role,
+        ticketId: `TKT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
     });
 
     res.status(201).json(participant);
@@ -70,7 +71,11 @@ const bulkAddParticipants = asyncHandler(async (req, res) => {
     }
 
     const createdParticipants = await Participant.insertMany(
-        participants.map(p => ({ ...p, event: eventId }))
+        participants.map(p => ({
+            ...p,
+            event: eventId,
+            ticketId: `TKT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+        }))
     );
 
     res.status(201).json(createdParticipants);
@@ -99,10 +104,51 @@ const publicAddParticipant = asyncHandler(async (req, res) => {
         name,
         email,
         role: 'Attendee',
-        status: 'Confirmed' // Default to confirmed for self-RSVP
+        status: 'Confirmed', // Default to confirmed for self-RSVP
+        ticketId: `TKT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
     });
 
     res.status(201).json(participant);
+});
+
+// @desc    Get participant by ticket ID
+// @route   GET /api/participants/ticket/:ticketId
+// @access  Public
+const getTicketById = asyncHandler(async (req, res) => {
+    const participant = await Participant.findOne({ ticketId: req.params.ticketId }).populate('event', 'title startDate location');
+
+    if (!participant) {
+        res.status(404);
+        throw new Error('Ticket not found');
+    }
+
+    res.json(participant);
+});
+
+// @desc    Validate ticket and check-in
+// @route   PUT /api/participants/validate/:ticketId
+// @access  Private
+const validateTicket = asyncHandler(async (req, res) => {
+    const participant = await Participant.findOne({ ticketId: req.params.ticketId });
+
+    if (!participant) {
+        res.status(404);
+        throw new Error('Invalid Ticket ID');
+    }
+
+    if (participant.checkInStatus === 'Checked In') {
+        res.status(400);
+        throw new Error('Ticket already validated / Checked In');
+    }
+
+    participant.checkInStatus = 'Checked In';
+    await participant.save();
+
+    res.json({
+        success: true,
+        message: `Welcome, ${participant.name}! Check-in successful.`,
+        participant
+    });
 });
 
 module.exports = {
@@ -110,5 +156,7 @@ module.exports = {
     getParticipantsByEvent,
     deleteParticipant,
     bulkAddParticipants,
-    publicAddParticipant
+    publicAddParticipant,
+    validateTicket,
+    getTicketById
 };

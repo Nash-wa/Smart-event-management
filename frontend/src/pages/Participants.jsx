@@ -16,7 +16,7 @@ function Participants() {
     const fetchParticipants = async () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const res = await fetch(`http://127.0.0.1:5000/api/participants/${eventId}`, {
+        const res = await fetch(`http://localhost:5000/api/participants/${eventId}`, {
           headers: {
             Authorization: `Bearer ${userInfo?.token}`
           }
@@ -32,8 +32,7 @@ function Participants() {
 
     const fetchEvent = async () => {
       try {
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const res = await fetch(`http://127.0.0.1:5000/api/events/public/${eventId}`);
+        const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
         const data = await res.json();
         if (res.ok) setEvent(data);
       } catch (error) {
@@ -49,7 +48,7 @@ function Participants() {
     e.preventDefault();
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`http://127.0.0.1:5000/api/participants`, {
+      const res = await fetch(`http://localhost:5000/api/participants`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +92,7 @@ function Participants() {
         }
 
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const res = await fetch(`http://127.0.0.1:5000/api/participants/bulk`, {
+        const res = await fetch(`http://localhost:5000/api/participants/bulk`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -124,7 +123,7 @@ function Participants() {
     if (!window.confirm("Are you sure you want to remove this participant?")) return;
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`http://127.0.0.1:5000/api/participants/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/participants/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${userInfo?.token}`
@@ -174,6 +173,12 @@ function Participants() {
                 <input type="file" accept=".csv" disabled={importing} onChange={handleCSVUpload} className="hidden" />
               </label>
               <button
+                onClick={() => navigate(`/checkin/${eventId}`)}
+                className="flex-1 md:flex-none px-6 py-3 border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 rounded-xl hover:bg-emerald-500/10 transition-all text-[10px] font-black uppercase tracking-widest"
+              >
+                🎟️ Manage Gate
+              </button>
+              <button
                 onClick={() => setShowAddModal(true)}
                 className="flex-1 md:flex-none px-8 py-3 bg-primary text-black font-black rounded-xl hover:scale-105 transition-all text-[10px] uppercase tracking-widest"
               >
@@ -189,6 +194,7 @@ function Participants() {
                   <th className="pb-4 pl-4">Name & Contact</th>
                   <th className="pb-4">Strategic Role</th>
                   <th className="pb-4">Status</th>
+                  <th className="pb-4">Check-In</th>
                   <th className="pb-4 text-right pr-4">Actions</th>
                 </tr>
               </thead>
@@ -211,7 +217,22 @@ function Participants() {
                           {person.status}
                         </span>
                       </td>
-                      <td className="py-5 text-right pr-4">
+                      <td className="py-5">
+                        <div className="flex flex-col">
+                          <span className={`text-[10px] font-bold ${person.checkInStatus === 'Checked In' ? 'text-emerald-400' : 'text-gray-600'}`}>
+                            {person.checkInStatus || 'Not Checked In'}
+                          </span>
+                          <span className="text-[8px] font-mono text-gray-500 mt-1">{person.ticketId || 'NO_TICKET_ID'}</span>
+                        </div>
+                      </td>
+                      <td className="py-5 text-right pr-4 flex items-center justify-end gap-4">
+                        <button
+                          onClick={() => navigate(`/ticket/${person.ticketId}`)}
+                          className="text-[10px] font-black text-primary/50 hover:text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={!person.ticketId}
+                        >
+                          View Ticket
+                        </button>
                         <button
                           onClick={() => handleDeleteParticipant(person._id)}
                           className="text-[10px] font-black text-red-500/50 hover:text-red-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"

@@ -3,9 +3,10 @@
  * Data-driven calculations for professional event operations.
  */
 
-export const calculateTimeline = (startDate, category) => {
+export const calculateTimeline = (startDate, category, selectedVendors = {}, features = {}) => {
     const start = new Date(startDate);
-    const timeline = [];
+    const normalizedCategory = (category || 'default').toLowerCase();
+    const vendors = selectedVendors || {};
 
     const categories = {
         corporate: [
@@ -78,9 +79,7 @@ export const calculateTimeline = (startDate, category) => {
         ]
     };
 
-    const normalizedCategory = (category || 'default').toLowerCase();
     let selectedTasks = categories.default;
-
     if (normalizedCategory.includes('wedding')) selectedTasks = categories.wedding;
     else if (normalizedCategory.includes('festival')) selectedTasks = categories.festival;
     else if (normalizedCategory.includes('exhibition')) selectedTasks = categories.exhibition;
@@ -90,15 +89,40 @@ export const calculateTimeline = (startDate, category) => {
     else if (normalizedCategory.includes('conference')) selectedTasks = categories.conference;
     else if (normalizedCategory.includes('corporate')) selectedTasks = categories.corporate;
 
-    return selectedTasks.map(t => {
+    const timeline = selectedTasks.map(t => {
         const date = new Date(start);
         date.setDate(date.getDate() - t.daysBefore);
+
+        let status = "Pending";
+        const taskLower = t.task.toLowerCase();
+        if (taskLower.includes('vendor') || taskLower.includes('venue') || taskLower.includes('catering') || taskLower.includes('confirm')) {
+            const vendorCats = Object.keys(vendors).map(c => c.toLowerCase());
+            if (vendorCats.some(cat => taskLower.includes(cat))) {
+                status = "Completed";
+            }
+        }
+
         return {
             ...t,
             deadline: date.toLocaleDateString(),
-            status: "Pending"
+            status
         };
-    }).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    });
+
+    // Feature specific
+    const featureTasks = [];
+    if (features?.food) featureTasks.push({ task: "Menu Selection & Finalization", daysBefore: 20, priority: "High", status: vendors['Catering'] ? "Completed" : "Pending" });
+    if (features?.photography) featureTasks.push({ task: "Photographer Briefing & Shot List", daysBefore: 10, priority: "Medium", status: vendors['Photography'] ? "Completed" : "Pending" });
+    if (features?.ar) featureTasks.push({ task: "AR Waypoint Configuration", daysBefore: 5, priority: "High", status: "Pending" });
+    if (features?.invitations) featureTasks.push({ task: "Digital Invitation Dispatch", daysBefore: 15, priority: "Medium", status: "Pending" });
+
+    featureTasks.forEach(ft => {
+        const date = new Date(start);
+        date.setDate(date.getDate() - ft.daysBefore);
+        timeline.push({ ...ft, deadline: date.toLocaleDateString() });
+    });
+
+    return timeline.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 };
 
 export const calculateBudgetAllocation = (totalBudget, category) => {
@@ -175,9 +199,8 @@ export const estimateResources = (attendees, venueType, category) => {
     const normalizedCategory = (category || 'default').toLowerCase();
     const staffRatio = venueType?.toLowerCase() === 'outdoor' ? 15 : 20;
 
-    // Weighted ratios based on event type
     let securityRatio = 50;
-    if (normalizedCategory.includes('festival')) securityRatio = 30; // High density requires more security
+    if (normalizedCategory.includes('festival')) securityRatio = 30;
     if (normalizedCategory.includes('party') || normalizedCategory.includes('hackathon')) securityRatio = 40;
 
     const resources = [
@@ -231,20 +254,18 @@ export const calculateReadinessScore = (tasks, selectedVendors) => {
     let taskWeight = 1;
     let vendorWeight = 0;
 
-    // Tasks calculation
     const totalTasks = tasks?.length || 0;
     const completedTasks = tasks?.filter(t => t.status === "Completed").length || 0;
     const taskScore = totalTasks > 0 ? (completedTasks / totalTasks) : 1;
 
-    // Vendor calculation
     const vendorEntries = selectedVendors ? Object.values(selectedVendors) : [];
     const totalVendors = vendorEntries.length;
 
     if (totalVendors > 0) {
         taskWeight = 0.6;
         vendorWeight = 0.4;
-        const confirmedVendors = vendorEntries.filter(v => v.status === "Confirmed").length;
-        const vendorScore = confirmedVendors / totalVendors;
+        const confirmedVendors = vendorEntries.length; // Actually if they are in the list at this stage it's partial readiness
+        const vendorScore = 1; // Simplify for now
         return Math.round((taskScore * taskWeight + vendorScore * vendorWeight) * 100);
     }
 

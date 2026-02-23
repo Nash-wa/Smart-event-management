@@ -6,11 +6,15 @@ const { generateEventPlan } = require('../utils/planGenerator');
 // @route   POST /api/events
 // @access  Private
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, description, category, startDate, venue, budget, capacity, address, location, arPoints } = req.body;
+    const {
+        name, description, category, mode, startDate, endDate,
+        startTime, endTime, district, venue, address, capacity,
+        budget, location, arPoints, selectedVendors, features
+    } = req.body;
 
-    if (!name || !category || !startDate) {
+    if (!name || !category || !startDate || !district) {
         res.status(400);
-        throw new Error('Please provide all required fields');
+        throw new Error('Please provide all required fields including district');
     }
 
     // Use our plan generator to create the initial state
@@ -21,15 +25,23 @@ const createEvent = asyncHandler(async (req, res) => {
         name,
         description,
         category,
+        mode,
         startDate,
+        endDate,
+        startTime,
+        endTime,
+        district,
         venue,
-        budget,
-        capacity,
         address,
+        capacity,
+        budget,
         location,
         arPoints,
+        selectedVendors,
+        features,
         plan: generatedPlan
     });
+
 
     res.status(201).json(event);
 });
@@ -72,12 +84,23 @@ const updateEvent = asyncHandler(async (req, res) => {
         event.name = req.body.name || event.name;
         event.description = req.body.description || event.description;
         event.category = req.body.category || event.category;
+        event.mode = req.body.mode || event.mode;
+        event.startDate = req.body.startDate || event.startDate;
+        event.endDate = req.body.endDate || event.endDate;
+        event.startTime = req.body.startTime || event.startTime;
+        event.endTime = req.body.endTime || event.endTime;
+        event.district = req.body.district || event.district;
         event.venue = req.body.venue || event.venue;
+        event.address = req.body.address || event.address;
+        event.capacity = req.body.capacity || event.capacity;
         event.budget = req.body.budget || event.budget;
-        event.plan = req.body.plan || event.plan;
         event.location = req.body.location || event.location;
         event.arPoints = req.body.arPoints || event.arPoints;
+        event.selectedVendors = req.body.selectedVendors || event.selectedVendors;
+        event.features = req.body.features || event.features;
+        event.plan = req.body.plan || event.plan;
         event.readinessScore = req.body.readinessScore || event.readinessScore;
+
 
         const updatedEvent = await event.save();
         res.json(updatedEvent);
@@ -91,7 +114,7 @@ const updateEvent = asyncHandler(async (req, res) => {
 // @route   GET /api/events/public/:id
 // @access  Public
 const getPublicEventById = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id).select('name startDate venue category capacity');
+    const event = await Event.findById(req.params.id).select('name startDate venue category capacity arPoints location');
 
     if (event) {
         res.json(event);

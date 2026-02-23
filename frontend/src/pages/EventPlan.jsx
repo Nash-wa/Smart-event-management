@@ -8,6 +8,38 @@ import {
     getSuggestedRoles
 } from "../utils/planningEngine";
 import "../css/eventplan.css";
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+function LocationPicker({ onLocationSelect }) {
+    useMapEvents({
+        click(e) {
+            onLocationSelect(e.latlng);
+        },
+    });
+    return null;
+}
+
+function RecenterMap({ center }) {
+    const map = useMapEvents({});
+    useEffect(() => {
+        if (center && center[0] && center[1]) {
+            map.setView(center, map.getZoom());
+        }
+    }, [center, map]);
+    return null;
+}
+
+
 
 function EventPlan() {
     const { id } = useParams();
@@ -15,7 +47,17 @@ function EventPlan() {
     const [loading, setLoading] = useState(true);
     const [participants, setParticipants] = useState([]);
     const [planningData, setPlanningData] = useState(null);
+    const [newARPoint, setNewARPoint] = useState({
+        label: '',
+        pointType: 'Other',
+        instruction: '',
+        lat: null,
+        lng: null
+    });
+    const [announcement, setAnnouncement] = useState({ text: '', type: 'Info' });
+    const [announcementStatus, setAnnouncementStatus] = useState({ type: '', message: '' });
     const navigate = useNavigate();
+
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -36,7 +78,18 @@ function EventPlan() {
                 if (res.ok) {
                     setEvent(data);
 
+                    // Pre-fill initial AR point with venue location context
+                    if (data.location?.lat && !data.arPoints?.length) {
+                        setNewARPoint(prev => ({
+                            ...prev,
+                            lat: data.location.lat,
+                            lng: data.location.lng,
+                            label: 'Main Entrance / HUB'
+                        }));
+                    }
+
                     // Fetch actual participants
+
                     const pRes = await fetch(`http://localhost:5000/api/participants/${id}`, {
                         headers: { Authorization: `Bearer ${userInfo?.token}` }
                     });
@@ -50,15 +103,15 @@ function EventPlan() {
                         setPlanningData(data.plan);
                     } else {
                         // Initialize new plan if not exists
-                        const timeline = calculateTimeline(data.startDate, data.category);
+                        const timeline = calculateTimeline(data.startDate, data.category, data.selectedVendors, data.features);
                         const budget = calculateBudgetAllocation(data.budget, data.category);
-                        const resources = estimateResources(data.capacity || 100, data.venueType || 'Indoor');
+                        const resources = estimateResources(data.capacity || 100, data.venueType || 'Indoor', data.category);
 
                         const newPlan = {
                             timeline,
                             budget,
                             resources,
-                            readinessScore: calculateReadinessScore(timeline)
+                            readinessScore: calculateReadinessScore(timeline, data.selectedVendors)
                         };
 
                         setPlanningData(newPlan);
@@ -86,6 +139,58 @@ function EventPlan() {
 
         fetchEvent();
     }, [id]);
+
+
+    const addARPoint = async () => {
+        if (!newARPoint.label || !newARPoint.lat) {
+            alert("Please pick a location on the map and provide a label.");
+            return;
+        }
+
+        const updatedARPoints = [...(event.arPoints || []), newARPoint];
+        const updatedEvent = { ...event, arPoints: updatedARPoints };
+
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userInfo?.token}`
+                },
+                body: JSON.stringify(updatedEvent)
+            });
+            if (res.ok) {
+                setEvent(updatedEvent);
+                setNewARPoint({ label: '', pointType: 'Other', instruction: '', lat: null, lng: null });
+            }
+        } catch (error) {
+            console.error("Failed to add AR point", error);
+        }
+    };
+
+
+    const deleteARPoint = async (index) => {
+        const updatedARPoints = event.arPoints.filter((_, i) => i !== index);
+        const updatedEvent = { ...event, arPoints: updatedARPoints };
+
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userInfo?.token}`
+                },
+                body: JSON.stringify(updatedEvent)
+            });
+            if (res.ok) {
+                setEvent(updatedEvent);
+            }
+        } catch (error) {
+            console.error("Failed to delete AR point", error);
+        }
+    };
 
     const updateTaskStatus = async (taskIndex, newStatus) => {
         const updatedTimeline = [...planningData.timeline];
@@ -117,6 +222,40 @@ function EventPlan() {
             console.error("Failed to update status", error);
         }
     };
+
+    const handleBroadcast = async (e) => {
+        e.preventDefault();
+        if (!announcement.text) return;
+
+        setAnnouncementStatus({ type: 'loading', message: 'Broadcasting...' });
+
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const res = await fetch('http://localhost:5000/api/messages/broadcast', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${userInfo?.token}`
+                },
+                body: JSON.stringify({
+                    event: id,
+                    text: announcement.text,
+                    type: announcement.type
+                })
+            });
+
+            if (res.ok) {
+                setAnnouncementStatus({ type: 'success', message: 'Message broadcasted to all participants!' });
+                setAnnouncement({ text: '', type: 'Info' });
+                setTimeout(() => setAnnouncementStatus({ type: '', message: '' }), 3000);
+            } else {
+                setAnnouncementStatus({ type: 'error', message: 'Failed to broadcast message.' });
+            }
+        } catch (error) {
+            setAnnouncementStatus({ type: 'error', message: 'Network error.' });
+        }
+    };
+
 
     if (loading) {
         return (
@@ -207,6 +346,50 @@ function EventPlan() {
                                     Suggested: {role}
                                 </span>
                             ))}
+                        </div>
+                    </div>
+
+                    <div className="w-full md:w-80">
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2rem] p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm">📣</div>
+                                <h3 className="text-sm font-bold uppercase tracking-tight">Broadcaster</h3>
+                            </div>
+
+                            <form onSubmit={handleBroadcast} className="space-y-3">
+                                <textarea
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-orange-500 transition-all outline-none min-h-[80px]"
+                                    placeholder="Alert all participants..."
+                                    value={announcement.text}
+                                    onChange={(e) => setAnnouncement({ ...announcement, text: e.target.value })}
+                                />
+
+                                <div className="flex gap-2">
+                                    <select
+                                        className="bg-zinc-900 border border-white/10 rounded-lg px-2 text-[8px] font-bold uppercase tracking-widest outline-none"
+                                        value={announcement.type}
+                                        onChange={(e) => setAnnouncement({ ...announcement, type: e.target.value })}
+                                    >
+                                        <option value="Info">Info</option>
+                                        <option value="Urgent">Urgent</option>
+                                        <option value="Schedule">Update</option>
+                                    </select>
+
+                                    <button
+                                        type="submit"
+                                        className="flex-1 bg-orange-500 text-white font-black rounded-lg text-[8px] uppercase tracking-widest hover:scale-105 transition-all py-2"
+                                    >
+                                        Broadcast
+                                    </button>
+                                </div>
+                            </form>
+
+                            {announcementStatus.message && (
+                                <div className={`mt-2 p-2 rounded-lg text-[8px] font-bold text-center uppercase tracking-widest ${announcementStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
+                                    }`}>
+                                    {announcementStatus.message}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -365,7 +548,15 @@ function EventPlan() {
 
                         {/* BUDGET ALLOCATION */}
                         <section className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                            <h2 className="text-lg font-black mb-6">💰 Capital Allocation</h2>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-black">💰 Capital Allocation</h2>
+                                <button
+                                    onClick={() => navigate(`/budget/${id}`)}
+                                    className="text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-widest"
+                                >
+                                    Full Report →
+                                </button>
+                            </div>
                             <div className="space-y-6">
                                 {planningData.budget.map((item, index) => (
                                     <div key={index} className="space-y-2">
@@ -418,6 +609,141 @@ function EventPlan() {
                     </div>
                 </div>
 
+                {/* AR POINT MANAGEMENT */}
+                <section className="mt-16 glass-card p-10 rounded-[3rem] border-white/10 bg-white/5">
+                    <div className="flex items-center gap-3 mb-8">
+                        <span className="px-3 py-1 bg-accent/20 text-accent text-[10px] font-black rounded-lg uppercase tracking-widest">Navigation Setup</span>
+                        <h2 className="text-2xl font-black uppercase tracking-tighter">AR Point Configuration</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div className="space-y-6">
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                Define key navigational nodes for your venue. These points will be used to generate the AR HUD instructions for your attendees.
+                            </p>
+
+                            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Location Label</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: Main Entrance, VIP Stage..."
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none transition-all"
+                                        value={newARPoint.label}
+                                        onChange={(e) => setNewARPoint({ ...newARPoint, label: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Navigation Instruction</label>
+                                    <textarea
+                                        placeholder="Ex: Walk straight for 10m then turn left..."
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none transition-all"
+                                        rows="2"
+                                        value={newARPoint.instruction}
+                                        onChange={(e) => setNewARPoint({ ...newARPoint, instruction: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Point Type</label>
+                                        <select
+                                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none transition-all"
+                                            value={newARPoint.pointType}
+                                            onChange={(e) => setNewARPoint({ ...newARPoint, pointType: e.target.value })}
+                                        >
+                                            <option value="Entrance">Entrance</option>
+                                            <option value="Stage">Stage</option>
+                                            <option value="Restroom">Restroom</option>
+                                            <option value="Exit">Exit</option>
+                                            <option value="HelpDesk">Help Desk</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Spatial Pin</label>
+                                        <div className={`w-full bg-black/50 border ${newARPoint.lat ? 'border-green-500/50' : 'border-white/10'} rounded-xl px-4 py-3 text-[10px] flex items-center justify-center font-mono`}>
+                                            {newARPoint.lat ? `${newARPoint.lat.toFixed(4)}, ${newARPoint.lng.toFixed(4)}` : "PICK ON MAP ↓"}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Map Picker */}
+                                <div className="h-48 rounded-xl overflow-hidden border border-white/10 relative">
+                                    <MapContainer
+                                        center={[event.location?.lat || 10.8505, event.location?.lng || 76.2711]}
+                                        zoom={14}
+                                        style={{ height: '100%', width: '100%' }}
+                                    >
+                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                        <LocationPicker onLocationSelect={(latlng) => setNewARPoint(prev => ({ ...prev, lat: latlng.lat, lng: latlng.lng }))} />
+                                        <RecenterMap center={[event.location?.lat, event.location?.lng]} />
+                                        {newARPoint.lat && <Marker position={[newARPoint.lat, newARPoint.lng]} />}
+                                    </MapContainer>
+
+
+                                    {!newARPoint.lat && (
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none z-[1000]">
+                                            <span className="text-[10px] font-black text-white uppercase tracking-widest bg-black/60 px-4 py-2 rounded-full border border-white/20 backdrop-blur-md">
+                                                Click to pin AR location
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={addARPoint}
+                                    className="w-full py-4 bg-accent text-black font-black rounded-xl uppercase tracking-tighter hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(217,70,239,0.3)]"
+                                >
+                                    Deploy AR Anchor +
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-end mb-4">
+                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Configured Nodes</h3>
+                                <span className="text-[10px] font-mono text-accent">Active: {event.arPoints?.length || 0}</span>
+                            </div>
+
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {event.arPoints && event.arPoints.map((point, index) => (
+                                    <div key={index} className="flex justify-between items-center p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-white/20 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent text-sm">
+                                                {point.pointType === 'Entrance' ? '🚪' :
+                                                    point.pointType === 'Stage' ? '🎭' :
+                                                        point.pointType === 'Restroom' ? '🚻' :
+                                                            point.pointType === 'Exit' ? '🏃' :
+                                                                point.pointType === 'HelpDesk' ? 'ℹ️' : '📍'}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm text-white">{point.label}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium mb-1">{point.instruction || "No specific instruction"}</p>
+                                                <p className="text-[8px] text-accent/60 uppercase font-mono tracking-widest">
+                                                    COORD: {point.lat?.toFixed(5)}, {point.lng?.toFixed(5)} // {point.pointType}
+                                                </p>
+                                            </div>
+
+                                        </div>
+                                        <button
+                                            onClick={() => deleteARPoint(index)}
+                                            className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                                {(!event.arPoints || event.arPoints.length === 0) && (
+                                    <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-3xl">
+                                        <p className="text-gray-600 text-xs uppercase font-black tracking-widest">No nodes defined</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* OPERATIONS CONTROL PANEL */}
                 <div className="mt-16 flex flex-wrap justify-center gap-4 border-t border-white/5 pt-12">
                     <button
@@ -442,11 +768,17 @@ function EventPlan() {
                     </button>
 
                     <button
-                        onClick={() => navigate("/ar-navigation", { state: { venue: event.venue } })}
-                        className="px-10 py-5 bg-primary text-black font-black rounded-2xl shadow-[0_0_40px_rgba(59,130,246,0.4)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-tighter"
+                        onClick={() => navigate(`/ar-navigation/${id}`)}
+                        className={`px-10 py-5 font-black rounded-2xl transition-all flex items-center gap-3 uppercase tracking-tighter ${event.arPoints?.length > 0
+                            ? 'bg-primary text-black shadow-[0_0_40px_rgba(59,130,246,0.4)] hover:scale-105'
+                            : 'bg-white/5 text-gray-500 border border-white/10 opacity-50 cursor-not-allowed'
+                            }`}
+                        title={event.arPoints?.length > 0 ? "Launch Navigation" : "Please configure AR points first"}
+                        disabled={!event.arPoints?.length}
                     >
-                        <span>🧭</span> Launch AR HUD
+                        <span>🧭</span> {event.arPoints?.length > 0 ? "Launch AR HUD" : "AR HUD Not Ready"}
                     </button>
+
 
                     <button
                         onClick={() => window.print()}

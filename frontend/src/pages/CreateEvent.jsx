@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/createevent.css";
-import "../css/createevent.css";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,11 +14,39 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+function LocationPicker({ setLocation, setMapCenter }) {
+  useMapEvents({
+    click(e) {
+      setLocation({ lat: e.latlng.lat, lng: e.latlng.lng });
+      setMapCenter([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+  return null;
+}
+
+
 const KERALA_DISTRICTS = [
   "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
   "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad",
   "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"
 ];
+
+const DISTRICT_COORDS = {
+  "Alappuzha": [9.4981, 76.3388],
+  "Ernakulam": [9.9312, 76.2673],
+  "Idukki": [9.8500, 76.9700],
+  "Kannur": [11.8745, 75.3704],
+  "Kasaragod": [12.4996, 74.9869],
+  "Kollam": [8.8932, 76.6141],
+  "Kottayam": [9.5916, 76.5221],
+  "Kozhikode": [11.2588, 75.7804],
+  "Malappuram": [11.0735, 76.0740],
+  "Palakkad": [10.7867, 76.6547],
+  "Pathanamthitta": [9.2648, 76.7870],
+  "Thiruvananthapuram": [8.5241, 76.9366],
+  "Thrissur": [10.5276, 76.2144],
+  "Wayanad": [11.6854, 76.1320]
+};
 
 function CreateEvent() {
   const [step, setStep] = useState(1);
@@ -37,7 +65,9 @@ function CreateEvent() {
     address: "",
     capacity: "",
     budget: "",
+    location: { lat: 10.8505, lng: 76.2711 },
     features: {
+
       registration: false,
       certificate: false,
       food: false,
@@ -63,8 +93,19 @@ function CreateEvent() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Center map on district change
+    if (name === "district" && DISTRICT_COORDS[value]) {
+      const newCenter = DISTRICT_COORDS[value];
+      setMapCenter(newCenter);
+      setZoom(11);
+      if (mapRef.current) {
+        mapRef.current.setView(newCenter, 11);
+      }
+    }
   };
+
 
   // Vendor State
   const [showVendorModal, setShowVendorModal] = useState(false);
@@ -159,13 +200,14 @@ function CreateEvent() {
           }));
 
           // If sorting by distance, auto-center on the closest venue (first one)
-          if (userLocation && sortedVenues[0].location && sortedVenues[0].location.lat) {
+          if (sortedVenues[0].location && sortedVenues[0].location.lat) {
             const venueLoc = [sortedVenues[0].location.lat, sortedVenues[0].location.lng];
-            // Optional: keep map on user or move to venue? 
-            // "show the map locations" -> maybe show both? 
-            // Let's stick to centering on the venue as that's the "selection"
             setMapCenter(venueLoc);
             setZoom(14);
+          } else if (DISTRICT_COORDS[formData.district]) {
+            // Fallback to district center if venue has no coords
+            setMapCenter(DISTRICT_COORDS[formData.district]);
+            setZoom(11);
           }
         } else {
           setFormData(prev => ({ ...prev, venue: "", address: "" }));
@@ -250,6 +292,13 @@ function CreateEvent() {
               </div>
             </div>
 
+            <div className="form-group">
+              <label>District (Kerala)</label>
+              <select name="district" value={formData.district} onChange={handleInputChange}>
+                {KERALA_DISTRICTS.map(d => <option key={d}>{d}</option>)}
+              </select>
+            </div>
+
             <div className="wizard-actions right-align">
               <button className="btn-next" onClick={handleNext}>Next Step ➝</button>
             </div>
@@ -312,30 +361,36 @@ function CreateEvent() {
             </div>
 
             <div className="form-group">
-              <label>District (Kerala)</label>
-              <select name="district" value={formData.district} onChange={handleInputChange}>
-                {KERALA_DISTRICTS.map(d => <option key={d}>{d}</option>)}
-              </select>
-            </div>
-
-            <div className="form-group">
               <label>Venue (Sorted by Rating)</label>
               <select
                 name="venue"
                 value={formData.venue}
                 onChange={(e) => {
                   const selectedVenue = venues.find(v => v.name === e.target.value);
-                  setFormData({
-                    ...formData,
+                  setFormData(prev => ({
+                    ...prev,
                     venue: e.target.value,
-                    address: selectedVenue ? selectedVenue.address : ""
-                  });
+                    address: selectedVenue ? selectedVenue.address : prev.address
+                  }));
                   if (selectedVenue && selectedVenue.location && selectedVenue.location.lat) {
                     const newCenter = [selectedVenue.location.lat, selectedVenue.location.lng];
                     setMapCenter(newCenter);
                     setZoom(15);
                     if (mapRef.current) {
                       mapRef.current.setView(newCenter, 15);
+                    }
+                    setFormData(prev => ({ ...prev, location: selectedVenue.location }));
+
+                    // Automatically add venue to selectedVendors for planning integration
+                    setSelectedVendors(prev => ({ ...prev, 'Venue': selectedVenue }));
+                  } else if (DISTRICT_COORDS[formData.district]) {
+
+                    // Fallback to district if venue has no coords
+                    const distCenter = DISTRICT_COORDS[formData.district];
+                    setMapCenter(distCenter);
+                    setZoom(12);
+                    if (mapRef.current) {
+                      mapRef.current.setView(distCenter, 12);
                     }
                   }
                 }}
@@ -346,6 +401,7 @@ function CreateEvent() {
                   </option>
                 ))}
                 {venues.length === 0 && <option value="">No venues found in this district</option>}
+                <option value="Other">Other (Custom Location)</option>
               </select>
             </div>
 
@@ -357,7 +413,6 @@ function CreateEvent() {
                 placeholder="Full address"
                 value={formData.address}
                 onChange={handleInputChange}
-                readOnly
               />
             </div>
 
@@ -369,6 +424,7 @@ function CreateEvent() {
                 zoom={zoom}
                 style={{ height: '100%', width: '100%' }}
                 ref={mapRef}
+                key={`${mapCenter[0]}-${mapCenter[1]}-${zoom}`}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -384,15 +440,21 @@ function CreateEvent() {
                   </Marker>
                 )}
 
+                <LocationPicker
+                  setLocation={(loc) => setFormData(prev => ({ ...prev, location: loc }))}
+                  setMapCenter={setMapCenter}
+                />
+
                 {/* Selected Venue Marker */}
-                {formData.venue && mapCenter[0] !== 10.8505 && (
-                  <Marker position={mapCenter}>
+                {formData.location && (
+                  <Marker position={[formData.location.lat, formData.location.lng]}>
                     <Popup>
-                      <strong>{formData.venue}</strong><br />
+                      <strong>{formData.venue || "Custom Location"}</strong><br />
                       {formData.address}
                     </Popup>
                   </Marker>
                 )}
+
               </MapContainer>
             </div>
 
@@ -402,6 +464,7 @@ function CreateEvent() {
             </div>
           </div>
         )}
+
 
         {/* STEP 3: Features & Budget */}
         {step === 3 && (

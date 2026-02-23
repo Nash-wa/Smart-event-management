@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
-    const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const navigate = useNavigate();
@@ -23,7 +22,7 @@ function Services() {
                     const eventRes = await fetch(`http://localhost:5000/api/events/${eventId}`, { headers });
                     const eventData = await eventRes.json();
                     if (eventRes.ok && eventData.location) {
-                        setEvent(eventData);
+
                         lat = eventData.location.lat;
                         lng = eventData.location.lng;
                     }
@@ -109,9 +108,28 @@ function Services() {
                                                         <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-yellow-400/10 text-yellow-500 text-sm font-bold">
                                                             ★ {vendor.rating || '5.0'}
                                                         </div>
-                                                        <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                                                        <div className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${(vendor.reliabilityScore || 100) >= 90 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                                                (vendor.reliabilityScore || 100) >= 70 ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
+                                                                    'bg-red-500/10 border-red-500/20 text-red-500'
+                                                            }`}>
                                                             Reliability: {vendor.reliabilityScore || 100}%
                                                         </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Performance Metrics Chips */}
+                                                <div className="flex gap-2 mb-6">
+                                                    <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
+                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter">Resp</span>
+                                                        <span className="text-[10px] font-bold text-white">{vendor.performanceMetrics?.responsiveness || 5}/5</span>
+                                                    </div>
+                                                    <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
+                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter">Punc</span>
+                                                        <span className="text-[10px] font-bold text-white">{vendor.performanceMetrics?.punctuality || 5}/5</span>
+                                                    </div>
+                                                    <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
+                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter">Qual</span>
+                                                        <span className="text-[10px] font-bold text-white">{vendor.performanceMetrics?.quality || 5}/5</span>
                                                     </div>
                                                 </div>
 

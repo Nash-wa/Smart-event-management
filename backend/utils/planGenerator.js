@@ -3,9 +3,10 @@
  * Synchronized with frontend/src/utils/planningEngine.js
  */
 const generateEventPlan = (eventData) => {
-    const { category, budget, startDate, capacity, venueType } = eventData;
+    const { category, budget, startDate, capacity, venueType, selectedVendors } = eventData;
     const start = new Date(startDate);
     const normalizedCategory = (category || 'default').toLowerCase();
+    const vendors = selectedVendors || {};
 
     // 1. Timeline Generation Templates
     const categories = {
@@ -79,25 +80,52 @@ const generateEventPlan = (eventData) => {
         ]
     };
 
-    let tasks = categories.default;
-    if (normalizedCategory.includes('wedding')) tasks = categories.wedding;
-    else if (normalizedCategory.includes('festival')) tasks = categories.festival;
-    else if (normalizedCategory.includes('exhibition')) tasks = categories.exhibition;
-    else if (normalizedCategory.includes('workshop')) tasks = categories.workshop;
-    else if (normalizedCategory.includes('hackathon')) tasks = categories.hackathon;
-    else if (normalizedCategory.includes('party')) tasks = categories.party;
-    else if (normalizedCategory.includes('conference')) tasks = categories.conference;
-    else if (normalizedCategory.includes('corporate')) tasks = categories.corporate;
+    let tasksData = categories.default;
+    if (normalizedCategory.includes('wedding')) tasksData = categories.wedding;
+    else if (normalizedCategory.includes('festival')) tasksData = categories.festival;
+    else if (normalizedCategory.includes('exhibition')) tasksData = categories.exhibition;
+    else if (normalizedCategory.includes('workshop')) tasksData = categories.workshop;
+    else if (normalizedCategory.includes('hackathon')) tasksData = categories.hackathon;
+    else if (normalizedCategory.includes('party')) tasksData = categories.party;
+    else if (normalizedCategory.includes('conference')) tasksData = categories.conference;
+    else if (normalizedCategory.includes('corporate')) tasksData = categories.corporate;
 
-    const timeline = tasks.map(t => {
+    const timeline = tasksData.map(t => {
         const date = new Date(start);
         date.setDate(date.getDate() - t.daysBefore);
+
+        // Check if task is already addressed by selected vendors
+        let status = "Pending";
+        const taskLower = t.task.toLowerCase();
+        if (taskLower.includes('vendor') || taskLower.includes('venue') || taskLower.includes('catering') || taskLower.includes('confirm')) {
+            const vendorCats = Object.keys(vendors).map(c => c.toLowerCase());
+            if (vendorCats.some(cat => taskLower.includes(cat))) {
+                status = "Completed";
+            }
+        }
+
         return {
             ...t,
             deadline: date.toLocaleDateString(),
-            status: "Pending"
+            status
         };
-    }).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    });
+
+    // Add feature-specific tasks
+    const featureTasks = [];
+    if (eventData.features?.food) featureTasks.push({ task: "Menu Selection & Finalization", daysBefore: 20, priority: "High", status: vendors['Catering'] ? "Completed" : "Pending" });
+    if (eventData.features?.photography) featureTasks.push({ task: "Photographer Briefing & Shot List", daysBefore: 10, priority: "Medium", status: vendors['Photography'] ? "Completed" : "Pending" });
+    if (eventData.features?.ar) featureTasks.push({ task: "AR Waypoint Configuration", daysBefore: 5, priority: "High", status: (eventData.arPoints?.length > 0) ? "Completed" : "Pending" });
+    if (eventData.features?.invitations) featureTasks.push({ task: "Digital Invitation Dispatch", daysBefore: 15, priority: "Medium", status: "Pending" });
+    if (eventData.features?.registration) featureTasks.push({ task: "Gate Management Setup", daysBefore: 2, priority: "High", status: "Pending" });
+
+    featureTasks.forEach(ft => {
+        const date = new Date(start);
+        date.setDate(date.getDate() - ft.daysBefore);
+        timeline.push({ ...ft, deadline: date.toLocaleDateString() });
+    });
+
+    timeline.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
     // 2. Budget Allocation
     const allocations = {
@@ -196,11 +224,15 @@ const generateEventPlan = (eventData) => {
         resources.push({ resource: "Check-in Points", quantity: Math.ceil(attendees / 150), unit: "Stations" });
     }
 
+    // Calculate initial readiness score based on pre-selected vendors
+    const completedTasks = timeline.filter(t => t.status === "Completed").length;
+    const readinessScore = timeline.length > 0 ? Math.round((completedTasks / timeline.length) * 100) : 0;
+
     return {
         timeline,
         budget: budgetAllocation,
         resources,
-        readinessScore: 0
+        readinessScore
     };
 };
 

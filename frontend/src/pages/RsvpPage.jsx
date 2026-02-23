@@ -8,14 +8,12 @@ function RsvpPage() {
     const [formData, setFormData] = useState({ name: '', email: '' });
     const [loading, setLoading] = useState(true);
     const [submitted, setSubmitted] = useState(false);
+    const [ticketId, setTicketId] = useState('');
 
     useEffect(() => {
         const fetchEventDetails = async () => {
             try {
-                // Public endpoint for event details might be needed, but we can try the general one if it's not protected
-                // Actually, most systems have a public 'view event' endpoint. 
-                // Let's assume there's one or we'll bypass it with simple info.
-                const res = await fetch(`http://127.0.0.1:5000/api/events/public/${eventId}`);
+                const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
                 const data = await res.json();
                 if (res.ok) setEvent(data);
             } catch (error) {
@@ -31,13 +29,15 @@ function RsvpPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://127.0.0.1:5000/api/participants/rsvp`, {
+            const res = await fetch(`http://localhost:5000/api/participants/rsvp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...formData, event: eventId })
             });
 
             if (res.ok) {
+                const data = await res.json();
+                setTicketId(data.ticketId);
                 setSubmitted(true);
             } else {
                 const err = await res.json();
@@ -59,7 +59,21 @@ function RsvpPage() {
                     <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-8 animate-bounce">✓</div>
                     <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter">Registration Confirmed</h2>
                     <p className="text-gray-400 font-medium">Your presence has been recorded in the event manifest. We look forward to seeing you at {event.name}.</p>
-                    <button onClick={() => navigate("/")} className="mt-10 text-xs font-black uppercase tracking-widest text-primary hover:underline">Return Home</button>
+
+                    <div className="flex flex-col gap-4 mt-8">
+                        <button
+                            onClick={() => navigate(`/ticket/${ticketId}`)}
+                            className="bg-primary text-black font-black py-4 px-8 rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                        >
+                            Get My Digital Ticket
+                        </button>
+                        <button
+                            onClick={() => navigate("/")}
+                            className="text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-white"
+                        >
+                            Return Home
+                        </button>
+                    </div>
                 </div>
             </div>
         );

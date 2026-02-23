@@ -15,20 +15,39 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('User already exists');
     }
 
+    // Email Domain Validation (Whitelist major providers)
+    const allowedDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'hotmail.com'];
+    const emailDomain = email.split('@')[1];
+
+    if (!allowedDomains.includes(emailDomain?.toLowerCase())) {
+        res.status(400);
+        throw new Error('Please use a standard email provider (Gmail, Outlook, Yahoo, or iCloud). Disposable emails are strictly prohibited.');
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
     const user = await User.create({
         name,
         email,
         password,
         role: role || 'user',
+        otpCode,
+        otpExpires,
+        isVerified: false
     });
 
     if (user) {
+        console.log(`-----------------------------------------`);
+        console.log(`VERIFICATION CODE FOR ${email}: ${otpCode}`);
+        console.log(`-----------------------------------------`);
+
         res.status(201).json({
             _id: user._id,
-            name: user.name,
             email: user.email,
-            role: user.role,
             token: generateToken(user._id),
+            message: 'Registration successful. Please verify your email with the OTP sent.'
         });
     } else {
         res.status(400);
@@ -45,6 +64,10 @@ const loginUser = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+        if (!user.isVerified) {
+            res.status(401);
+            throw new Error('Please verify your email before logging in.');
+        }
         res.json({
             _id: user._id,
             name: user.name,
@@ -58,7 +81,47 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+const verifyOTP = asyncHandler(async (req, res) => {
+    const { email, otpCode } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    if (user.isVerified) {
+        res.status(400);
+        throw new Error('User already verified');
+    }
+
+    if (user.otpCode !== otpCode || user.otpExpires < Date.now()) {
+        res.status(400);
+        throw new Error('Invalid or expired OTP');
+    }
+
+    user.isVerified = true;
+    user.otpCode = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    res.json({
+        success: true,
+        message: 'Email verified successfully',
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user._id)
+    });
+});
+
 module.exports = {
     registerUser,
     loginUser,
+    verifyOTP
 };
