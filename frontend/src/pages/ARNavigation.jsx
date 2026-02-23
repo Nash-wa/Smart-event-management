@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api';
 import imgStep1 from '../assets/ar/IMG_8777.JPG.jpeg';
@@ -208,6 +208,7 @@ const ARNavigation = () => {
     const [step, setStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
     const { eventId } = useParams();
@@ -234,7 +235,7 @@ const ARNavigation = () => {
     // Standard steps using local assets (uploaded images)
     const defaultSteps = [
         {
-            image: img1,
+            image: imgStep1,
             instruction: "Proceed into the main hall",
             distance: "12m"
         },
@@ -245,12 +246,12 @@ const ARNavigation = () => {
             distance: "4m"
         },
         {
-            image: img3,
+            image: imgStep3,
             instruction: "Follow the north corridor",
             distance: "18m"
         },
         {
-            image: img4,
+            image: imgStep4,
             instruction: "Safety exit detected",
             label: "Fire Safety Point 04",
             distance: "2m"
