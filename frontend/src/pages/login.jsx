@@ -24,11 +24,7 @@ function Login() {
         else if (data.role === 'vendor') navigate("/vendor-dashboard");
         else navigate("/dashboard");
       } else {
-        if (response.status === 401 && data.message.includes("verify")) {
-          navigate("/verify-otp", { state: { email } });
-        } else {
-          alert(data.message || "Login failed");
-        }
+        alert(data.message || "Login failed");
       }
     } catch (error) {
       console.error("Login Error:", error);

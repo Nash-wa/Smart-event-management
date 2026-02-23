@@ -44,8 +44,8 @@ function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        // Navigate to verification instead of direct login
-        navigate("/verify-otp", { state: { email } });
+        // Navigate to login instead of verification
+        navigate("/login");
       } else {
         alert(data.message || "Registration failed");
       }

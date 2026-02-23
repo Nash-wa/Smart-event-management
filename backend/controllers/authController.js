@@ -33,21 +33,17 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         role: role || 'user',
-        otpCode,
-        otpExpires,
-        isVerified: false
+        isVerified: true // OTP disabled by default
     });
 
     if (user) {
-        console.log(`-----------------------------------------`);
-        console.log(`VERIFICATION CODE FOR ${email}: ${otpCode}`);
-        console.log(`-----------------------------------------`);
+        // OTP generation logic removed for simplicity as per user request
 
         res.status(201).json({
             _id: user._id,
             email: user.email,
             token: generateToken(user._id),
-            message: 'Registration successful. Please verify your email with the OTP sent.'
+            message: 'Registration successful.'
         });
     } else {
         res.status(400);
@@ -64,10 +60,6 @@ const loginUser = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
-        if (!user.isVerified) {
-            res.status(401);
-            throw new Error('Please verify your email before logging in.');
-        }
         res.json({
             _id: user._id,
             name: user.name,
