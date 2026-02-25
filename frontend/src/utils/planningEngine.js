@@ -110,17 +110,9 @@ export const calculateTimeline = (startDate, category, selectedVendors = {}, fea
     });
 
     // Feature specific
-    const featureTasks = [];
-    if (features?.food) featureTasks.push({ task: "Menu Selection & Finalization", daysBefore: 20, priority: "High", status: vendors['Catering'] ? "Completed" : "Pending" });
-    if (features?.photography) featureTasks.push({ task: "Photographer Briefing & Shot List", daysBefore: 10, priority: "Medium", status: vendors['Photography'] ? "Completed" : "Pending" });
-    if (features?.ar) featureTasks.push({ task: "AR Waypoint Configuration", daysBefore: 5, priority: "High", status: "Pending" });
-    if (features?.invitations) featureTasks.push({ task: "Digital Invitation Dispatch", daysBefore: 15, priority: "Medium", status: "Pending" });
-
-    featureTasks.forEach(ft => {
-        const date = new Date(start);
-        date.setDate(date.getDate() - ft.daysBefore);
-        timeline.push({ ...ft, deadline: date.toLocaleDateString() });
-    });
+    if (features?.food) timeline.push({ task: "Menu Selection & Finalization", deadline: new Date(start.getTime() - 20 * 86400000).toLocaleDateString(), priority: "High", status: vendors['Catering'] ? "Completed" : "Pending" });
+    if (features?.photography) timeline.push({ task: "Photographer Briefing & Shot List", deadline: new Date(start.getTime() - 10 * 86400000).toLocaleDateString(), priority: "Medium", status: vendors['Photography'] ? "Completed" : "Pending" });
+    if (features?.ar) timeline.push({ task: "AR Waypoint Configuration", deadline: new Date(start.getTime() - 5 * 86400000).toLocaleDateString(), priority: "High", status: "Pending" });
 
     return timeline.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 };
@@ -196,32 +188,21 @@ export const calculateBudgetAllocation = (totalBudget, category) => {
 };
 
 export const estimateResources = (attendees, venueType, category) => {
-    const normalizedCategory = (category || 'default').toLowerCase();
-    const staffRatio = venueType?.toLowerCase() === 'outdoor' ? 15 : 20;
+    const count = parseInt(attendees) || 0;
+    const isOutdoor = venueType?.toLowerCase() === 'outdoor';
 
-    let securityRatio = 50;
-    if (normalizedCategory.includes('festival')) securityRatio = 30;
-    if (normalizedCategory.includes('party') || normalizedCategory.includes('hackathon')) securityRatio = 40;
-
+    // Automatic recalculations based on attendee count
     const resources = [
-        { resource: "Event Staff", quantity: Math.ceil(attendees / staffRatio), unit: "Personnel" },
-        { resource: "Security", quantity: Math.ceil(attendees / securityRatio), unit: "Personnel" },
+        { resource: "Event Staff", quantity: Math.ceil(count / (isOutdoor ? 15 : 20)), unit: "Personnel" },
+        { resource: "Security Personnel", quantity: Math.ceil(count / 50), unit: "Personnel" },
+        { resource: "Seating Capacity", quantity: Math.ceil(count * 1.05), unit: "Seats" }, // 5% buffer
+        { resource: "Food Quantity (Meals)", quantity: Math.ceil(count * 1.1), unit: "Servings" }, // 10% buffer
+        { resource: "Water Inventory", quantity: Math.ceil(count * 2), unit: "Litres" },
+        { resource: "Housekeeping", quantity: Math.ceil(count / 100), unit: "Personnel" },
     ];
 
-    if (normalizedCategory.includes('workshop')) {
-        resources.push({ resource: "Facilitators", quantity: Math.ceil(attendees / 25), unit: "Personnel" });
-        resources.push({ resource: "Material Kits", quantity: attendees, unit: "Units" });
-    } else if (normalizedCategory.includes('festival')) {
-        resources.push({ resource: "Field Technicians", quantity: Math.ceil(attendees / 100), unit: "Personnel" });
-        resources.push({ resource: "Safety Barriers", quantity: Math.ceil(attendees / 10), unit: "Meters" });
-    } else if (normalizedCategory.includes('hackathon')) {
-        resources.push({ resource: "Cloud Credits", quantity: attendees * 50, unit: "USD" });
-        resources.push({ resource: "Mentors", quantity: Math.ceil(attendees / 15), unit: "Personnel" });
-        resources.push({ resource: "Extension Boards", quantity: Math.ceil(attendees / 4), unit: "Nodes" });
-        resources.push({ resource: "Redundant WiFi", quantity: 2, unit: "Uplinks" });
-    } else {
-        resources.push({ resource: "AV Technicians", quantity: Math.max(2, Math.ceil(attendees / 100)), unit: "Personnel" });
-        resources.push({ resource: "Check-in Points", quantity: Math.ceil(attendees / 150), unit: "Stations" });
+    if (category?.toLowerCase().includes('corporate')) {
+        resources.push({ resource: "AV Support", quantity: Math.max(2, Math.ceil(count / 150)), unit: "Personnel" });
     }
 
     return resources;
@@ -250,24 +231,22 @@ export const getSuggestedRoles = (category) => {
     return roles.default;
 };
 
-export const calculateReadinessScore = (tasks, selectedVendors) => {
-    let taskWeight = 1;
-    let vendorWeight = 0;
+export const calculateReadinessScore = (tasks = [], selectedVendors = {}) => {
+    if (!tasks || tasks.length === 0) return 0;
 
-    const totalTasks = tasks?.length || 0;
-    const completedTasks = tasks?.filter(t => t.status === "Completed").length || 0;
-    const taskScore = totalTasks > 0 ? (completedTasks / totalTasks) : 1;
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.status === "Completed").length;
 
-    const vendorEntries = selectedVendors ? Object.values(selectedVendors) : [];
-    const totalVendors = vendorEntries.length;
+    // Base score from tasks
+    let score = (completedTasks / totalTasks) * 100;
 
-    if (totalVendors > 0) {
-        taskWeight = 0.6;
-        vendorWeight = 0.4;
-        const confirmedVendors = vendorEntries.length; // Actually if they are in the list at this stage it's partial readiness
-        const vendorScore = 1; // Simplify for now
-        return Math.round((taskScore * taskWeight + vendorScore * vendorWeight) * 100);
+    // Vendor penalty: If vendors are required (based on category tasks) but not confirmed, reduce score
+    const vendorTasks = tasks.filter(t => t.task.toLowerCase().includes('vendor') || t.task.toLowerCase().includes('catering'));
+    const pendingVendorTasks = vendorTasks.filter(t => t.status !== "Completed").length;
+
+    if (pendingVendorTasks > 0) {
+        score -= (pendingVendorTasks * 5); // Penalty for unconfirmed vendors
     }
 
-    return Math.round(taskScore * 100);
+    return Math.max(0, Math.min(100, Math.round(score)));
 };
