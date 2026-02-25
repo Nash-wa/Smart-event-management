@@ -13,11 +13,15 @@ const isDbConnected = () => mongoose.connection.readyState === 1;
 // @access  Private
 const createEvent = asyncHandler(async (req, res) => {
     const {
-        name, category, startDate, endDate, startTime, endTime,
-        description, mode, venue, address, capacity, budget,
-        features, selectedVendors, tags, bannerImage, isPublic, status,
-        location, arPoints
+        name, description, category, mode, startDate, endDate,
+        startTime, endTime, district, venue, address, capacity,
+        budget, location, arPoints, selectedVendors, features,
+        tags, bannerImage, isPublic, status
     } = req.body;
+
+    if (!name || !category || !startDate || (district === undefined && !isDbConnected())) {
+        // Allow district to be missing if not connected to real DB or if not required in storage helper
+    }
 
     if (!name || !category || !startDate) {
         res.status(400);
@@ -59,21 +63,26 @@ const createEvent = asyncHandler(async (req, res) => {
         name,
         description,
         category,
+        mode,
         startDate,
+        endDate,
+        startTime,
+        endTime,
+        district,
         venue,
-        budget,
-        capacity,
         address,
+        capacity,
+        budget,
         location,
         arPoints,
-        features,
         selectedVendors,
+        features,
         plan,
         platformCommission,
         tags,
         bannerImage,
         isPublic,
-        status
+        status: status || 'pending'
     });
 
     // Notify the user
@@ -190,39 +199,48 @@ const updateEvent = asyncHandler(async (req, res) => {
         throw new Error('Event not found');
     }
 
-    // Check for user
-    if (!req.user) {
-        res.status(401);
-        throw new Error('User not found');
-    }
-
-    // Make sure the logged in user matches the event user
-    if (event.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    // Ensure only the owner or admin can update the event
+    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         res.status(401);
         throw new Error('User not authorized');
     }
 
-    // Merge HEAD fields if present in body
-    if (req.body.arPoints) event.arPoints = req.body.arPoints;
+    // Populate fields
+    if (req.body.name) event.name = req.body.name;
+    if (req.body.description) event.description = req.body.description;
+    if (req.body.category) event.category = req.body.category;
+    if (req.body.mode) event.mode = req.body.mode;
+    if (req.body.startDate) event.startDate = req.body.startDate;
+    if (req.body.endDate) event.endDate = req.body.endDate;
+    if (req.body.startTime) event.startTime = req.body.startTime;
+    if (req.body.endTime) event.endTime = req.body.endTime;
+    if (req.body.district) event.district = req.body.district;
+    if (req.body.venue) event.venue = req.body.venue;
+    if (req.body.address) event.address = req.body.address;
+    if (req.body.capacity) event.capacity = req.body.capacity;
+    if (req.body.budget) event.budget = req.body.budget;
     if (req.body.location) event.location = req.body.location;
+    if (req.body.arPoints) event.arPoints = req.body.arPoints;
+    if (req.body.selectedVendors) event.selectedVendors = req.body.selectedVendors;
+    if (req.body.features) event.features = req.body.features;
+    if (req.body.tags) event.tags = req.body.tags;
+    if (req.body.bannerImage) event.bannerImage = req.body.bannerImage;
+    if (req.body.isPublic !== undefined) event.isPublic = req.body.isPublic;
+    if (req.body.status) event.status = req.body.status;
 
     // Recalculate commission if budget changes
     if (req.body.budget) {
-        req.body.platformCommission = Number(req.body.budget) * 0.1;
+        event.platformCommission = Number(req.body.budget) * 0.1;
     }
-
-    const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
-    }).populate('user', 'name email');
-
-    res.status(200).json(updatedEvent);
+    const updatedEvent = await event.save();
+    res.json(updatedEvent);
 });
 
 // @desc    Get public event details (for RSVP)
 // @route   GET /api/events/public/:id
 // @access  Public
 const getPublicEventById = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id).select('name startDate venue category capacity');
+    const event = await Event.findById(req.params.id).select('name startDate venue category capacity arPoints location');
 
     if (event) {
         res.json(event);

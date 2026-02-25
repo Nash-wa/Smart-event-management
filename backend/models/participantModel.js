@@ -7,6 +7,8 @@ const participantSchema = mongoose.Schema({
     role: { type: String, enum: ['Attendee', 'Speaker', 'VIP', 'Staff'], default: 'Attendee' },
     status: { type: String, enum: ['Pending', 'Confirmed', 'Declined'], default: 'Pending' },
     invitationSent: { type: Boolean, default: false },
+    checkInStatus: { type: String, enum: ['Not Checked In', 'Checked In'], default: 'Not Checked In' },
+    ticketId: { type: String, unique: true, sparse: true },
 }, {
     timestamps: true,
 });

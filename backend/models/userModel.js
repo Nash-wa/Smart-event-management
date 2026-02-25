@@ -10,6 +10,8 @@ const userSchema = mongoose.Schema({
     profilePic: { type: String, default: 'https://ui-avatars.com/api/?background=random' },
     phoneNumber: { type: String },
     isVerified: { type: Boolean, default: false },
+    otpCode: { type: String },
+    otpExpires: { type: Date }
 }, {
     timestamps: true,
 });

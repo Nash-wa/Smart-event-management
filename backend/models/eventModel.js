@@ -23,11 +23,16 @@ const eventSchema = mongoose.Schema({
     readinessScore: { type: Number, default: 0 },
     arPoints: [{
         label: { type: String },
+        instruction: { type: String },
         lat: { type: Number },
         lng: { type: Number },
         pointType: { type: String, enum: ['Entrance', 'Stage', 'Restroom', 'Exit', 'HelpDesk', 'Other'] }
     }],
     selectedVendors: { type: Map, of: Object }, // Store selected vendor details
+    manualExpenses: [{
+        label: { type: String },
+        amount: { type: Number }
+    }],
     features: { type: Object },
     plan: { type: Object }, // To store generated plan (Timeline, Budget Breakdown, etc.)
     paymentStatus: { type: String, enum: ['unpaid', 'partial', 'paid'], default: 'unpaid' },

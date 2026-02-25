@@ -31,6 +31,7 @@ app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/spatial', require('./routes/spatialRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/venues', require('./routes/venueRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 
 // Error handling
 app.use((req, res, next) => {
