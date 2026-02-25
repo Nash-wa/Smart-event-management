@@ -32,14 +32,27 @@ const connectDB = async () => {
             }
         }
 
-        // 2. Fallback to In-Memory Database
+        // 2. Fallback to Local Persistent Database
         try {
-            mongoServer = await MongoMemoryServer.create();
+            const fs = require('fs');
+            const path = require('path');
+            const dbPath = path.join(__dirname, '../data/db');
+
+            if (!fs.existsSync(dbPath)) {
+                fs.mkdirSync(dbPath, { recursive: true });
+            }
+
+            mongoServer = await MongoMemoryServer.create({
+                instance: {
+                    dbPath: dbPath,
+                    storageEngine: 'wiredTiger'
+                }
+            });
             const memUri = mongoServer.getUri();
 
             const memConn = await mongoose.connect(memUri);
-            console.log(`✅ MongoDB Connected (In-Memory): ${memConn.connection.host}`);
-            console.log('📝 Note: Using temporary database. Data will be lost on server restart.');
+            console.log(`✅ MongoDB Connected (Local Fallback): ${memConn.connection.host}`);
+            console.log('💾 Note: Using local permanent database! Data is safely stored in backend/data/db folder and WILL NOT be lost on server restart. You are good to go!');
         } catch (memError) {
             console.error(`❌ In-Memory DB Error: ${memError.message}`);
             throw memError; // Re-throw if even fallback fails
