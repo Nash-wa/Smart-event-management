@@ -5,14 +5,14 @@ import {
     calculateBudgetAllocation,
     estimateResources,
     calculateReadinessScore,
-    getSuggestedRoles
 } from "../utils/planningEngine";
 import "../css/eventplan.css";
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { QRCodeSVG } from 'qrcode.react';
 
-// Fix Leaflet marker icons
+// Fix Leaflet default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -20,787 +20,727 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Map click handler – captures GPS coordinates
 function LocationPicker({ onLocationSelect }) {
     useMapEvents({
-        click(e) {
-            onLocationSelect(e.latlng);
-        },
+        click(e) { onLocationSelect(e.latlng); },
     });
     return null;
 }
 
+// Recenter map whenever center changes  
 function RecenterMap({ center }) {
     const map = useMapEvents({});
     useEffect(() => {
-        if (center && center[0] && center[1]) {
-            map.setView(center, map.getZoom());
-        }
+        if (center?.[0] && center?.[1]) map.setView(center, map.getZoom());
     }, [center, map]);
     return null;
 }
 
-
+// Anchor type icons
+const anchorIcon = (type) => {
+    const icons = { Entrance: '🚪', Stage: '🎭', Restroom: '🚻', Exit: '🏃', HelpDesk: 'ℹ️', Other: '📍' };
+    return icons[type] || '📍';
+};
 
 function EventPlan() {
     const { id } = useParams();
+    const navigate = useNavigate();
+
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [participants, setParticipants] = useState([]);
     const [planningData, setPlanningData] = useState(null);
-    const [newARPoint, setNewARPoint] = useState({
-        label: '',
-        pointType: 'Other',
-        instruction: '',
-        lat: null,
-        lng: null
+
+    // New node form state
+    const [newNode, setNewNode] = useState({
+        nodeId: '',
+        anchorType: 'Entrance',
+        latitude: null,
+        longitude: null,
+        instructions: ''
     });
+    const [nodeDeploying, setNodeDeploying] = useState(false);
+    const [nodeError, setNodeError] = useState('');
+
     const [announcement, setAnnouncement] = useState({ text: '', type: 'Info' });
     const [announcementStatus, setAnnouncementStatus] = useState({ type: '', message: '' });
-    const navigate = useNavigate();
+    const [showQR, setShowQR] = useState(false);
 
+    const guestARUrl = `${window.location.origin}/ar/${id}`;
 
+    // ─── Fetch event data ──────────────────────────────────────────
     useEffect(() => {
         const fetchEvent = async () => {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-
-                const res = await fetch(
-                    `http://localhost:5000/api/events/${id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${userInfo?.token}`
-                        }
-                    }
-                );
-
+                const res = await fetch(`http://localhost:5000/api/events/${id}`, {
+                    headers: { Authorization: `Bearer ${userInfo?.token}` }
+                });
                 const data = await res.json();
-
                 if (res.ok) {
                     setEvent(data);
 
-                    // Pre-fill initial AR point with venue location context
-                    if (data.location?.lat && !data.arPoints?.length) {
-                        setNewARPoint(prev => ({
+                    // Pre-fill node latitude/longitude from venue
+                    if (data.location?.lat && !(data.nodes?.length)) {
+                        setNewNode(prev => ({
                             ...prev,
-                            lat: data.location.lat,
-                            lng: data.location.lng,
-                            label: 'Main Entrance / HUB'
+                            latitude: data.location.lat,
+                            longitude: data.location.lng,
+                            nodeId: 'entrance',
+                            anchorType: 'Entrance'
                         }));
                     }
 
-                    // Fetch actual participants
-
+                    // Fetch participants
                     const pRes = await fetch(`http://localhost:5000/api/participants/${id}`, {
                         headers: { Authorization: `Bearer ${userInfo?.token}` }
                     });
                     if (pRes.ok) {
                         const pData = await pRes.json();
-                        setParticipants(pData);
+                        setParticipants(Array.isArray(pData) ? pData : []);
                     }
 
-                    if (data.plan && data.plan.timeline) {
-                        // Use existing persistent plan
-                        setPlanningData(data.plan);
+                    // Set or init planning data
+                    if (data.plan?.timeline) {
+                        setPlanningData({
+                            ...data.plan,
+                            timeline: data.plan.timeline || [],
+                            budget: data.plan.budget || [],
+                            resources: data.plan.resources || []
+                        });
                     } else {
-                        // Initialize new plan if not exists
                         const timeline = calculateTimeline(data.startDate, data.category, data.selectedVendors, data.features);
                         const budget = calculateBudgetAllocation(data.budget, data.category);
                         const resources = estimateResources(data.capacity || 100, data.venueType || 'Indoor', data.category);
-
                         const newPlan = {
-                            timeline,
-                            budget,
-                            resources,
+                            timeline, budget, resources,
                             readinessScore: calculateReadinessScore(timeline, data.selectedVendors)
                         };
-
                         setPlanningData(newPlan);
-
-                        // Persist the initialized plan to backend
+                        const userInfo2 = JSON.parse(localStorage.getItem('userInfo'));
                         await fetch(`http://localhost:5000/api/events/${id}`, {
                             method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${userInfo?.token}`
-                            },
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo2?.token}` },
                             body: JSON.stringify({ plan: newPlan })
                         });
                     }
-
                 } else {
                     console.error("Event not found");
                 }
-            } catch (error) {
-                console.error("Failed to fetch event", error);
+            } catch (err) {
+                console.error("Failed to fetch event", err);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchEvent();
     }, [id]);
 
+    // ─── Deploy node to backend ────────────────────────────────────
+    const deployNode = async () => {
+        setNodeError('');
+        if (!newNode.nodeId.trim()) { setNodeError('Node ID is required.'); return; }
+        if (!newNode.latitude) { setNodeError('Please click on the map to select a GPS coordinate.'); return; }
 
-    const addARPoint = async () => {
-        if (!newARPoint.label || !newARPoint.lat) {
-            alert("Please pick a location on the map and provide a label.");
-            return;
-        }
-
-        const updatedARPoints = [...(event.arPoints || []), newARPoint];
-        const updatedEvent = { ...event, arPoints: updatedARPoints };
-
+        setNodeDeploying(true);
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo?.token}`
-                },
-                body: JSON.stringify(updatedEvent)
+            const res = await fetch(`http://localhost:5000/api/events/${id}/nodes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
+                body: JSON.stringify(newNode)
             });
             if (res.ok) {
-                setEvent(updatedEvent);
-                setNewARPoint({ label: '', pointType: 'Other', instruction: '', lat: null, lng: null });
+                const updatedNodes = await res.json();
+                setEvent(prev => ({ ...prev, nodes: updatedNodes }));
+                setNewNode({ nodeId: '', anchorType: 'Entrance', latitude: null, longitude: null, instructions: '' });
+            } else {
+                const err = await res.json();
+                setNodeError(err.message || 'Failed to deploy node.');
             }
-        } catch (error) {
-            console.error("Failed to add AR point", error);
+        } catch (err) {
+            setNodeError('Network error. Please try again.');
+        } finally {
+            setNodeDeploying(false);
         }
     };
 
-
-    const deleteARPoint = async (index) => {
-        const updatedARPoints = event.arPoints.filter((_, i) => i !== index);
-        const updatedEvent = { ...event, arPoints: updatedARPoints };
-
+    // ─── Delete node ───────────────────────────────────────────────
+    const deleteNode = async (nodeId) => {
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo?.token}`
-                },
-                body: JSON.stringify(updatedEvent)
+            const res = await fetch(`http://localhost:5000/api/events/${id}/nodes/${nodeId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${userInfo?.token}` }
             });
             if (res.ok) {
-                setEvent(updatedEvent);
+                const updatedNodes = await res.json();
+                setEvent(prev => ({ ...prev, nodes: updatedNodes }));
             }
-        } catch (error) {
-            console.error("Failed to delete AR point", error);
+        } catch (err) {
+            console.error("Failed to delete node", err);
         }
     };
 
+    // ─── Update task status ────────────────────────────────────────
     const updateTaskStatus = async (taskIndex, newStatus) => {
+        if (!planningData?.timeline) return;
         const updatedTimeline = [...planningData.timeline];
         updatedTimeline[taskIndex].status = newStatus;
-
-        const newReadiness = calculateReadinessScore(updatedTimeline, event.selectedVendors);
-
-        const updatedEvent = {
-            ...event,
-            plan: { ...planningData, timeline: updatedTimeline, readinessScore: newReadiness },
-            readinessScore: newReadiness
-        };
-
+        const newReadiness = calculateReadinessScore(updatedTimeline, event?.selectedVendors);
+        const updatedPlan = { ...planningData, timeline: updatedTimeline, readinessScore: newReadiness };
+        const updatedEvent = { ...event, plan: updatedPlan, readinessScore: newReadiness };
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const res = await fetch(`http://localhost:5000/api/events/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo?.token}`
-                },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
                 body: JSON.stringify(updatedEvent)
             });
-            if (res.ok) {
-                setEvent(updatedEvent);
-                setPlanningData(updatedEvent.plan); // Update planningData state as well
-            }
-        } catch (error) {
-            console.error("Failed to update status", error);
-        }
+            if (res.ok) { setEvent(updatedEvent); setPlanningData(updatedPlan); }
+        } catch (err) { console.error("Failed to update task", err); }
     };
 
+    // ─── Broadcast announcement ────────────────────────────────────
     const handleBroadcast = async (e) => {
         e.preventDefault();
         if (!announcement.text) return;
-
         setAnnouncementStatus({ type: 'loading', message: 'Broadcasting...' });
-
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const res = await fetch('http://localhost:5000/api/messages/broadcast', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${userInfo?.token}`
-                },
-                body: JSON.stringify({
-                    event: id,
-                    text: announcement.text,
-                    type: announcement.type
-                })
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
+                body: JSON.stringify({ event: id, text: announcement.text, type: announcement.type })
             });
-
             if (res.ok) {
-                setAnnouncementStatus({ type: 'success', message: 'Message broadcasted to all participants!' });
+                setAnnouncementStatus({ type: 'success', message: 'Broadcasted!' });
                 setAnnouncement({ text: '', type: 'Info' });
                 setTimeout(() => setAnnouncementStatus({ type: '', message: '' }), 3000);
             } else {
-                setAnnouncementStatus({ type: 'error', message: 'Failed to broadcast message.' });
+                setAnnouncementStatus({ type: 'error', message: 'Failed to broadcast.' });
             }
-        } catch (error) {
-            setAnnouncementStatus({ type: 'error', message: 'Network error.' });
-        }
+        } catch { setAnnouncementStatus({ type: 'error', message: 'Network error.' }); }
     };
 
-
+    // ─── Loading / error states ────────────────────────────────────
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#050505] text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-accent"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
             </div>
         );
     }
-
     if (!event || !planningData) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white">
                 <h1 className="text-3xl font-bold mb-4">Event Not Found</h1>
-                <button
-                    onClick={() => navigate("/dashboard")}
-                    className="px-6 py-2 bg-accent rounded-lg"
-                >
-                    Back to Dashboard
-                </button>
+                <button onClick={() => navigate("/dashboard")} className="px-6 py-2 bg-primary rounded-lg">Back to Dashboard</button>
             </div>
         );
     }
+
+    const mapCenter = [event.location?.lat || 10.8505, event.location?.lng || 76.2711];
+    const nodes = event.nodes || [];
 
     return (
         <div className="event-plan-page min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans">
             <div className="max-w-7xl mx-auto">
 
-                {/* HEADER / OPERATIONS SUMMARY */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 border-b border-white/5 pb-8 gap-6">
+                {/* ── HEADER ───────────────────────────────────────── */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 border-b border-white/5 pb-12 gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-4">
                             <span className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest rounded-full">
-                                Operational Dashboard
+                                Control Center
                             </span>
                             <span className="px-3 py-1 bg-white/5 border border-white/10 text-gray-400 text-[10px] font-bold uppercase tracking-widest rounded-full">
-                                ID: {id.slice(-6)}
+                                Node: {id?.slice?.(-6) || "ID"}
                             </span>
+                            <button
+                                onClick={() => navigate(`/ar/${id}`)}
+                                className="px-4 py-1 bg-accent text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                            >
+                                🚀 Launch Guest AR
+                            </button>
                         </div>
-
-                        <h1 className="text-5xl md:text-6xl font-black mb-4 tracking-tighter">
-                            {event.name}
+                        <h1 className="text-6xl md:text-7xl font-black mb-6 tracking-tighter text-white">
+                            {event?.name || "Event"}
                         </h1>
-
-                        <div className="flex flex-wrap gap-6 text-gray-400">
-                            <div className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                                <span className="text-sm font-medium">{event.category}</span>
+                        <div className="flex flex-wrap gap-8 text-gray-400">
+                            <div className="flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                                <span className="text-sm font-black uppercase tracking-widest">{event.category || "General"}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                <span className="text-sm font-medium">{new Date(event.startDate).toLocaleDateString()}</span>
+                            <div className="flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-primary" />
+                                <span className="text-sm font-black uppercase tracking-widest">
+                                    {event.startDate ? new Date(event.startDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : "Date TBD"}
+                                </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                <span className="text-sm font-medium">{event.venue || "Global Location"}</span>
+                            <div className="flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                <span className="text-sm font-black uppercase tracking-widest">{event.venue || "Field Location"}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-8 bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-xl">
-                        <div className="text-center">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">Readiness</p>
-                            <p className="text-3xl font-black text-white">{event.readinessScore || planningData.readinessScore}%</p>
+                    <div className="flex flex-col lg:flex-row items-center gap-8 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-xl w-full lg:w-auto">
+                        <div className="flex flex-col items-center">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Event Readiness</p>
+                            <div className="relative w-24 h-24 flex items-center justify-center">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
+                                    <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent"
+                                        strokeDasharray={251.2}
+                                        strokeDashoffset={251.2 - (251.2 * (event?.readinessScore || planningData?.readinessScore || 0)) / 100}
+                                        className="text-primary transition-all duration-1000"
+                                    />
+                                </svg>
+                                <span className="absolute text-2xl font-black text-white">{event?.readinessScore || planningData?.readinessScore || 0}%</span>
+                            </div>
                         </div>
-                        <div className="w-px h-10 bg-white/10" />
-                        <div className="text-center">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-1">Confirmed Guests</p>
-                            <p className="text-3xl font-black text-white">{participants.filter(p => p.status === 'Confirmed').length} / {event.capacity || 0}</p>
+                        <div className="hidden lg:block w-px h-16 bg-white/10" />
+                        <div className="grid grid-cols-2 gap-8 text-center">
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Status</p>
+                                <p className="text-xl font-black text-accent uppercase">
+                                    {(event?.readinessScore || planningData?.readinessScore || 0) >= 90 ? 'Ready' : 'Planning'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Guests</p>
+                                <p className="text-xl font-black text-white">{participants?.filter?.(p => p && p.status === 'Confirmed')?.length || 0} / {event?.capacity || 0}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="glass-card p-10 rounded-[3rem] border-white/10 bg-white/5 flex flex-col md:flex-row gap-12 items-center">
-                    <div className="flex-1 w-full">
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-black rounded-lg uppercase tracking-widest">Live Context</span>
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">Operational Overview</h2>
-                        </div>
-                        <p className="text-gray-400 font-medium leading-relaxed mb-8">
-                            Deploying resources for <span className="text-white font-bold">{event.name}</span>.
-                            The system has calibrated <span className="text-white font-bold">{planningData.timeline.length} milestones</span> and
-                            allocated <span className="text-white font-bold">₹{event.budget.toLocaleString()}</span> across critical operational nodes.
-                        </p>
-
-                        <div className="flex flex-wrap gap-2">
-                            {getSuggestedRoles(event.category).map((role, i) => (
-                                <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black text-gray-500 uppercase tracking-widest">
-                                    Suggested: {role}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="w-full md:w-80">
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2rem] p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm">📣</div>
-                                <h3 className="text-sm font-bold uppercase tracking-tight">Broadcaster</h3>
-                            </div>
-
-                            <form onSubmit={handleBroadcast} className="space-y-3">
-                                <textarea
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-orange-500 transition-all outline-none min-h-[80px]"
-                                    placeholder="Alert all participants..."
-                                    value={announcement.text}
-                                    onChange={(e) => setAnnouncement({ ...announcement, text: e.target.value })}
-                                />
-
-                                <div className="flex gap-2">
-                                    <select
-                                        className="bg-zinc-900 border border-white/10 rounded-lg px-2 text-[8px] font-bold uppercase tracking-widest outline-none"
-                                        value={announcement.type}
-                                        onChange={(e) => setAnnouncement({ ...announcement, type: e.target.value })}
-                                    >
-                                        <option value="Info">Info</option>
-                                        <option value="Urgent">Urgent</option>
-                                        <option value="Schedule">Update</option>
-                                    </select>
-
-                                    <button
-                                        type="submit"
-                                        className="flex-1 bg-orange-500 text-white font-black rounded-lg text-[8px] uppercase tracking-widest hover:scale-105 transition-all py-2"
-                                    >
-                                        Broadcast
-                                    </button>
+                {/* ── TOP CARDS ─────────────────────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    {/* Critical Alerts */}
+                    <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
+                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Critical Alerts</h3>
+                        <div className="space-y-3">
+                            {(planningData?.timeline || []).filter(t => t.priority === 'High' && t.status !== 'Completed').length > 0 ? (
+                                (planningData?.timeline || []).filter(t => t.priority === 'High' && t.status !== 'Completed').slice(0, 2).map((t, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                                        <span className="text-red-400 animate-pulse">⚠️</span>
+                                        <p className="text-[10px] font-bold text-white uppercase">{t.task}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                                    <span className="text-green-400">✅</span>
+                                    <p className="text-[10px] font-bold text-white uppercase">All Critical Tasks Secured</p>
                                 </div>
-                            </form>
-
-                            {announcementStatus.message && (
-                                <div className={`mt-2 p-2 rounded-lg text-[8px] font-bold text-center uppercase tracking-widest ${announcementStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
-                                    }`}>
-                                    {announcementStatus.message}
+                            )}
+                            {(!event?.selectedVendors || Object.keys(event?.selectedVendors || {}).length === 0) && (
+                                <div className="flex items-center gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                                    <span className="text-yellow-400">⚡</span>
+                                    <p className="text-[10px] font-bold text-white uppercase">Vendor Confirmation Pending</p>
                                 </div>
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* OPERATIONS GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-                    {/* MAIN COLUMN: TIMELINE & STAFFING */}
-                    <div className="lg:col-span-3 space-y-8">
-
-                        {/* OPERATIONAL STRATEGY SUMMARY */}
-                        <section className="glass-card p-10 rounded-[3rem] border-white/10 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-8 opacity-5">
-                                <span className="text-9xl font-black italic">STRATEGY</span>
-                            </div>
-                            <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-6">Execution Strategy</h2>
-                            <p className="text-2xl md:text-3xl font-bold leading-tight text-white/90 max-w-3xl">
-                                System-generated roadmap for {event.name}.
-                                Prioritizing <span className="text-accent">{event.category}</span> optimization with a focus on
-                                attendee experience and operational efficiency.
+                    {/* Operations Feed */}
+                    <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
+                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Operations Feed</h3>
+                        <p className="text-white font-bold text-sm leading-relaxed">
+                            Deploying resources for <span className="text-accent">{event?.name || "Event"}</span>.
+                            The system has calibrated <span className="text-primary">{planningData?.timeline?.length || 0} milestones</span> and
+                            allocated <span className="text-purple-500">₹{(event?.budget || 0).toLocaleString()}</span> for execution.
+                        </p>
+                        <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+                            <p className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                                {nodes.length} Spatial Node{nodes.length !== 1 ? 's' : ''} Deployed
                             </p>
-                        </section>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* TIMELINE */}
-                            <section className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                                <h2 className="text-xl font-black mb-8 flex items-center justify-between">
-                                    <span>🗓️ Milestone Timeline</span>
-                                    <span className="text-[10px] font-mono text-gray-500">REAL-TIME SYNC</span>
-                                </h2>
-                                <div className="space-y-6">
-                                    {planningData.timeline.map((item, index) => (
-                                        <div key={index} className="flex gap-4 relative">
-                                            <div className="flex flex-col items-center">
-                                                <div className={`w-4 h-4 rounded-full border-2 border-[#050505] z-10 ${item.status === 'Completed' ? 'bg-accent shadow-[0_0_10px_#10b981]' : 'bg-primary shadow-[0_0_10px_#3b82f6]'
-                                                    }`} />
-                                                {index !== planningData.timeline.length - 1 && (
-                                                    <div className={`w-[2px] h-full absolute top-2 left-[7px] ${item.status === 'Completed' ? 'bg-accent/40' : 'bg-white/10'
-                                                        }`} />
-                                                )}
-                                            </div>
-                                            <div className="pb-8 flex-1">
-                                                <div className="flex justify-between items-start gap-4">
-                                                    <div>
-                                                        <h3 className={`font-bold text-sm ${item.status === 'Completed' ? 'text-accent' : 'text-white'}`}>{item.task}</h3>
-                                                        <p className="text-[10px] text-gray-500 mt-1 uppercase font-mono tracking-widest">{item.deadline}</p>
-                                                    </div>
-                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded border transition-colors ${item.priority === 'High' ? 'border-red-500/30 text-red-400 bg-red-500/5' : 'border-white/10 text-gray-500'
-                                                        }`}>
-                                                        {item.priority}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-
-                            {/* RESOURCES & STAFFING */}
-                            <section className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                                <h2 className="text-xl font-black mb-8 flex items-center justify-between">
-                                    <span>👥 Resource Estimation</span>
-                                    <span className="text-[10px] font-mono text-gray-500">CALCULATED DATA</span>
-                                </h2>
-                                <div className="space-y-4">
-                                    {planningData.resources.map((res, i) => (
-                                        <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/5 flex justify-between items-center group hover:bg-white/10 transition-all">
-                                            <div>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{res.resource}</p>
-                                                <p className="text-2xl font-black text-white">{res.quantity} <span className="text-[10px] font-medium text-gray-500">{res.unit}</span></p>
-                                            </div>
-                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                                                📋
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="mt-8 p-6 rounded-2xl bg-primary/10 border border-primary/20">
-                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Notice</p>
-                                    <p className="text-xs text-primary/80 leading-relaxed font-medium">
-                                        Resources estimated based on a {event.capacity}-attendee {event.category.toLowerCase()} venture model. Adjustments may be required for complex technical dependencies.
-                                    </p>
-                                </div>
-                            </section>
                         </div>
                     </div>
 
-                    {/* SIDE COLUMN: BUDGET & CHECKLIST */}
-                    {/* VENDOR OPERATIONS */}
-                    <div className="lg:col-span-1 space-y-8">
-                        <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">Service Deployment</h3>
-                                <button
-                                    onClick={() => navigate(`/services/${id}`)}
-                                    className="text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-widest"
-                                >
-                                    Add Team +
-                                </button>
+                    {/* Global Broadcast */}
+                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2.5rem] p-8">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm">📣</div>
+                            <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Global Broadcast</h3>
+                        </div>
+                        <form onSubmit={handleBroadcast} className="flex gap-2">
+                            <input
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] text-white focus:border-orange-500 outline-none"
+                                placeholder="Alert all attendees..."
+                                value={announcement.text}
+                                onChange={(e) => setAnnouncement({ ...announcement, text: e.target.value })}
+                            />
+                            <button type="submit" className="px-4 py-2 bg-orange-500 text-white font-black rounded-xl text-[10px] uppercase">Send</button>
+                        </form>
+                        {announcementStatus.message && (
+                            <p className={`text-[10px] mt-2 font-bold ${announcementStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                                {announcementStatus.message}
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                {/* ── TIMELINE + RESOURCES ──────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+                    {/* Timeline */}
+                    <div className="lg:col-span-2 glass-card p-10 rounded-[3rem] border-white/10 bg-white/5">
+                        <div className="flex justify-between items-center mb-10">
+                            <div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter">Milestone Timeline</h2>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Real-time Operational Sync</p>
                             </div>
-                            <div className="space-y-4">
-                                {event.selectedVendors && Object.entries(event.selectedVendors).map(([cat, vendor]) => (
-                                    <div key={cat} className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                            <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg uppercase tracking-widest">
+                                {(planningData?.timeline || []).filter(t => t.status === 'Completed').length} / {planningData?.timeline?.length || 0} COMPLETED
+                            </span>
+                        </div>
+                        <div className="space-y-8">
+                            {(planningData?.timeline || []).map((item, index) => (
+                                <div key={index} className="flex gap-6 relative group">
+                                    <div className="flex flex-col items-center">
+                                        <div
+                                            onClick={() => updateTaskStatus(index, item?.status === 'Completed' ? 'Pending' : 'Completed')}
+                                            className={`w-6 h-6 rounded-full border-4 cursor-pointer transition-all z-10 ${item?.status === 'Completed' ? 'bg-accent border-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-[#050505] border-white/10 hover:border-primary'}`}
+                                        />
+                                        {index !== (planningData?.timeline?.length || 0) - 1 && (
+                                            <div className="w-[1px] h-full absolute top-6 left-[11px] bg-white/5" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 pb-4">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{cat}</p>
-                                                <p className="text-xs font-bold text-white uppercase">{vendor.name}</p>
+                                                <h3 className={`font-bold text-lg leading-tight uppercase ${item?.status === 'Completed' ? 'text-gray-500 line-through' : 'text-white'}`}>
+                                                    {item?.task || "Untitled Task"}
+                                                </h3>
+                                                <div className="flex gap-4 mt-1">
+                                                    <p className="text-[10px] font-mono text-gray-500 uppercase">Deadline: {item?.deadline}</p>
+                                                    <span className={`text-[8px] font-black uppercase tracking-widest ${item?.priority === 'High' ? 'text-red-500' : 'text-gray-600'}`}>Priority: {item?.priority}</span>
+                                                </div>
                                             </div>
-                                            <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${vendor.status === 'Confirmed' ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'
-                                                }`}>
-                                                {vendor.status || 'Selected'}
-                                            </span>
+                                            {item?.priority === 'High' && item?.status !== 'Completed' && (
+                                                <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-black rounded uppercase animate-pulse">Critical</span>
+                                            )}
                                         </div>
-                                        <div className="flex justify-between items-center text-[10px] font-bold text-gray-400">
-                                            <span>₹{vendor.price.toLocaleString()}</span>
-                                            <div className="flex gap-2 text-primary">
-                                                <button className="hover:underline">Track</button>
-                                                <span>•</span>
-                                                <button
-                                                    onClick={() => alert(`Review System: Verification of ${vendor.name} deployment...`)}
-                                                    className="hover:underline text-accent"
-                                                >
-                                                    Review
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {(!event.selectedVendors || Object.keys(event.selectedVendors).length === 0) && (
-                                    <div className="text-center py-6">
-                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4">No services deployed</p>
-                                        <button
-                                            onClick={() => navigate(`/services/${id}`)}
-                                            className="gradient-button w-full text-[10px]"
-                                        >
-                                            Source Nearby Vendors
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* RESOURCE ESTIMATION */}
-                        <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-6">Resource Allocation</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                {planningData.resources.map((res, i) => (
-                                    <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-tight mb-1">{res.resource}</p>
-                                        <p className="text-xl font-bold text-white">{res.quantity}</p>
-                                        <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{res.unit}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* BUDGET ALLOCATION */}
-                        <section className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-black">💰 Capital Allocation</h2>
-                                <button
-                                    onClick={() => navigate(`/budget/${id}`)}
-                                    className="text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-widest"
-                                >
-                                    Full Report →
-                                </button>
-                            </div>
-                            <div className="space-y-6">
-                                {planningData.budget.map((item, index) => (
-                                    <div key={index} className="space-y-2">
-                                        <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-400">
-                                            <span>{item.category}</span>
-                                            <span className="text-white">₹{item.amount.toLocaleString()}</span>
-                                        </div>
-                                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-primary"
-                                                style={{ width: `${item.percentage}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="pt-4 border-t border-white/5">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Total Ops Budget</span>
-                                        <span className="text-xl font-black text-accent">₹{event.budget?.toLocaleString()}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </section>
+                            ))}
+                        </div>
+                    </div>
 
-                        {/* ACTION CHECKLIST */}
-                        <section className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-white/5">
-                            <h2 className="text-lg font-black mb-6">✅ Action Tracker</h2>
-                            <div className="space-y-3">
-                                {planningData.timeline.map((task, index) => (
-                                    <div
-                                        key={index}
-                                        onClick={() => updateTaskStatus(index, task.status === 'Completed' ? 'Pending' : 'Completed')}
-                                        className={`group cursor-pointer p-4 rounded-2xl border transition-all flex items-center justify-between ${task.status === 'Completed'
-                                            ? 'bg-accent/10 border-accent/20'
-                                            : 'bg-white/5 border-white/5 hover:border-white/20'
-                                            }`}
-                                    >
-                                        <span className={`text-xs font-bold ${task.status === 'Completed' ? 'text-accent line-through opacity-70' : 'text-white'}`}>
-                                            {task.task}
-                                        </span>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${task.status === 'Completed' ? 'bg-accent border-accent' : 'border-white/20'
-                                            }`}>
-                                            {task.status === 'Completed' && <span className="text-black text-[10px] font-black">✓</span>}
+                    {/* Resource + Budget columns */}
+                    <div className="space-y-8">
+                        <div className="glass-card p-10 rounded-[3rem] border-white/10 bg-white/5">
+                            <h2 className="text-xl font-black uppercase tracking-tighter mb-8 italic">Resource Model</h2>
+                            <div className="space-y-4">
+                                {(planningData?.resources || []).map((res, i) => (
+                                    <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/5 flex justify-between items-center hover:bg-white/10 transition-all">
+                                        <div>
+                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">{res.resource}</p>
+                                            <p className="text-2xl font-black text-white">{res.quantity} <span className="text-[10px] font-medium text-gray-500 uppercase">{res.unit}</span></p>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                            {res.resource?.includes('Staff') ? '👥' : res.resource?.includes('Food') ? '🍱' : '📦'}
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </section>
+                        </div>
 
+                        <div className="glass-card p-10 rounded-[3rem] border-white/10 bg-white/5">
+                            <div className="flex justify-between items-center mb-8">
+                                <h2 className="text-xl font-black uppercase tracking-tighter italic">Budget Allocation</h2>
+                                <span className="text-accent font-black text-sm">₹{(event?.budget || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="space-y-6">
+                                {(planningData?.budget || []).map((item, index) => (
+                                    <div key={index} className="space-y-2">
+                                        <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-gray-500">
+                                            <span>{item.category}</span>
+                                            <span className="text-white">{(item.percentage || 0).toFixed(0)}%</span>
+                                        </div>
+                                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-full bg-primary" style={{ width: `${item.percentage || 0}%` }} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* AR POINT MANAGEMENT */}
-                <section className="mt-16 glass-card p-10 rounded-[3rem] border-white/10 bg-white/5">
-                    <div className="flex items-center gap-3 mb-8">
-                        <span className="px-3 py-1 bg-accent/20 text-accent text-[10px] font-black rounded-lg uppercase tracking-widest">Navigation Setup</span>
-                        <h2 className="text-2xl font-black uppercase tracking-tighter">AR Point Configuration</h2>
+                {/* ═══════════════════════════════════════════════════ */}
+                {/* ADMIN: SPATIAL NODE CONFIGURATION CONSOLE          */}
+                {/* ═══════════════════════════════════════════════════ */}
+                <div className="glass-card p-12 rounded-[4rem] border-white/10 bg-white/5 mb-16">
+
+                    {/* Header row */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                        <div>
+                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-3 block">⚙️ Admin Mode — Spatial Node Configuration</span>
+                            <h2 className="text-4xl font-black uppercase tracking-tighter">Indoor Navigation Nodes</h2>
+                            <p className="text-gray-500 text-sm mt-2 max-w-xl">
+                                Deploy spatial anchors on the field map. Each node becomes a step in the guest AR navigation experience.
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3 w-full md:w-auto min-w-[200px]">
+                            <button
+                                onClick={() => navigate(`/ar/${id}`)}
+                                disabled={nodes.length === 0}
+                                className={`px-8 py-4 font-black rounded-2xl uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-sm ${nodes.length > 0 ? 'bg-white text-black hover:bg-primary hover:text-white shadow-xl' : 'bg-white/5 text-gray-600 border border-white/10 cursor-not-allowed'}`}
+                            >
+                                🚀 Launch Guest AR
+                            </button>
+                            <button
+                                onClick={() => setShowQR(q => !q)}
+                                className="px-8 py-4 font-black rounded-2xl uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-sm bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20"
+                            >
+                                📱 {showQR ? 'Hide' : 'Show'} QR Code
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <div className="space-y-6">
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                Define key navigational nodes for your venue. These points will be used to generate the AR HUD instructions for your attendees.
-                            </p>
+                    {/* QR Code + Public Link Panel */}
+                    {showQR && (
+                        <div className="mb-12 p-8 rounded-[2.5rem] bg-white/5 border border-purple-500/20 flex flex-col md:flex-row items-center gap-10">
+                            <div className="p-4 bg-white rounded-2xl">
+                                <QRCodeSVG value={guestARUrl} size={160} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2">Guest AR Public Access Link</p>
+                                <p className="text-xl font-mono font-black text-white break-all mb-4">{guestARUrl}</p>
+                                <p className="text-gray-500 text-sm mb-4">Share this link or QR code with guests for no-login indoor navigation access.</p>
+                                <button
+                                    onClick={() => navigator.clipboard.writeText(guestARUrl)}
+                                    className="px-6 py-3 bg-purple-500 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-purple-600 transition-all"
+                                >
+                                    📋 Copy Link
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
-                            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Location Label</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ex: Main Entrance, VIP Stage..."
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none transition-all"
-                                        value={newARPoint.label}
-                                        onChange={(e) => setNewARPoint({ ...newARPoint, label: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Navigation Instruction</label>
-                                    <textarea
-                                        placeholder="Ex: Walk straight for 10m then turn left..."
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none transition-all"
-                                        rows="2"
-                                        value={newARPoint.instruction}
-                                        onChange={(e) => setNewARPoint({ ...newARPoint, instruction: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                    {nodes.length === 0 && (
+                        <div className="mb-8 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl text-center">
+                            <p className="text-orange-400 text-xs font-black uppercase tracking-widest animate-pulse">
+                                ⚠️ No nodes deployed — guests cannot access AR navigation until at least one node is configured.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+                        {/* LEFT: Node form + deployed list */}
+                        <div className="space-y-8">
+
+                            {/* Node Input Form */}
+                            <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] space-y-6">
+                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Configure New Node</h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Node ID */}
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Point Type</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Node ID *</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. entrance, stage-a, exit-1"
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:border-primary outline-none text-white font-bold"
+                                            value={newNode.nodeId}
+                                            onChange={(e) => setNewNode({ ...newNode, nodeId: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                        />
+                                    </div>
+                                    {/* Anchor Type */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Anchor Class *</label>
                                         <select
-                                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none transition-all"
-                                            value={newARPoint.pointType}
-                                            onChange={(e) => setNewARPoint({ ...newARPoint, pointType: e.target.value })}
+                                            className="w-full bg-zinc-950 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:border-primary outline-none text-white font-bold appearance-none cursor-pointer"
+                                            value={newNode.anchorType}
+                                            onChange={(e) => setNewNode({ ...newNode, anchorType: e.target.value })}
                                         >
-                                            <option value="Entrance">Entrance</option>
-                                            <option value="Stage">Stage</option>
-                                            <option value="Restroom">Restroom</option>
-                                            <option value="Exit">Exit</option>
-                                            <option value="HelpDesk">Help Desk</option>
-                                            <option value="Other">Other</option>
+                                            <option value="Entrance">🚪 Entrance</option>
+                                            <option value="Stage">🎭 Stage / Main Area</option>
+                                            <option value="Restroom">🚻 Restroom / Service Point</option>
+                                            <option value="Exit">🏃 Emergency Exit</option>
+                                            <option value="HelpDesk">ℹ️ Information Hub</option>
+                                            <option value="Other">📍 Custom Anchor</option>
                                         </select>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Spatial Pin</label>
-                                        <div className={`w-full bg-black/50 border ${newARPoint.lat ? 'border-green-500/50' : 'border-white/10'} rounded-xl px-4 py-3 text-[10px] flex items-center justify-center font-mono`}>
-                                            {newARPoint.lat ? `${newARPoint.lat.toFixed(4)}, ${newARPoint.lng.toFixed(4)}` : "PICK ON MAP ↓"}
-                                        </div>
-                                    </div>
                                 </div>
 
-                                {/* Map Picker */}
-                                <div className="h-48 rounded-xl overflow-hidden border border-white/10 relative">
-                                    <MapContainer
-                                        center={[event.location?.lat || 10.8505, event.location?.lng || 76.2711]}
-                                        zoom={14}
-                                        style={{ height: '100%', width: '100%' }}
-                                    >
-                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                        <LocationPicker onLocationSelect={(latlng) => setNewARPoint(prev => ({ ...prev, lat: latlng.lat, lng: latlng.lng }))} />
-                                        <RecenterMap center={[event.location?.lat, event.location?.lng]} />
-                                        {newARPoint.lat && <Marker position={[newARPoint.lat, newARPoint.lng]} />}
-                                    </MapContainer>
+                                {/* Instructions */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Navigation Instructions</label>
+                                    <textarea
+                                        placeholder="e.g. Walk straight from the main gate, turn left at the fountain..."
+                                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:border-primary outline-none h-28 text-white font-medium leading-relaxed"
+                                        value={newNode.instructions}
+                                        onChange={(e) => setNewNode({ ...newNode, instructions: e.target.value })}
+                                    />
+                                </div>
 
+                                {/* GPS Lock Status */}
+                                <div className={`p-5 rounded-2xl flex items-center justify-between border ${newNode.latitude ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                    <div>
+                                        <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${newNode.latitude ? 'text-green-400' : 'text-red-400'}`}>
+                                            {newNode.latitude ? '🔒 GPS Coordinates Locked' : '📍 Click Map to Lock GPS'}
+                                        </p>
+                                        <p className="font-mono text-xs text-white">
+                                            {newNode.latitude ? `${newNode.latitude.toFixed(6)}, ${newNode.longitude.toFixed(6)}` : "AWAITING GPS PIN..."}
+                                        </p>
+                                    </div>
+                                    <div className={`w-3 h-3 rounded-full ${newNode.latitude ? 'bg-green-400 animate-pulse shadow-[0_0_15px_#4ade80]' : 'bg-red-500 shadow-[0_0_15px_#ef4444]'}`} />
+                                </div>
 
-                                    {!newARPoint.lat && (
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none z-[1000]">
-                                            <span className="text-[10px] font-black text-white uppercase tracking-widest bg-black/60 px-4 py-2 rounded-full border border-white/20 backdrop-blur-md">
-                                                Click to pin AR location
-                                            </span>
+                                {/* Error */}
+                                {nodeError && (
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                                        <p className="text-red-400 text-xs font-bold">{nodeError}</p>
+                                    </div>
+                                )}
+
+                                {/* Deploy Button */}
+                                <button
+                                    onClick={deployNode}
+                                    disabled={nodeDeploying}
+                                    className="w-full py-5 bg-white text-black font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-wait"
+                                >
+                                    {nodeDeploying ? '⏳ Deploying...' : '📡 Deploy Node to Map'}
+                                </button>
+                            </div>
+
+                            {/* Deployed Nodes List */}
+                            <div>
+                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-6 flex justify-between">
+                                    <span>Active Spatial Nodes</span>
+                                    <span className="text-primary font-mono">{nodes.length} DEPLOYED</span>
+                                </h3>
+                                <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {nodes.map((node, i) => (
+                                        <div key={i} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:bg-primary/20 transition-all">
+                                                    {anchorIcon(node?.anchorType)}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-black text-white uppercase">{node?.nodeId || "Node"}</p>
+                                                    <p className="text-[10px] text-gray-500 uppercase font-mono tracking-widest">
+                                                        {node?.anchorType} · {node?.latitude?.toFixed(4)}, {node?.longitude?.toFixed(4)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => deleteNode(node.nodeId)}
+                                                className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {nodes.length === 0 && (
+                                        <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[2rem]">
+                                            <p className="text-gray-700 text-[10px] font-black uppercase tracking-[0.4em]">No Nodes Deployed</p>
+                                            <p className="text-gray-800 text-[8px] uppercase mt-1">Click map to begin</p>
                                         </div>
                                     )}
                                 </div>
-
-                                <button
-                                    onClick={addARPoint}
-                                    className="w-full py-4 bg-accent text-black font-black rounded-xl uppercase tracking-tighter hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(217,70,239,0.3)]"
-                                >
-                                    Deploy AR Anchor +
-                                </button>
                             </div>
-
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-end mb-4">
-                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Configured Nodes</h3>
-                                <span className="text-[10px] font-mono text-accent">Active: {event.arPoints?.length || 0}</span>
-                            </div>
+                        {/* RIGHT: Map */}
+                        <div className="h-[700px] sticky top-12 rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.5)] relative">
+                            <MapContainer center={mapCenter} zoom={17} style={{ height: '100%', width: '100%' }}>
+                                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className="map-tiles-dark" />
+                                <LocationPicker onLocationSelect={(latlng) => setNewNode({ ...newNode, latitude: latlng.lat, longitude: latlng.lng })} />
+                                <RecenterMap center={mapCenter} />
 
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                {event.arPoints && event.arPoints.map((point, index) => (
-                                    <div key={index} className="flex justify-between items-center p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-white/20 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent text-sm">
-                                                {point.pointType === 'Entrance' ? '🚪' :
-                                                    point.pointType === 'Stage' ? '🎭' :
-                                                        point.pointType === 'Restroom' ? '🚻' :
-                                                            point.pointType === 'Exit' ? '🏃' :
-                                                                point.pointType === 'HelpDesk' ? 'ℹ️' : '📍'}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-sm text-white">{point.label}</p>
-                                                <p className="text-[10px] text-gray-400 font-medium mb-1">{point.instruction || "No specific instruction"}</p>
-                                                <p className="text-[8px] text-accent/60 uppercase font-mono tracking-widest">
-                                                    COORD: {point.lat?.toFixed(5)}, {point.lng?.toFixed(5)} // {point.pointType}
-                                                </p>
-                                            </div>
-
-                                        </div>
-                                        <button
-                                            onClick={() => deleteARPoint(index)}
-                                            className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                ))}
-                                {(!event.arPoints || event.arPoints.length === 0) && (
-                                    <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-3xl">
-                                        <p className="text-gray-600 text-xs uppercase font-black tracking-widest">No nodes defined</p>
-                                    </div>
+                                {/* Venue marker (blue) */}
+                                {event.location?.lat && (
+                                    <Marker position={[event.location.lat, event.location.lng]} icon={L.divIcon({
+                                        className: '',
+                                        html: `<div style='background:#3b82f6;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 20px rgba(59,130,246,0.8);'></div>`,
+                                        iconSize: [18, 18], iconAnchor: [9, 9]
+                                    })}>
+                                        <Popup><strong>{event.venue || 'Venue'}</strong><br />Main venue location</Popup>
+                                    </Marker>
                                 )}
+
+                                {/* Deployed nodes (green) */}
+                                {nodes.map((node, i) => (
+                                    node.latitude && (
+                                        <Marker key={i} position={[node.latitude, node.longitude]} icon={L.divIcon({
+                                            className: '',
+                                            html: `<div style='background:#10b981;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 0 15px rgba(16,185,129,0.7);'></div>`,
+                                            iconSize: [14, 14], iconAnchor: [7, 7]
+                                        })}>
+                                            <Popup>
+                                                <strong>{anchorIcon(node.anchorType)} {node.nodeId}</strong><br />
+                                                {node.anchorType}<br />
+                                                {node.instructions && <em>{node.instructions}</em>}
+                                            </Popup>
+                                        </Marker>
+                                    )
+                                ))}
+
+                                {/* Pending (preview) node (red) */}
+                                {newNode.latitude && (
+                                    <Marker position={[newNode.latitude, newNode.longitude]} icon={L.divIcon({
+                                        className: '',
+                                        html: `<div style='background:#ef4444;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 20px rgba(239,68,68,0.7);animation:pulse 1s infinite;'></div>`,
+                                        iconSize: [16, 16], iconAnchor: [8, 8]
+                                    })}>
+                                        <Popup>📍 Pending node — complete form and deploy</Popup>
+                                    </Marker>
+                                )}
+                            </MapContainer>
+
+                            {/* Map legend */}
+                            <div className="absolute bottom-4 left-4 right-4 z-[1000] flex gap-3">
+                                <div className="glass-card px-4 py-2 rounded-full border-white/10 backdrop-blur-2xl flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                                    <p className="text-[9px] font-black text-white uppercase tracking-widest">Venue</p>
+                                </div>
+                                <div className="glass-card px-4 py-2 rounded-full border-white/10 backdrop-blur-2xl flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                                    <p className="text-[9px] font-black text-white uppercase tracking-widest">Deployed</p>
+                                </div>
+                                <div className="glass-card px-4 py-2 rounded-full border-white/10 backdrop-blur-2xl flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                                    <p className="text-[9px] font-black text-white uppercase tracking-widest">Pending</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                {/* OPERATIONS CONTROL PANEL */}
-                <div className="mt-16 flex flex-wrap justify-center gap-4 border-t border-white/5 pt-12">
-                    <button
-                        onClick={() => navigate("/dashboard")}
-                        className="px-8 py-4 border border-white/10 rounded-2xl hover:bg-white/5 text-sm font-bold tracking-widest uppercase transition-all"
-                    >
-                        Operations Center
-                    </button>
-
-                    <button
-                        onClick={() => navigate(`/notifications/${id}`)}
-                        className="px-8 py-4 border border-white/10 rounded-2xl hover:bg-white/5 text-sm font-bold tracking-widest uppercase transition-all"
-                    >
-                        Communications 📡
-                    </button>
-
-                    <button
-                        onClick={() => navigate(`/participants/${id}`)}
-                        className="px-8 py-4 border border-white/10 rounded-2xl hover:bg-white/5 text-sm font-bold tracking-widest uppercase transition-all"
-                    >
-                        Guest List 👥
-                    </button>
-
-                    <button
-                        onClick={() => navigate(`/ar-navigation/${id}`)}
-                        className={`px-10 py-5 font-black rounded-2xl transition-all flex items-center gap-3 uppercase tracking-tighter ${event.arPoints?.length > 0
-                            ? 'bg-primary text-black shadow-[0_0_40px_rgba(59,130,246,0.4)] hover:scale-105'
-                            : 'bg-white/5 text-gray-500 border border-white/10 opacity-50 cursor-not-allowed'
-                            }`}
-                        title={event.arPoints?.length > 0 ? "Launch Navigation" : "Please configure AR points first"}
-                        disabled={!event.arPoints?.length}
-                    >
-                        <span>🧭</span> {event.arPoints?.length > 0 ? "Launch AR HUD" : "AR HUD Not Ready"}
-                    </button>
-
-
-                    <button
-                        onClick={() => window.print()}
-                        className="px-8 py-4 bg-white text-black font-black rounded-2xl text-sm tracking-widest uppercase transition-all active:scale-95"
-                    >
-                        Export Manifest 📥
-                    </button>
+                {/* ── FOOTER NAV ────────────────────────────────────── */}
+                <div className="flex flex-wrap justify-between items-center gap-8 mb-20 p-10 bg-white/5 border border-white/10 rounded-[3rem]">
+                    <div className="flex flex-wrap gap-4">
+                        <button onClick={() => navigate("/dashboard")} className="px-8 py-4 border border-white/5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Operations</button>
+                        <button onClick={() => navigate(`/participants/${id}`)} className="px-8 py-4 border border-white/5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Guest Roster</button>
+                        <button onClick={() => navigate(`/services/${id}`)} className="px-8 py-4 border border-white/5 bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Services</button>
+                        <button onClick={() => navigate(`/ar/${id}`)} className="px-8 py-4 border border-green-500/20 bg-green-500/10 text-green-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-500/20 transition-all">Guest AR View</button>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Protocol V1.0.0</p>
+                        <div className="w-2 h-2 rounded-full bg-accent animate-ping" />
+                    </div>
                 </div>
             </div>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @media print {
-                    .event-plan-page { background: white !important; color: black !important; padding: 0 !important; }
-                    .glass-card { background: white !important; border: 1px solid #eee !important; box-shadow: none !important; }
-                    button { display: none !important; }
-                    .text-white { color: black !important; }
-                    .text-gray-400, .text-gray-500 { color: #666 !important; }
-                    .bg-primary, .bg-accent { color: black !important; }
-                    .border-white\\/10 { border-color: #eee !important; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.2); border-radius: 10px; }
+                .map-tiles-dark { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+                .leaflet-popup-content-wrapper { background: #111; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
+                .leaflet-popup-tip { background: #111; }
+                @keyframes pulse {
+                    0%,100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.3); opacity: 0.7; }
                 }
-            `}} />
+            ` }} />
         </div>
     );
 }
