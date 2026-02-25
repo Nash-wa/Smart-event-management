@@ -107,6 +107,7 @@ const generateEventPlan = (eventData) => {
         return {
             ...t,
             deadline: date.toLocaleDateString(),
+            deadlineISO: date.toISOString(),
             status
         };
     });
@@ -122,10 +123,10 @@ const generateEventPlan = (eventData) => {
     featureTasks.forEach(ft => {
         const date = new Date(start);
         date.setDate(date.getDate() - ft.daysBefore);
-        timeline.push({ ...ft, deadline: date.toLocaleDateString() });
+        timeline.push({ ...ft, deadline: date.toLocaleDateString(), deadlineISO: date.toISOString() });
     });
 
-    timeline.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    timeline.sort((a, b) => new Date(a.deadlineISO) - new Date(b.deadlineISO));
 
     // 2. Budget Allocation
     const allocations = {

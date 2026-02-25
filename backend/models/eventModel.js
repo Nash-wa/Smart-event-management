@@ -13,6 +13,15 @@ const eventSchema = mongoose.Schema({
     district: { type: String, required: true },
     venue: { type: String },
     address: { type: String },
+    isCollegeEvent: { type: Boolean, default: false },
+    college: {
+        name: { type: String },
+        address: { type: String },
+        location: {
+            lat: { type: Number },
+            lng: { type: Number }
+        }
+    },
     capacity: { type: Number },
     budget: { type: Number },
     location: {
