@@ -28,6 +28,66 @@ const createEvent = asyncHandler(async (req, res) => {
         plan: generatedPlan
     });
 
+    // Create default reminders for the event owner: 7d, 1d, 1h before startDate (if in future)
+    try {
+        const Reminder = require('../models/reminderModel');
+        const schedules = [
+            { label: '7d', offsetMs: 7 * 24 * 60 * 60 * 1000 },
+            { label: '1d', offsetMs: 24 * 60 * 60 * 1000 },
+            { label: '1h', offsetMs: 60 * 60 * 1000 }
+        ];
+        const start = new Date(startDate);
+        const remindersToCreate = [];
+        for (const s of schedules) {
+            const notifyAt = new Date(start.getTime() - s.offsetMs);
+            if (notifyAt > new Date()) {
+                remindersToCreate.push({ event: event._id, user: req.user._id, method: 'email', notifyAt });
+            }
+        }
+        if (remindersToCreate.length > 0) {
+            await Reminder.insertMany(remindersToCreate);
+        }
+    } catch (err) {
+        console.error('Failed to create reminders for event', err);
+    }
+
+    // Create milestone reminders based on generated plan timeline
+    try {
+        const Reminder = require('../models/reminderModel');
+        const timeline = generatedPlan.timeline || [];
+        const remindersToCreate = [];
+
+        for (const item of timeline) {
+            if (item.status && item.status.toLowerCase() === 'completed') continue;
+            // prefer ISO deadline if present
+            const dl = item.deadlineISO ? new Date(item.deadlineISO) : new Date(item.deadline);
+            if (isNaN(dl.getTime())) continue;
+
+            // schedules: 7 days before, 1 day before, on-deadline (to warn if still pending)
+            const offsets = [7 * 24 * 60 * 60 * 1000, 24 * 60 * 60 * 1000, 0];
+            for (const off of offsets) {
+                const notifyAt = new Date(dl.getTime() - off);
+                // Only schedule reminders in the future
+                if (notifyAt > new Date()) {
+                    remindersToCreate.push({
+                        event: event._id,
+                        user: req.user._id,
+                        method: 'email',
+                        type: 'milestone',
+                        taskName: item.task,
+                        notifyAt
+                    });
+                }
+            }
+        }
+
+        if (remindersToCreate.length > 0) {
+            await Reminder.insertMany(remindersToCreate);
+        }
+    } catch (err) {
+        console.error('Failed to create milestone reminders', err);
+    }
+
     res.status(201).json(event);
 });
 
@@ -35,7 +95,14 @@ const createEvent = asyncHandler(async (req, res) => {
 // @route   GET /api/events
 // @access  Private
 const getEvents = asyncHandler(async (req, res) => {
-    const events = await Event.find({ user: req.user._id });
+    // Admins should see all events; normal users only see their own
+    let events;
+    if (req.user && req.user.role === 'admin') {
+        events = await Event.find({});
+    } else {
+        events = await Event.find({ user: req.user._id });
+    }
+
     res.json(events);
 });
 
@@ -59,6 +126,7 @@ const updateEvent = asyncHandler(async (req, res) => {
     const event = await Event.findById(req.params.id);
 
     if (event) {
+        const previousPlan = event.plan ? JSON.parse(JSON.stringify(event.plan)) : null;
         if (event.user.toString() !== req.user._id.toString()) {
             res.status(401);
             throw new Error('User not authorized');
@@ -89,6 +157,36 @@ const updateEvent = asyncHandler(async (req, res) => {
         }
 
         const updatedEvent = await event.save();
+
+        // If plan timeline updated, and some tasks moved to Completed, mark related reminders as sent
+        try {
+            const Reminder = require('../models/reminderModel');
+            const newPlan = updatedEvent.plan || {};
+            const oldTimeline = previousPlan?.timeline || [];
+            const newTimeline = newPlan.timeline || [];
+
+            // Build map of old statuses by task name
+            const oldStatusMap = {};
+            for (const t of oldTimeline) {
+                if (t && t.task) oldStatusMap[t.task] = (t.status || '').toLowerCase();
+            }
+
+            const tasksCompleted = [];
+            for (const t of newTimeline) {
+                const name = t.task;
+                const newStatus = (t.status || '').toLowerCase();
+                const oldStatus = oldStatusMap[name] || 'pending';
+                if (oldStatus !== 'completed' && newStatus === 'completed') tasksCompleted.push(name);
+            }
+
+            if (tasksCompleted.length > 0) {
+                // mark matching milestone reminders for this event and user as sent
+                await Reminder.updateMany({ event: event._id, user: req.user._id, type: 'milestone', taskName: { $in: tasksCompleted }, sent: false }, { $set: { sent: true, sentAt: new Date() } });
+            }
+        } catch (err) {
+            console.error('Failed to cleanup reminders after task update', err);
+        }
+
         res.json(updatedEvent);
     } else {
         res.status(404);

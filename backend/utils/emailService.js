@@ -72,4 +72,21 @@ const sendPasswordResetEmail = async (toEmail, otpCode, userName) => {
     await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendOTPEmail, sendPasswordResetEmail };
+/**
+ * Send a broadcast message to one or multiple recipients.
+ * toEmails can be a string or array of strings.
+ */
+const sendBroadcastEmail = async (toEmails, subject, htmlBody) => {
+    const toField = Array.isArray(toEmails) ? toEmails.join(',') : toEmails;
+    const mailOptions = {
+        from: `"Smart Event" <${process.env.EMAIL_USER}>`,
+        to: toField,
+        subject,
+        html: htmlBody
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendOTPEmail, sendPasswordResetEmail, sendBroadcastEmail };
+

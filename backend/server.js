@@ -26,6 +26,16 @@ app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/participants', require('./routes/participantRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/colleges', require('./routes/collegeRoutes'));
+app.use('/api/admin/colleges', require('./routes/adminCollegeRoutes'));
+
+// Start reminder scheduler (sends due reminders via email/SMS)
+try {
+    const { startScheduler } = require('./utils/reminderScheduler');
+    startScheduler();
+} catch (err) {
+    console.error('Could not start reminder scheduler', err);
+}
 
 // Error handling
 app.use((req, res, next) => {
