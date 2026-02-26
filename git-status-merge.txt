@@ -1,0 +1,33 @@
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 45 and 2 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+All conflicts fixed but you are still merging.
+  (use "git commit" to conclude merge)
+
+Changes to be committed:
+	new file:   backend/collegeData.js
+	modified:   backend/controllers/adminController.js
+	new file:   backend/controllers/collegeAdminController.js
+	new file:   backend/controllers/collegeController.js
+	modified:   backend/controllers/eventController.js
+	new file:   backend/models/categoryModel.js
+	new file:   backend/models/collegeModel.js
+	modified:   backend/models/eventModel.js
+	new file:   backend/models/reminderModel.js
+	new file:   backend/routes/adminCollegeRoutes.js
+	modified:   backend/routes/adminRoutes.js
+	new file:   backend/routes/collegeRoutes.js
+	modified:   backend/server.js
+	modified:   backend/utils/emailService.js
+	modified:   backend/utils/planGenerator.js
+	new file:   backend/utils/reminderScheduler.js
+	new file:   backend/utils/smsService.js
+	modified:   frontend/src/pages/CreateEvent.jsx
+	new file:   status-after-pull.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	git-status-merge.txt
+

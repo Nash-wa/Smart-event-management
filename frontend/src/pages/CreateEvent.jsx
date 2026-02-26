@@ -73,6 +73,8 @@ function CreateEvent() {
     district: "Thiruvananthapuram",
     venue: "",
     address: "",
+    isCollegeEvent: false,
+    college: { name: "", address: "", location: { lat: null, lng: null } },
     capacity: "",
     budget: "",
     location: { lat: 10.8505, lng: 76.2711 },
@@ -119,6 +121,11 @@ function CreateEvent() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Special handling for event type toggle
+    if (name === 'eventType') {
+      setFormData(prev => ({ ...prev, isCollegeEvent: value === 'College' }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
 
     // Center map on district change
@@ -180,6 +187,9 @@ function CreateEvent() {
     });
   };
 
+  const [collegeList, setCollegeList] = useState([]);
+  const [collegeQuery, setCollegeQuery] = useState("");
+  const [collegeSuggestions, setCollegeSuggestions] = useState([]);
   // Get User Location on Mount
   useEffect(() => {
     if (navigator.geolocation) {
@@ -278,6 +288,51 @@ function CreateEvent() {
     }
   }, [formData.district, step, userLocation]);
 
+  // Fetch colleges list for the district when event type is College
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/colleges?district=${encodeURIComponent(formData.district)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setCollegeList(data || []);
+      } catch (err) {
+        console.error('Failed to fetch colleges', err);
+      }
+    };
+
+    if (formData.isCollegeEvent && formData.district && step === 2) {
+      fetchColleges();
+    } else {
+      setCollegeList([]);
+    }
+  }, [formData.isCollegeEvent, formData.district, step]);
+
+  // Debounced college search when typing
+  useEffect(() => {
+    if (!collegeQuery || collegeQuery.trim().length === 0) {
+      setCollegeSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/colleges?q=${encodeURIComponent(collegeQuery)}&district=${encodeURIComponent(formData.district)}`, { signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        setCollegeSuggestions(data || []);
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error('College search failed', err);
+      }
+    }, 300);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [collegeQuery, formData.district]);
+
   return (
     <div className="create-event-page">
       <div className="wizard-header text-center mb-12">
@@ -343,6 +398,14 @@ function CreateEvent() {
                   <option>Offline</option>
                   <option>Online</option>
                   <option>Hybrid</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Event Type</label>
+                <select name="eventType" value={formData.isCollegeEvent ? 'College' : 'General'} onChange={handleInputChange}>
+                  <option value="General">General</option>
+                  <option value="College">College</option>
                 </select>
               </div>
             </div>
@@ -415,46 +478,123 @@ function CreateEvent() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Venue (Sorted by Rating)</label>
-              <select
-                name="venue"
-                value={formData.venue}
-                onChange={(e) => {
-                  const selectedVenue = venues.find(v => v.name === e.target.value);
-                  setFormData(prev => ({
-                    ...prev,
-                    venue: e.target.value,
-                    address: selectedVenue ? selectedVenue.address : prev.address
-                  }));
-                  if (selectedVenue && selectedVenue.location && selectedVenue.location.lat) {
-                    const newCenter = [selectedVenue.location.lat, selectedVenue.location.lng];
-                    setMapCenter(newCenter);
-                    setZoom(15);
-                    if (mapRef.current) {
-                      mapRef.current.setView(newCenter, 15);
+            {formData.isCollegeEvent ? (
+              <div className="form-group">
+                <label>Select College</label>
+                <select
+                  name="venue"
+                  value={formData.venue}
+                  onChange={(e) => {
+                    const selectedCollege = collegeList.find(c => c.name === e.target.value);
+                    if (!selectedCollege) return;
+                    setFormData(prev => ({
+                      ...prev,
+                      isCollegeEvent: true,
+                      venue: selectedCollege.name,
+                      address: selectedCollege.address || prev.address,
+                      location: selectedCollege.location || prev.location,
+                      college: { name: selectedCollege.name, address: selectedCollege.address || '', location: selectedCollege.location || {} }
+                    }));
+                    if (selectedCollege.location && selectedCollege.location.lat) {
+                      const newCenter = [selectedCollege.location.lat, selectedCollege.location.lng];
+                      setMapCenter(newCenter);
+                      setZoom(15);
+                      if (mapRef.current) mapRef.current.setView(newCenter, 15);
                     }
-                    setFormData(prev => ({ ...prev, location: selectedVenue.location }));
-                    setSelectedVendors(prev => ({ ...prev, 'Venue': selectedVenue }));
-                  } else if (DISTRICT_COORDINATES[formData.district]) {
-                    const distCenter = DISTRICT_COORDINATES[formData.district];
-                    setMapCenter(distCenter);
-                    setZoom(12);
-                    if (mapRef.current) {
-                      mapRef.current.setView(distCenter, 12);
+                  }}
+                >
+                  {collegeList.map((c, idx) => (
+                    <option key={idx} value={c.name}>{c.name}</option>
+                  ))}
+                  {collegeList.length === 0 && <option value="">No colleges found in this district</option>}
+                </select>
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>Venue (Sorted by Rating)</label>
+                <select
+                  name="venue"
+                  value={formData.venue}
+                  onChange={(e) => {
+                    const selectedVenue = venues.find(v => v.name === e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      venue: e.target.value,
+                      address: selectedVenue ? selectedVenue.address : prev.address
+                    }));
+                    if (selectedVenue && selectedVenue.location && selectedVenue.location.lat) {
+                      const newCenter = [selectedVenue.location.lat, selectedVenue.location.lng];
+                      setMapCenter(newCenter);
+                      setZoom(15);
+                      if (mapRef.current) {
+                        mapRef.current.setView(newCenter, 15);
+                      }
+                      setFormData(prev => ({ ...prev, location: selectedVenue.location }));
+
+                      // Automatically add venue to selectedVendors for planning integration
+                      setSelectedVendors(prev => ({ ...prev, 'Venue': selectedVenue }));
+                    } else if (DISTRICT_COORDINATES[formData.district]) {
+                      const distCenter = DISTRICT_COORDINATES[formData.district];
+                      setMapCenter(distCenter);
+                      setZoom(12);
+                      if (mapRef.current) {
+                        mapRef.current.setView(distCenter, 12);
+                      }
                     }
-                  }
-                }}
-              >
-                {venues.map(v => (
-                  <option key={v.id} value={v.name}>
-                    {v.name} (★ {v.rating})
-                  </option>
-                ))}
-                {venues.length === 0 && <option value="">No venues found in this district</option>}
-                <option value="Other">Other (Custom Location)</option>
-              </select>
-            </div>
+                  }}
+                >
+                  {venues.map(v => (
+                    <option key={v.id || v._id} value={v.name}>
+                      {v.name} (★ {v.rating})
+                    </option>
+                  ))}
+                  {venues.length === 0 && <option value="">No venues found in this district</option>}
+                  <option value="Other">Other (Custom Location)</option>
+                </select>
+              </div>
+            )}
+
+            {formData.isCollegeEvent && (
+              <div className="form-group">
+                <label>College / Institution (type to search)</label>
+                <input
+                  type="text"
+                  placeholder="Search college or institution"
+                  value={collegeQuery}
+                  onChange={(e) => setCollegeQuery(e.target.value)}
+                  onFocus={() => { /* keep suggestions visible */ }}
+                />
+
+                {collegeSuggestions.length > 0 && (
+                  <ul className="suggestions" style={{ maxHeight: 200, overflowY: 'auto', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginTop: 6, borderRadius: 6, padding: 6 }}>
+                    {collegeSuggestions.map((c, idx) => (
+                      <li key={idx} style={{ padding: '8px 10px', cursor: 'pointer' }} onMouseDown={(e) => {
+                        e.preventDefault();
+                        setFormData(prev => ({
+                          ...prev,
+                          isCollegeEvent: true,
+                          venue: c.name,
+                          address: c.address || prev.address,
+                          location: c.location || prev.location,
+                          college: { name: c.name, address: c.address || '', location: c.location || {} }
+                        }));
+                        if (c.location && c.location.lat) {
+                          const newCenter = [c.location.lat, c.location.lng];
+                          setMapCenter(newCenter);
+                          setZoom(15);
+                          if (mapRef.current) mapRef.current.setView(newCenter, 15);
+                        }
+                        setCollegeQuery(c.name);
+                        setCollegeSuggestions([]);
+                      }}>
+                        <strong>{c.name}</strong>
+                        <div style={{ fontSize: 12, color: '#aaa' }}>{c.address}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             <div className="form-group">
               <label>Address</label>

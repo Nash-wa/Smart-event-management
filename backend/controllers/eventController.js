@@ -93,6 +93,66 @@ const createEvent = asyncHandler(async (req, res) => {
         );
     } catch (e) { }
 
+    // Create default reminders for the event owner: 7d, 1d, 1h before startDate (if in future)
+    try {
+        const Reminder = require('../models/reminderModel');
+        const schedules = [
+            { label: '7d', offsetMs: 7 * 24 * 60 * 60 * 1000 },
+            { label: '1d', offsetMs: 24 * 60 * 60 * 1000 },
+            { label: '1h', offsetMs: 60 * 60 * 1000 }
+        ];
+        const start = new Date(startDate);
+        const remindersToCreate = [];
+        for (const s of schedules) {
+            const notifyAt = new Date(start.getTime() - s.offsetMs);
+            if (notifyAt > new Date()) {
+                remindersToCreate.push({ event: event._id, user: req.user._id, method: 'email', notifyAt });
+            }
+        }
+        if (remindersToCreate.length > 0) {
+            await Reminder.insertMany(remindersToCreate);
+        }
+    } catch (err) {
+        console.error('Failed to create reminders for event', err);
+    }
+
+    // Create milestone reminders based on generated plan timeline
+    try {
+        const Reminder = require('../models/reminderModel');
+        const timeline = plan.timeline || [];
+        const remindersToCreate = [];
+
+        for (const item of timeline) {
+            if (item.status && item.status.toLowerCase() === 'completed') continue;
+            // prefer ISO deadline if present
+            const dl = item.deadlineISO ? new Date(item.deadlineISO) : new Date(item.deadline);
+            if (isNaN(dl.getTime())) continue;
+
+            // schedules: 7 days before, 1 day before, on-deadline (to warn if still pending)
+            const offsets = [7 * 24 * 60 * 60 * 1000, 24 * 60 * 60 * 1000, 0];
+            for (const off of offsets) {
+                const notifyAt = new Date(dl.getTime() - off);
+                // Only schedule reminders in the future
+                if (notifyAt > new Date()) {
+                    remindersToCreate.push({
+                        event: event._id,
+                        user: req.user._id,
+                        method: 'email',
+                        type: 'milestone',
+                        taskName: item.task,
+                        notifyAt
+                    });
+                }
+            }
+        }
+
+        if (remindersToCreate.length > 0) {
+            await Reminder.insertMany(remindersToCreate);
+        }
+    } catch (err) {
+        console.error('Failed to create milestone reminders', err);
+    }
+
     res.status(201).json(event);
 });
 
@@ -102,7 +162,10 @@ const createEvent = asyncHandler(async (req, res) => {
 const getEvents = asyncHandler(async (req, res) => {
     const { keyword, category, status, minBudget, maxBudget } = req.query;
 
-    const query = { user: req.user._id };
+    const query = {};
+    if (req.user && req.user.role !== 'admin') {
+        query.user = req.user._id;
+    }
 
     if (keyword) {
         query.$or = [
@@ -123,26 +186,6 @@ const getEvents = asyncHandler(async (req, res) => {
     const events = await Event.find(query)
         .populate('user', 'name email')
         .sort('-createdAt');
-
-    res.json(events);
-});
-
-// @desc    Get all public events for browsing
-// @route   GET /api/events/public
-// @access  Public
-const getPublicEvents = asyncHandler(async (req, res) => {
-    const { category, keyword } = req.query;
-    const query = { isPublic: true, status: { $ne: 'cancelled' } };
-
-    if (category) query.category = category;
-    if (keyword) {
-        query.$or = [
-            { name: { $regex: keyword, $options: 'i' } },
-            { description: { $regex: keyword, $options: 'i' } }
-        ];
-    }
-
-    const events = await Event.find(query).populate('user', 'name email profilePic');
     res.json(events);
 });
 
@@ -179,47 +222,82 @@ const getEventById = asyncHandler(async (req, res) => {
 const updateEvent = asyncHandler(async (req, res) => {
     const event = await Event.findById(req.params.id);
 
-    if (!event) {
+    if (event) {
+        const previousPlan = event.plan ? JSON.parse(JSON.stringify(event.plan)) : null;
+        if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            res.status(401);
+            throw new Error('User not authorized');
+        }
+
+        event.name = req.body.name || event.name;
+        event.description = req.body.description !== undefined ? req.body.description : event.description;
+        event.category = req.body.category || event.category;
+        event.mode = req.body.mode || event.mode;
+        event.startDate = req.body.startDate || event.startDate;
+        event.endDate = req.body.endDate || event.endDate;
+        event.startTime = req.body.startTime || event.startTime;
+        event.endTime = req.body.endTime || event.endTime;
+        event.district = req.body.district || event.district;
+        event.venue = req.body.venue || event.venue;
+        event.address = req.body.address || event.address;
+        event.capacity = req.body.capacity || event.capacity;
+        if (req.body.budget) {
+            event.budget = req.body.budget;
+            event.platformCommission = Number(req.body.budget) * 0.1;
+        }
+        event.location = req.body.location || event.location;
+        event.selectedVendors = req.body.selectedVendors || event.selectedVendors;
+        event.features = req.body.features || event.features;
+        event.plan = req.body.plan || event.plan;
+        event.tags = req.body.tags || event.tags;
+        event.bannerImage = req.body.bannerImage || event.bannerImage;
+        event.isPublic = req.body.isPublic !== undefined ? req.body.isPublic : event.isPublic;
+        event.status = req.body.status || event.status;
+        event.readinessScore = req.body.readinessScore !== undefined ? req.body.readinessScore : event.readinessScore;
+
+        // Handle nodes update
+        if (req.body.nodes !== undefined) {
+            event.nodes = req.body.nodes;
+        } else if (req.body.arPoints !== undefined) {
+            event.nodes = req.body.arPoints;
+        }
+
+        const updatedEvent = await event.save();
+
+        // If plan timeline updated, and some tasks moved to Completed, mark related reminders as sent
+        try {
+            const Reminder = require('../models/reminderModel');
+            const newPlan = updatedEvent.plan || {};
+            const oldTimeline = previousPlan?.timeline || [];
+            const newTimeline = newPlan.timeline || [];
+
+            // Build map of old statuses by task name
+            const oldStatusMap = {};
+            for (const t of oldTimeline) {
+                if (t && t.task) oldStatusMap[t.task] = (t.status || '').toLowerCase();
+            }
+
+            const tasksCompleted = [];
+            for (const t of newTimeline) {
+                const name = t.task;
+                const newStatus = (t.status || '').toLowerCase();
+                const oldStatus = oldStatusMap[name] || 'pending';
+                if (oldStatus !== 'completed' && newStatus === 'completed') tasksCompleted.push(name);
+            }
+
+            if (tasksCompleted.length > 0) {
+                // mark matching milestone reminders for this event and user as sent
+                await Reminder.updateMany({ event: event._id, user: req.user._id, type: 'milestone', taskName: { $in: tasksCompleted }, sent: false }, { $set: { sent: true, sentAt: new Date() } });
+            }
+        } catch (err) {
+            console.error('Failed to cleanup reminders after task update', err);
+        }
+
+        return res.json(updatedEvent);
+    } else {
         res.status(404);
         throw new Error('Event not found');
     }
-
-    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-        res.status(401);
-        throw new Error('User not authorized');
-    }
-
-    // Update fields
-    if (req.body.name) event.name = req.body.name;
-    if (req.body.description !== undefined) event.description = req.body.description;
-    if (req.body.category) event.category = req.body.category;
-    if (req.body.mode) event.mode = req.body.mode;
-    if (req.body.startDate) event.startDate = req.body.startDate;
-    if (req.body.endDate) event.endDate = req.body.endDate;
-    if (req.body.startTime) event.startTime = req.body.startTime;
-    if (req.body.endTime) event.endTime = req.body.endTime;
-    if (req.body.district) event.district = req.body.district;
-    if (req.body.venue) event.venue = req.body.venue;
-    if (req.body.address) event.address = req.body.address;
-    if (req.body.capacity) event.capacity = req.body.capacity;
-    if (req.body.budget) {
-        event.budget = req.body.budget;
-        event.platformCommission = Number(req.body.budget) * 0.1;
-    }
-    if (req.body.location) event.location = req.body.location;
-    if (req.body.nodes !== undefined) event.nodes = req.body.nodes;
-    if (req.body.arPoints !== undefined) event.nodes = req.body.arPoints; // handle both naming conventions
-    if (req.body.selectedVendors) event.selectedVendors = req.body.selectedVendors;
-    if (req.body.features) event.features = req.body.features;
-    if (req.body.tags) event.tags = req.body.tags;
-    if (req.body.bannerImage) event.bannerImage = req.body.bannerImage;
-    if (req.body.isPublic !== undefined) event.isPublic = req.body.isPublic;
-    if (req.body.status) event.status = req.body.status;
-    if (req.body.readinessScore !== undefined) event.readinessScore = req.body.readinessScore;
-    if (req.body.plan) event.plan = req.body.plan;
-
-    const updatedEvent = await event.save();
-    res.json(updatedEvent);
 });
 
 // @desc    Get public event details (for RSVP / Guest AR)
