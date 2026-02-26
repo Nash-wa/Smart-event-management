@@ -1,0 +1,122 @@
+module.exports = {
+    "Ernakulam": [
+        { name: "Cochin Cultural Centre", address: "Kochi, Ernakulam", location: { lat: 9.965, lng: 76.285 } },
+        { name: "Fine Arts Hall", address: "Jos Junction, Kochi", location: { lat: 9.945, lng: 76.285 } },
+        { name: "JT PAC", address: "Thrippunithura, Kochi", location: { lat: 9.950, lng: 76.345 } },
+        { name: "TDM Hall", address: "Kochi", location: { lat: 9.965, lng: 76.280 } },
+        { name: "Samudrika Convention Centre", address: "Willingdon Island", location: { lat: 9.955, lng: 76.260 } },
+        { name: "Renai Cochin", address: "Palarivattom, Kochi", location: { lat: 9.995, lng: 76.305 } },
+        { name: "Holiday Inn Cochin", address: "Vennala, Kochi", location: { lat: 9.985, lng: 76.320 } },
+        { name: "Abad Plaza", address: "MG Road, Kochi", location: { lat: 9.980, lng: 76.280 } },
+        { name: " IMA House Kochi", address: "Kaloor, Kochi", location: { lat: 9.990, lng: 76.290 } },
+        { name: "Gokulam Convention Centre", address: "Kaloor", location: { lat: 9.988, lng: 76.289 } }
+    ],
+    "Thiruvananthapuram": [
+        { name: "Sri Moolam Club", address: "Vazhuthacaud", location: { lat: 8.508, lng: 76.953 } },
+        { name: "Alakapuri Auditorium", address: "Kowdiar", location: { lat: 8.528, lng: 76.963 } },
+        { name: "PTA Hall", address: "Trivandrum", location: { lat: 8.510, lng: 76.950 } },
+        { name: "Ganesham Auditorium", address: "Thycaud", location: { lat: 8.495, lng: 76.960 } },
+        { name: "Nishagandhi Auditorium", address: "Kanakakkunnu", location: { lat: 8.513, lng: 76.955 } },
+        { name: "Jimmy George Indoor Stadium", address: "Vellayambalam", location: { lat: 8.515, lng: 76.958 } },
+        { name: "Hotel SP Grand Days", address: "Panavila", location: { lat: 8.498, lng: 76.952 } },
+        { name: "O By Tamara", address: "NH Bypass", location: { lat: 8.522, lng: 76.902 } },
+        { name: "Maurya Rajadhani", address: "Statue Junction", location: { lat: 8.502, lng: 76.951 } },
+        { name: "The South Park Hotel", address: "MG Road", location: { lat: 8.505, lng: 76.950 } }
+    ],
+    "Kozhikode": [
+        { name: "JDT Islam Convention Centre", address: "Vellimadukunnu", location: { lat: 11.290, lng: 75.805 } },
+        { name: "HiLite Business Park", address: "Thondayad Bypass", location: { lat: 11.260, lng: 75.820 } },
+        { name: "Aashirvad Lawns", address: "Karaparamba", location: { lat: 11.280, lng: 75.785 } },
+        { name: "Kandoth Convention Centre", address: "Kozhikode", location: { lat: 11.250, lng: 75.800 } },
+        { name: "Vyapar Bhavan Auditorium", address: "Bank Road", location: { lat: 11.258, lng: 75.782 } },
+        { name: "Sadhbhavana Auditorium", address: "Mavoor Road", location: { lat: 11.265, lng: 75.805 } },
+        { name: "Eternity Convention Centre", address: "Govindapuram", location: { lat: 11.245, lng: 75.810 } },
+        { name: "Alhind Trade Centre", address: "Bypass Road", location: { lat: 11.275, lng: 75.815 } },
+        { name: "Yash International", address: "Mavoor Road", location: { lat: 11.268, lng: 75.795 } },
+        { name: "Tripenta Hotel & Convention Centre", address: "Malaparamba", location: { lat: 11.285, lng: 75.805 } }
+    ],
+    "Thrissur": [
+        { name: "Regional Theatre", address: "Chembukkav", location: { lat: 10.535, lng: 76.220 } },
+        { name: "Kousthubham Auditorium", address: "Shornur Road", location: { lat: 10.540, lng: 76.225 } },
+        { name: "Paramekkavu Vidya Mandir Auditorium", address: "Bull Temple Road", location: { lat: 10.525, lng: 76.218 } },
+        { name: "Elite International", address: "Thrissur", location: { lat: 10.518, lng: 76.215 } },
+        { name: "Wellington Convention Centre", address: "Poothole", location: { lat: 10.522, lng: 76.210 } },
+        { name: "Kalyan Hotel & Convention", address: "Thrissur", location: { lat: 10.515, lng: 76.225 } },
+        { name: "Aquatic Palace", address: "Thrissur", location: { lat: 10.510, lng: 76.220 } },
+        { name: "Celine Convention Centre", address: "Ollur", location: { lat: 10.490, lng: 76.240 } },
+        { name: "Ashirvad Grand", address: "Puzhakkal", location: { lat: 10.545, lng: 76.195 } },
+        { name: "Sobha City Mall Atrium", address: "Puzhakkal", location: { lat: 10.550, lng: 76.190 } }
+    ],
+    "Kollam": [
+        { name: "C. Kesavan Memorial Town Hall", address: "Kollam", location: { lat: 8.885, lng: 76.585 } },
+        { name: "TKM Convention Centre", address: "Karuvelil", location: { lat: 8.915, lng: 76.615 } },
+        { name: "Nani Hotel", address: "Clock Tower", location: { lat: 8.880, lng: 76.590 } },
+        { name: "Sree Chithra Auditorium", address: "Kollam", location: { lat: 8.895, lng: 76.585 } },
+        { name: "Varkala Beach Events", address: "Varkala (Near)", location: { lat: 8.735, lng: 76.705 } },
+        { name: "Aquaserene Resort", address: "South Paravoor", location: { lat: 8.815, lng: 76.655 } },
+        { name: "Fragrant Nature", address: "Paravur", location: { lat: 8.825, lng: 76.665 } },
+        { name: "Nila Palace", address: "Cheerancavu", location: { lat: 8.945, lng: 76.625 } },
+        { name: "Beach Orchid", address: "Beach Road", location: { lat: 8.875, lng: 76.580 } },
+        { name: "Sopanam Auditorium", address: "Kollam", location: { lat: 8.890, lng: 76.595 } }
+    ],
+    "Palakkad": [
+        { name: "Jobys Mall Atrium", address: "Gandhi Bazar", location: { lat: 10.778, lng: 76.655 } },
+        { name: "Sree Krishna Auditorium", address: "Ottapalam", location: { lat: 10.770, lng: 76.380 } },
+        { name: "Rappadi Auditorium", address: "Kotta Maidan", location: { lat: 10.768, lng: 76.650 } },
+        { name: "Indraprastha Hotel", address: "English Church Road", location: { lat: 10.775, lng: 76.655 } },
+        { name: "KPM Residency", address: "Palakkad", location: { lat: 10.780, lng: 76.660 } },
+        { name: "Gems 9 Hotel", address: "Palakkad", location: { lat: 10.772, lng: 76.653 } },
+        { name: "Malampuzha Gardens Venue", address: "Malampuzha", location: { lat: 10.835, lng: 76.685 } },
+        { name: "Surya City Auditorium", address: "Palakkad", location: { lat: 10.795, lng: 76.675 } },
+        { name: "Dhoni Resorts Venue", address: "Dhoni", location: { lat: 10.845, lng: 76.645 } },
+        { name: "Ahalia Convention Centre", address: "Kozhippara", location: { lat: 10.765, lng: 76.815 } }
+    ],
+    "Alappuzha": [
+        { name: "SDV Centenary Auditorium", address: "Alappuzha", location: { lat: 9.495, lng: 76.335 } },
+        { name: "Rajiv Gandhi Indoor Stadium", address: "Alappuzha", location: { lat: 9.505, lng: 76.330 } },
+        { name: "Camelot Convention Center (Hall 2)", address: "Pathirappally", location: { lat: 9.530, lng: 76.325 } },
+        { name: "Uday Samudra Backwater Resort", address: "Alappuzha", location: { lat: 9.500, lng: 76.345 } },
+        { name: "Lemon Tree Vembanad Lake", address: "Muhamma", location: { lat: 9.595, lng: 76.375 } },
+        { name: "Raheem Residency", address: "Beach Road", location: { lat: 9.492, lng: 76.315 } },
+        { name: "Arcadia Regency", address: "Alappuzha", location: { lat: 9.498, lng: 76.332 } },
+        { name: "Coir Board Auditorium", address: "Kalavoor", location: { lat: 9.555, lng: 76.320 } },
+        { name: "Kuttanad Convention Centre", address: "Edathua", location: { lat: 9.375, lng: 76.475 } },
+        { name: "Carmel Hall", address: "Alappuzha", location: { lat: 9.505, lng: 76.335 } }
+    ],
+    "Kottayam": [
+        { name: "Mammen Mappillai Hall", address: "Kottayam", location: { lat: 9.590, lng: 76.518 } },
+        { name: "Bakers Resort", address: "Kumarakom", location: { lat: 9.615, lng: 76.435 } },
+        { name: "Fathima Matha Auditorium", address: "Thellakom", location: { lat: 9.635, lng: 76.535 } },
+        { name: "Pearl Spot Resort", address: "Kumarakom", location: { lat: 9.605, lng: 76.425 } },
+        { name: "Orchid Residency", address: "Kottayam", location: { lat: 9.585, lng: 76.525 } },
+        { name: "Mali International", address: "Kottayam", location: { lat: 9.580, lng: 76.520 } },
+        { name: "Ettumanoor Auditorium", address: "Ettumanoor", location: { lat: 9.675, lng: 76.565 } },
+        { name: "Changanassery Town Hall", address: "Changanassery", location: { lat: 9.445, lng: 76.545 } },
+        { name: "Nisha Auditorium", address: "Kottayam", location: { lat: 9.595, lng: 76.525 } },
+        { name: "Kottayam Club", address: "Kottayam", location: { lat: 9.585, lng: 76.515 } }
+    ],
+    "Malappuram": [
+        { name: "Rose Lounge Convention Centre", address: "Kottakkal", location: { lat: 10.995, lng: 75.990 } },
+        { name: "Rubi Arena Convention", address: "Tirur", location: { lat: 10.915, lng: 75.925 } },
+        { name: "Eadens Holiday Resort", address: "Nilambur", location: { lat: 11.275, lng: 76.225 } },
+        { name: "Grand Thaz", address: "Perinthalmanna", location: { lat: 10.970, lng: 76.225 } },
+        { name: "Hotel Afrad International", address: "Malappuram", location: { lat: 11.075, lng: 76.080 } },
+        { name: "Majlis Complex", address: "Manjeri", location: { lat: 11.115, lng: 76.125 } },
+        { name: "Jubilee Auditorium", address: "Edappal", location: { lat: 10.775, lng: 76.005 } },
+        { name: "Rydges Inn", address: "Kottakkal", location: { lat: 11.000, lng: 75.995 } },
+        { name: "Asaam Palace", address: "Tirurangadi", location: { lat: 11.045, lng: 75.935 } },
+        { name: "City Light Convention Centre", address: "Kondotty", location: { lat: 11.145, lng: 75.955 } }
+    ],
+    "Kannur": [
+        { name: "Aura Convention Centre", address: "Payyambalam", location: { lat: 11.875, lng: 75.355 } },
+        { name: "Shikha Convention Centre", address: "Thalassery", location: { lat: 11.750, lng: 75.495 } },
+        { name: "Sneha Inn", address: "Kannur", location: { lat: 11.870, lng: 75.365 } },
+        { name: "Broad Bean", address: "Kannur", location: { lat: 11.885, lng: 75.375 } },
+        { name: "Green Park Residency", address: "Kannur", location: { lat: 11.880, lng: 75.370 } },
+        { name: "Centaur Hotel", address: "Kannur", location: { lat: 11.890, lng: 75.380 } },
+        { name: "Kairali Heritage", address: "Kattampally", location: { lat: 11.915, lng: 75.375 } },
+        { name: "Costa Malabari", address: "Thottada", location: { lat: 11.835, lng: 75.390 } },
+        { name: "Sree Chithira Auditorium", address: "Kannur", location: { lat: 11.865, lng: 75.365 } },
+        { name: "Kottali Convention Centre", address: "Kottali", location: { lat: 11.905, lng: 75.385 } }
+    ]
+};

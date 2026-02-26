@@ -217,14 +217,12 @@ const ARNavigation = () => {
     useEffect(() => {
         const fetchEvent = async () => {
             if (!eventId) {
-                setLoading(false);
                 return;
             }
             try {
 
-                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
-                const data = await res.json();
-                if (res.ok) setEvent(data);
+                const res = await api.get(`/events/public/${eventId}`);
+                if (res.status === 200) setEvent(res.data);
             } catch (error) {
                 console.error("Failed to fetch event for AR", error);
             }

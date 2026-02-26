@@ -16,7 +16,7 @@ const createEvent = asyncHandler(async (req, res) => {
         name, category, startDate, endDate, startTime, endTime,
         description, mode, venue, address, capacity, budget,
         features, selectedVendors, tags, bannerImage, isPublic, status,
-        location, arPoints
+        location, arPoints, district
     } = req.body;
 
     if (!name || !category || !startDate) {
@@ -39,6 +39,7 @@ const createEvent = asyncHandler(async (req, res) => {
             endDate,
             startTime,
             endTime,
+            district,
             venue,
             address,
             capacity,
@@ -59,7 +60,12 @@ const createEvent = asyncHandler(async (req, res) => {
         name,
         description,
         category,
+        mode,
         startDate,
+        endDate,
+        startTime,
+        endTime,
+        district,
         venue,
         budget,
         capacity,

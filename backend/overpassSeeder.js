@@ -38,13 +38,21 @@ const fetchVenuesForDistrict = async (district) => {
     console.log(`Fetching venues for ${district} (Query: ${searchName})...`);
 
     const query = `
-    [out:json][timeout:60];
+    [out:json][timeout:90];
     area["name"="Kerala"]["admin_level"="4"]->.kerala;
     area["name"="${searchName}"](area.kerala)->.searchArea;
     (
-      node["amenity"~"community_centre|events_venue|conference_centre|theatre|townhall"](area.searchArea);
-      way["amenity"~"community_centre|events_venue|conference_centre|theatre|townhall"](area.searchArea);
-      relation["amenity"~"community_centre|events_venue|conference_centre|theatre|townhall"](area.searchArea);
+      node["amenity"~"community_centre|events_venue|conference_centre|theatre|townhall|auditorium|hall|convention_centre"](area.searchArea);
+      way["amenity"~"community_centre|events_venue|conference_centre|theatre|townhall|auditorium|hall|convention_centre"](area.searchArea);
+      relation["amenity"~"community_centre|events_venue|conference_centre|theatre|townhall|auditorium|hall|convention_centre"](area.searchArea);
+      
+      node["building"~"auditorium|hall|community_centre|convention_centre"](area.searchArea);
+      way["building"~"auditorium|hall|community_centre|convention_centre"](area.searchArea);
+      relation["building"~"auditorium|hall|community_centre|convention_centre"](area.searchArea);
+      
+      node["leisure"~"resort"](area.searchArea);
+      way["leisure"~"resort"](area.searchArea);
+      relation["leisure"~"resort"](area.searchArea);
     );
     out center;
   `;
@@ -91,9 +99,8 @@ const seedOverpassData = async () => {
         for (const district of KERALA_DISTRICTS) {
             let venues = await fetchVenuesForDistrict(district);
 
-            // Fallback logic for reliability
-            if (venues.length < 5 && MANUAL_FALLBACKS[district]) {
-                console.log(`⚠️ Low API results for ${district}. Applying fallback data.`);
+            // Apply fallback data to ensure curated venues are included
+            if (MANUAL_FALLBACKS[district]) {
                 const fallbacks = MANUAL_FALLBACKS[district].map(fb => ({
                     ...fb,
                     category: 'Venue',
