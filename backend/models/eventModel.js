@@ -21,12 +21,12 @@ const eventSchema = mongoose.Schema({
         displayAddress: { type: String }
     },
     readinessScore: { type: Number, default: 0 },
-    arPoints: [{
-        label: { type: String },
-        instruction: { type: String },
-        lat: { type: Number },
-        lng: { type: Number },
-        pointType: { type: String, enum: ['Entrance', 'Stage', 'Restroom', 'Exit', 'HelpDesk', 'Other'] }
+    nodes: [{
+        nodeId: { type: String },
+        anchorType: { type: String, enum: ['Entrance', 'Stage', 'Restroom', 'Exit', 'HelpDesk', 'Other'] },
+        latitude: { type: Number },
+        longitude: { type: Number },
+        instructions: { type: String }
     }],
     selectedVendors: { type: Map, of: Object }, // Store selected vendor details
     manualExpenses: [{

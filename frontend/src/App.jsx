@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/login";
 import Register from "./pages/register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/dashboard";
 import CreateEvent from "./pages/CreateEvent";
 import MyEvents from "./pages/myevents";
@@ -18,7 +19,9 @@ import EventPlan from "./pages/EventPlan";
 import ARNavigation from "./pages/ARNavigation";
 import VentureAdvice from "./pages/VentureAdvice";
 import Chatbot from "./components/Chatbot";
+import GuestARNavigation from "./pages/GuestARNavigation";
 import RsvpPage from "./pages/RsvpPage";
+
 import TicketView from "./pages/TicketView";
 import CheckIn from "./pages/CheckIn";
 import VerifyOtp from "./pages/VerifyOtp";
@@ -33,6 +36,8 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/vendor-dashboard" element={<VendorDashboard />} />
@@ -47,7 +52,9 @@ function App() {
         <Route path="/notifications/:eventId" element={<Notifications />} />
         <Route path="/services/:eventId?" element={<Services />} />
         <Route path="/ar-navigation/:eventId?" element={<ARNavigation />} />
+        <Route path="/ar/:eventId" element={<GuestARNavigation />} />
         <Route path="/rsvp/:eventId" element={<RsvpPage />} />
+
         <Route path="/ticket/:ticketId" element={<TicketView />} />
         <Route path="/checkin/:eventId" element={<CheckIn />} />
 

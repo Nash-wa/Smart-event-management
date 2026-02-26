@@ -1,0 +1,98 @@
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 44 and 4 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+  (use "git merge --abort" to abort the merge)
+
+Changes to be committed:
+	modified:   backend/models/eventModel.js
+	new file:   backend/node_modules/nodemailer/.gitattributes
+	new file:   backend/node_modules/nodemailer/.ncurc.js
+	new file:   backend/node_modules/nodemailer/.prettierignore
+	new file:   backend/node_modules/nodemailer/.prettierrc
+	new file:   backend/node_modules/nodemailer/.prettierrc.js
+	new file:   backend/node_modules/nodemailer/.release-please-config.json
+	new file:   backend/node_modules/nodemailer/CHANGELOG.md
+	new file:   backend/node_modules/nodemailer/CODE_OF_CONDUCT.md
+	new file:   backend/node_modules/nodemailer/LICENSE
+	new file:   backend/node_modules/nodemailer/README.md
+	new file:   backend/node_modules/nodemailer/SECURITY.txt
+	new file:   backend/node_modules/nodemailer/eslint.config.js
+	new file:   backend/node_modules/nodemailer/lib/addressparser/index.js
+	new file:   backend/node_modules/nodemailer/lib/base64/index.js
+	new file:   backend/node_modules/nodemailer/lib/dkim/index.js
+	new file:   backend/node_modules/nodemailer/lib/dkim/message-parser.js
+	new file:   backend/node_modules/nodemailer/lib/dkim/relaxed-body.js
+	new file:   backend/node_modules/nodemailer/lib/dkim/sign.js
+	new file:   backend/node_modules/nodemailer/lib/errors.js
+	new file:   backend/node_modules/nodemailer/lib/fetch/cookies.js
+	new file:   backend/node_modules/nodemailer/lib/fetch/index.js
+	new file:   backend/node_modules/nodemailer/lib/json-transport/index.js
+	new file:   backend/node_modules/nodemailer/lib/mail-composer/index.js
+	new file:   backend/node_modules/nodemailer/lib/mailer/index.js
+	new file:   backend/node_modules/nodemailer/lib/mailer/mail-message.js
+	new file:   backend/node_modules/nodemailer/lib/mime-funcs/index.js
+	new file:   backend/node_modules/nodemailer/lib/mime-funcs/mime-types.js
+	new file:   backend/node_modules/nodemailer/lib/mime-node/index.js
+	new file:   backend/node_modules/nodemailer/lib/mime-node/last-newline.js
+	new file:   backend/node_modules/nodemailer/lib/mime-node/le-unix.js
+	new file:   backend/node_modules/nodemailer/lib/mime-node/le-windows.js
+	new file:   backend/node_modules/nodemailer/lib/nodemailer.js
+	new file:   backend/node_modules/nodemailer/lib/punycode/index.js
+	new file:   backend/node_modules/nodemailer/lib/qp/index.js
+	new file:   backend/node_modules/nodemailer/lib/sendmail-transport/index.js
+	new file:   backend/node_modules/nodemailer/lib/ses-transport/index.js
+	new file:   backend/node_modules/nodemailer/lib/shared/index.js
+	new file:   backend/node_modules/nodemailer/lib/smtp-connection/data-stream.js
+	new file:   backend/node_modules/nodemailer/lib/smtp-connection/http-proxy-client.js
+	new file:   backend/node_modules/nodemailer/lib/smtp-connection/index.js
+	new file:   backend/node_modules/nodemailer/lib/smtp-pool/index.js
+	new file:   backend/node_modules/nodemailer/lib/smtp-pool/pool-resource.js
+	new file:   backend/node_modules/nodemailer/lib/smtp-transport/index.js
+	new file:   backend/node_modules/nodemailer/lib/stream-transport/index.js
+	new file:   backend/node_modules/nodemailer/lib/well-known/index.js
+	new file:   backend/node_modules/nodemailer/lib/well-known/services.json
+	new file:   backend/node_modules/nodemailer/lib/xoauth2/index.js
+	new file:   backend/node_modules/nodemailer/package.json
+	modified:   backend/package-lock.json
+	modified:   backend/package.json
+	new file:   backend/utils/emailService.js
+	new file:   frontend/src/pages/ForgotPassword.jsx
+	new file:   frontend/src/pages/GuestARNavigation.jsx
+	modified:   frontend/src/pages/login.jsx
+	modified:   frontend/src/utils/planningEngine.js
+
+Unmerged paths:
+  (use "git add/rm <file>..." as appropriate to mark resolution)
+	both added:      backend/.env
+	both modified:   backend/controllers/authController.js
+	both modified:   backend/controllers/eventController.js
+	deleted by us:   backend/node_modules/.package-lock.json
+	both modified:   backend/routes/authRoutes.js
+	both modified:   backend/routes/eventRoutes.js
+	both modified:   frontend/package-lock.json
+	both modified:   frontend/package.json
+	both modified:   frontend/src/App.jsx
+	both modified:   frontend/src/pages/EventPlan.jsx
+	both modified:   frontend/src/pages/myevents.jsx
+	both modified:   frontend/src/pages/register.jsx
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   conflicts.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	backend/data/db/
+	git_status_full.txt
+	status-check.txt
+	status.txt
+	temp.txt
+	test.js
+	test_controller.js
+	test_load.js
+

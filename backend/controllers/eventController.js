@@ -19,21 +19,17 @@ const createEvent = asyncHandler(async (req, res) => {
         tags, bannerImage, isPublic, status
     } = req.body;
 
-    if (!name || !category || !startDate || (district === undefined && !isDbConnected())) {
-        // Allow district to be missing if not connected to real DB or if not required in storage helper
-    }
-
     if (!name || !category || !startDate) {
         res.status(400);
         throw new Error('Please provide all required fields');
     }
 
     // Generate the plan
-    const plan = generateEventPlan({ name, category, budget, startDate });
+    const plan = generateEventPlan({ name, category, budget, startDate, capacity, venueType: venue });
     const platformCommission = budget ? (Number(budget) * 0.1) : 0;
 
     if (!isDbConnected()) {
-        const event = storage.create('events', {
+        const eventData = {
             user: req.user._id,
             name,
             description,
@@ -53,8 +49,9 @@ const createEvent = asyncHandler(async (req, res) => {
             platformCommission,
             status: status || 'pending',
             location,
-            arPoints
-        });
+            nodes: arPoints || []
+        };
+        const event = storage.create('events', eventData);
         return res.status(201).json(event);
     }
 
@@ -74,7 +71,7 @@ const createEvent = asyncHandler(async (req, res) => {
         capacity,
         budget,
         location,
-        arPoints,
+        nodes: arPoints || [],
         selectedVendors,
         features,
         plan,
@@ -107,7 +104,6 @@ const getEvents = asyncHandler(async (req, res) => {
 
     const query = { user: req.user._id };
 
-    // Search by keyword in name or description
     if (keyword) {
         query.$or = [
             { name: { $regex: keyword, $options: 'i' } },
@@ -115,24 +111,15 @@ const getEvents = asyncHandler(async (req, res) => {
         ];
     }
 
-    // Filter by category
-    if (category) {
-        query.category = category;
-    }
+    if (category) query.category = category;
+    if (status) query.status = status;
 
-    // Filter by status
-    if (status) {
-        query.status = status;
-    }
-
-    // Filter by budget range
     if (minBudget || maxBudget) {
         query.budget = {};
         if (minBudget) query.budget.$gte = Number(minBudget);
         if (maxBudget) query.budget.$lte = Number(maxBudget);
     }
 
-    // Filter by user and populate user details for "more details"
     const events = await Event.find(query)
         .populate('user', 'name email')
         .sort('-createdAt');
@@ -145,7 +132,7 @@ const getEvents = asyncHandler(async (req, res) => {
 // @access  Public
 const getPublicEvents = asyncHandler(async (req, res) => {
     const { category, keyword } = req.query;
-    const query = { isPublic: true, status: 'published' };
+    const query = { isPublic: true, status: { $ne: 'cancelled' } };
 
     if (category) query.category = category;
     if (keyword) {
@@ -174,9 +161,7 @@ const getEventById = asyncHandler(async (req, res) => {
     }
 
     const event = await Event.findById(req.params.id).populate('user', 'name email');
-
     if (event) {
-        // Security check: ensure event belongs to user
         if (event.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             res.status(401);
             throw new Error('User not authorized');
@@ -199,15 +184,14 @@ const updateEvent = asyncHandler(async (req, res) => {
         throw new Error('Event not found');
     }
 
-    // Ensure only the owner or admin can update the event
     if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         res.status(401);
         throw new Error('User not authorized');
     }
 
-    // Populate fields
+    // Update fields
     if (req.body.name) event.name = req.body.name;
-    if (req.body.description) event.description = req.body.description;
+    if (req.body.description !== undefined) event.description = req.body.description;
     if (req.body.category) event.category = req.body.category;
     if (req.body.mode) event.mode = req.body.mode;
     if (req.body.startDate) event.startDate = req.body.startDate;
@@ -218,29 +202,32 @@ const updateEvent = asyncHandler(async (req, res) => {
     if (req.body.venue) event.venue = req.body.venue;
     if (req.body.address) event.address = req.body.address;
     if (req.body.capacity) event.capacity = req.body.capacity;
-    if (req.body.budget) event.budget = req.body.budget;
+    if (req.body.budget) {
+        event.budget = req.body.budget;
+        event.platformCommission = Number(req.body.budget) * 0.1;
+    }
     if (req.body.location) event.location = req.body.location;
-    if (req.body.arPoints) event.arPoints = req.body.arPoints;
+    if (req.body.nodes !== undefined) event.nodes = req.body.nodes;
+    if (req.body.arPoints !== undefined) event.nodes = req.body.arPoints; // handle both naming conventions
     if (req.body.selectedVendors) event.selectedVendors = req.body.selectedVendors;
     if (req.body.features) event.features = req.body.features;
     if (req.body.tags) event.tags = req.body.tags;
     if (req.body.bannerImage) event.bannerImage = req.body.bannerImage;
     if (req.body.isPublic !== undefined) event.isPublic = req.body.isPublic;
     if (req.body.status) event.status = req.body.status;
+    if (req.body.readinessScore !== undefined) event.readinessScore = req.body.readinessScore;
+    if (req.body.plan) event.plan = req.body.plan;
 
-    // Recalculate commission if budget changes
-    if (req.body.budget) {
-        event.platformCommission = Number(req.body.budget) * 0.1;
-    }
     const updatedEvent = await event.save();
     res.json(updatedEvent);
 });
 
-// @desc    Get public event details (for RSVP)
+// @desc    Get public event details (for RSVP / Guest AR)
 // @route   GET /api/events/public/:id
 // @access  Public
 const getPublicEventById = asyncHandler(async (req, res) => {
-    const event = await Event.findById(req.params.id).select('name startDate venue category capacity arPoints location');
+    const event = await Event.findById(req.params.id)
+        .select('name startDate venue category capacity nodes location');
 
     if (event) {
         res.json(event);
@@ -261,20 +248,12 @@ const deleteEvent = asyncHandler(async (req, res) => {
         throw new Error('Event not found');
     }
 
-    // Check for user
-    if (!req.user) {
-        res.status(401);
-        throw new Error('User not found');
-    }
-
-    // Make sure the logged in user matches the event user
-    if (event.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         res.status(401);
         throw new Error('User not authorized');
     }
 
     await event.deleteOne();
-
     res.status(200).json({ id: req.params.id });
 });
 
@@ -299,13 +278,90 @@ const getEventStats = asyncHandler(async (req, res) => {
     res.json(stats);
 });
 
+// @desc    Add or update a spatial node on an event
+// @route   POST /api/events/:id/nodes
+// @access  Private (event owner)
+const addNode = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+
+    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(401);
+        throw new Error('User not authorized');
+    }
+
+    const { nodeId, anchorType, latitude, longitude, instructions } = req.body;
+
+    if (!nodeId || !anchorType || latitude === undefined || longitude === undefined) {
+        res.status(400);
+        throw new Error('nodeId, anchorType, latitude, and longitude are required');
+    }
+
+    const existingIndex = event.nodes.findIndex(n => n.nodeId === nodeId);
+    if (existingIndex >= 0) {
+        event.nodes[existingIndex] = { nodeId, anchorType, latitude, longitude, instructions };
+    } else {
+        event.nodes.push({ nodeId, anchorType, latitude, longitude, instructions });
+    }
+
+    const updatedEvent = await event.save();
+    res.json(updatedEvent.nodes);
+});
+
+// @desc    Delete a spatial node from an event
+// @route   DELETE /api/events/:id/nodes/:nodeId
+// @access  Private (event owner)
+const deleteNode = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+
+    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(401);
+        throw new Error('User not authorized');
+    }
+
+    event.nodes = event.nodes.filter(n => n.nodeId !== req.params.nodeId);
+    const updatedEvent = await event.save();
+    res.json(updatedEvent.nodes);
+});
+
+// @desc    Get public nodes for guest AR (by eventId)
+// @route   GET /api/events/public/:id/nodes
+// @access  Public
+const getPublicNodes = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id)
+        .select('name venue nodes');
+
+    if (!event) {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+
+    res.json({
+        eventName: event.name,
+        venue: event.venue,
+        nodes: event.nodes || []
+    });
+});
+
 module.exports = {
     createEvent,
     getEvents,
+    getPublicEvents,
     getEventById,
     updateEvent,
     getPublicEventById,
     deleteEvent,
     getEventStats,
-    getPublicEvents
+    addNode,
+    deleteNode,
+    getPublicNodes
 };
