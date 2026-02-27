@@ -239,12 +239,12 @@ function CreateEvent() {
         // Combine: Local first, then API
         const combined = [...formattedLocal, ...formattedApi];
 
-        // Sort by distance if available
-        if (userLocation) {
-          combined.sort((a, b) => (a.distance || 9999) - (b.distance || 9999));
-        }
+        // Safe sorting logic: sort by distance if location available, else by rating
+        const sortedVenues = userLocation ?
+          combined.sort((a, b) => (Number(a.distance) || Infinity) - (Number(b.distance) || Infinity)) :
+          combined.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
 
-        setVenues(combined);
+        setVenues(sortedVenues);
 
         // Auto-select first venue if available
         if (combined.length > 0 && !formData.venue) {
@@ -485,291 +485,316 @@ function CreateEvent() {
                 )}
 
                 {/* All Venues Markers with Images & Navigation */}
-                {venues.map((v) => (
-                  v.location && v.location.lat ? (
-                    <Marker
-                      key={v.id}
-                      position={[v.location.lat, v.location.lng]}
-                      eventHandlers={{
-                        click: () => {
-                          setFormData(prev => ({ ...prev, venue: v.name, address: v.address || "" }));
-                        },
-                      }}
-                    >
-                      <Popup minWidth={300}>
-                        <div className="text-black bg-white rounded-lg overflow-hidden">
-                          {/* Venue Image */}
-                          <div className="h-32 w-full bg-gray-200 overflow-hidden relative">
-                            <img src={v.image} alt={v.name} className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://loremflickr.com/320/240/building'} />
-                            {v.isExternal && <span className="absolute top-2 right-2 text-[10px] bg-blue-600 text-white px-2 py-1 rounded shadow">Free Discovery</span>}
-                          </div>
-
-                          <div className="p-3">
-                            <strong className="block text-lg leading-tight mb-1">{v.name}</strong>
-                            <p className="text-xs text-gray-500 mb-2 line-clamp-2">{v.address}</p>
-
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-amber-500 font-bold text-sm">★ {v.rating}</span>
-                              <span className="text-xs text-gray-400">{v.distance ? `${v.distance.toFixed(1)} km away` : ''}</span>
+                {
+                  venues.map((v) => (
+                    v.location && v.location.lat ? (
+                      <Marker
+                        key={v.id}
+                        position={[v.location.lat, v.location.lng]}
+                        eventHandlers={{
+                          click: () => {
+                            setFormData(prev => ({ ...prev, venue: v.name, address: v.address || "" }));
+                          },
+                        }}
+                      >
+                        <Popup minWidth={300}>
+                          <div className="text-black bg-white rounded-lg overflow-hidden">
+                            {/* Venue Image */}
+                            <div className="h-32 w-full bg-gray-200 overflow-hidden relative">
+                              <img src={v.image} alt={v.name} className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://loremflickr.com/320/240/building'} />
+                              {v.isExternal && <span className="absolute top-2 right-2 text-[10px] bg-blue-600 text-white px-2 py-1 rounded shadow">Free Discovery</span>}
                             </div>
 
-                            {/* Navigation Links */}
-                            <div className="grid grid-cols-2 gap-2 mb-3">
-                              <a
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${v.location.lat},${v.location.lng}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 text-[10px] font-bold py-2 rounded hover:bg-blue-100 transition-colors"
-                              >
-                                <span>🗺️ Google Maps</span>
-                              </a>
-                              <a
-                                href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLocation ? `${userLocation[0]}%2C${userLocation[1]}` : ''}%3B${v.location.lat}%2C${v.location.lng}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-center gap-1 bg-green-50 text-green-600 text-[10px] font-bold py-2 rounded hover:bg-green-100 transition-colors"
-                              >
-                                <span>📍 OSM Route</span>
-                              </a>
-                            </div>
+                            <div className="p-3">
+                              <strong className="block text-lg leading-tight mb-1">{v.name}</strong>
+                              <p className="text-xs text-gray-500 mb-2 line-clamp-2">{v.address}</p>
 
-                            <button
-                              className="block w-full bg-indigo-600 text-white text-xs font-bold py-2 rounded hover:bg-indigo-700 transition-colors shadow-lg"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setFormData(prev => ({ ...prev, venue: v.name, address: v.address || "" }));
-                              }}
-                            >
-                              Select Venue
-                            </button>
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-amber-500 font-bold text-sm">★ {v.rating}</span>
+                                <span className="text-xs text-gray-400">{v.distance ? `${v.distance.toFixed(1)} km away` : ''}</span>
+                              </div>
+
+                              {/* Navigation Links */}
+                              <div className="grid grid-cols-2 gap-2 mb-3">
+                                <a
+                                  href={`https://www.google.com/maps/dir/?api=1&destination=${v.location.lat},${v.location.lng}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 text-[10px] font-bold py-2 rounded hover:bg-blue-100 transition-colors"
+                                >
+                                  <span>🗺️ Google Maps</span>
+                                </a>
+                                <a
+                                  href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLocation ? `${userLocation[0]}%2C${userLocation[1]}` : ''}%3B${v.location.lat}%2C${v.location.lng}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center justify-center gap-1 bg-green-50 text-green-600 text-[10px] font-bold py-2 rounded hover:bg-green-100 transition-colors"
+                                >
+                                  <span>📍 OSM Route</span>
+                                </a>
+                              </div>
+
+                              <button
+                                className="block w-full bg-indigo-600 text-white text-xs font-bold py-2 rounded hover:bg-indigo-700 transition-colors shadow-lg"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setFormData(prev => ({ ...prev, venue: v.name, address: v.address || "" }));
+                                }}
+                              >
+                                Select Venue
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ) : null
-                ))}
-              </MapContainer>
-            </div>
+                        </Popup>
+                      </Marker>
+                    ) : null
+                  ))
+                }
+                {/* Selected Venue Marker */}
+                {(() => {
+                  const selectedVenue = venues.find(v => v.name === formData.venue);
+                  if (selectedVenue && selectedVenue.location && selectedVenue.location.lat) {
+                    const position = [selectedVenue.location.lat, selectedVenue.location.lng];
+                    return (
+                      <Marker
+                        key={`selected-${selectedVenue._id || selectedVenue.name}`}
+                        position={position}
+                        icon={redIcon}
+                      >
+                        <Popup>
+                          <strong>{selectedVenue.name}</strong><br />
+                          {selectedVenue.address || "Kerala"}
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                  return null;
+                })()}
+              </MapContainer >
+            </div >
 
             <div className="wizard-actions">
               <button className="btn-prev" onClick={handlePrev}>Back</button>
               <button className="btn-next" onClick={handleNext}>Next Step ➝</button>
             </div>
-          </div>
-        )}
+          </div >
+        )
+        }
 
         {/* STEP 3: Features & Budget */}
-        {step === 3 && (
-          <div className="form-step slide-in">
-            <h2 className="text-xl font-bold mb-6 text-white/90">Section 03: Resource & Financial Controls</h2>
+        {
+          step === 3 && (
+            <div className="form-step slide-in">
+              <h2 className="text-xl font-bold mb-6 text-white/90">Section 03: Resource & Financial Controls</h2>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Max Participants</label>
-                <input name="capacity" type="number" placeholder="200" value={formData.capacity} onChange={handleInputChange} />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Max Participants</label>
+                  <input name="capacity" type="number" placeholder="200" value={formData.capacity} onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                  <label>Budget (₹)</label>
+                  <input name="budget" type="number" placeholder="50000" value={formData.budget} onChange={handleInputChange} />
+                </div>
               </div>
-              <div className="form-group">
-                <label>Budget (₹)</label>
-                <input name="budget" type="number" placeholder="50000" value={formData.budget} onChange={handleInputChange} />
-              </div>
-            </div>
 
-            <div className="features-section mt-8">
-              <h3 className="text-lg font-bold mb-4">Operational Modules</h3>
-              <p className="text-sm text-gray-500 mb-6 font-medium">Select primary service modules for this venture.</p>
+              <div className="features-section mt-8">
+                <h3 className="text-lg font-bold mb-4">Operational Modules</h3>
+                <p className="text-sm text-gray-500 mb-6 font-medium">Select primary service modules for this venture.</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['Photography', 'Catering', 'Music/DJ', 'Decoration', 'Invitation'].map((cat) => (
-                  <div key={cat} className="p-4 border border-white/10 rounded-xl bg-white/5 flex justify-between items-center hover:bg-white/10 transition-colors vendor-card">
-                    <div>
-                      <h4 className="font-semibold text-lg">{cat}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['Photography', 'Catering', 'Music/DJ', 'Decoration', 'Invitation'].map((cat) => (
+                    <div key={cat} className="p-4 border border-white/10 rounded-xl bg-white/5 flex justify-between items-center hover:bg-white/10 transition-colors vendor-card">
+                      <div>
+                        <h4 className="font-semibold text-lg">{cat}</h4>
+                        {selectedVendors[cat] ? (
+                          <p className="text-green-400 text-sm">✅ {selectedVendors[cat].name} (₹{selectedVendors[cat].price})</p>
+                        ) : (
+                          <p className="text-gray-500 text-sm">Not selected</p>
+                        )}
+                      </div>
                       {selectedVendors[cat] ? (
-                        <p className="text-green-400 text-sm">✅ {selectedVendors[cat].name} (₹{selectedVendors[cat].price})</p>
+                        <button
+                          className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const newVendors = { ...selectedVendors };
+                            delete newVendors[cat];
+                            setSelectedVendors(newVendors);
+                          }}
+                        >
+                          Remove
+                        </button>
                       ) : (
-                        <p className="text-gray-500 text-sm">Not selected</p>
+                        <button
+                          className="px-3 py-1 bg-accent/20 text-accent rounded-lg text-sm hover:bg-accent/30"
+                          onClick={(e) => { e.preventDefault(); handleVendorClick(cat); }}
+                        >
+                          Browse {cat}
+                        </button>
                       )}
                     </div>
-                    {selectedVendors[cat] ? (
-                      <button
-                        className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const newVendors = { ...selectedVendors };
-                          delete newVendors[cat];
-                          setSelectedVendors(newVendors);
-                        }}
-                      >
-                        Remove
-                      </button>
-                    ) : (
-                      <button
-                        className="px-3 py-1 bg-accent/20 text-accent rounded-lg text-sm hover:bg-accent/30"
-                        onClick={(e) => { e.preventDefault(); handleVendorClick(cat); }}
-                      >
-                        Browse {cat}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Other basic checkboxes */}
-              <div className="checkbox-grid mt-6">
-                <label className="custom-checkbox">
-                  <input type="checkbox" name="registration" checked={formData.features.registration} onChange={handleCheckboxChange} />
-                  <span className="checkmark"></span>
-                  Registration
-                </label>
-                <div className="glass-card p-4 rounded-xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold flex items-center gap-2">📱 AR Spatial Scan <span className="text-[10px] bg-accent px-2 rounded-full text-white">NEW</span></span>
-                    {formData.features.arScan ? (
-                      <span className="text-green-400 text-sm font-bold">✓ Scanned</span>
-                    ) : (
-                      <button
-                        className="px-3 py-1 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200"
-                        disabled={isScanning}
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          setIsScanning(true);
-
-                          // Mock Scan
-                          setTimeout(async () => {
-                            try {
-                              const res = await api.post("/spatial/save-scan", { coordinates: "10.5276, 76.2144 (Thrissur)" });
-                              if (res.status === 200) {
-                                setFormData(prev => ({ ...prev, features: { ...prev.features, arScan: true } }));
-                                alert("Room scanned successfully! Dimensions saved.");
-                              }
-                            } catch (err) {
-                              console.error(err);
-                              alert("Scan failed. Is backend running?");
-                            } finally {
-                              setIsScanning(false);
-                            }
-                          }, 2000);
-                        }}
-                      >
-                        {isScanning ? "Scanning Room..." : "Scan Area"}
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400">Use camera to map venue dimensions automatically.</p>
+                  ))}
                 </div>
-                <label className="custom-checkbox">
-                  <input type="checkbox" name="streaming" checked={formData.features.streaming} onChange={handleCheckboxChange} />
-                  <span className="checkmark"></span>
-                  Live Streaming
-                </label>
-              </div>
-            </div>
 
-            {/* Vendor Modal */}
-            {showVendorModal && (
-              <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6 animate-fade-in">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Select {currentCategory}</h2>
-                    <button onClick={() => setShowVendorModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                {/* Other basic checkboxes */}
+                <div className="checkbox-grid mt-6">
+                  <label className="custom-checkbox">
+                    <input type="checkbox" name="registration" checked={formData.features.registration} onChange={handleCheckboxChange} />
+                    <span className="checkmark"></span>
+                    Registration
+                  </label>
+                  <div className="glass-card p-4 rounded-xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold flex items-center gap-2">📱 AR Spatial Scan <span className="text-[10px] bg-accent px-2 rounded-full text-white">NEW</span></span>
+                      {formData.features.arScan ? (
+                        <span className="text-green-400 text-sm font-bold">✓ Scanned</span>
+                      ) : (
+                        <button
+                          className="px-3 py-1 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200"
+                          disabled={isScanning}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            setIsScanning(true);
+
+                            // Mock Scan
+                            setTimeout(async () => {
+                              try {
+                                const res = await api.post("/spatial/save-scan", { coordinates: "10.5276, 76.2144 (Thrissur)" });
+                                if (res.status === 200) {
+                                  setFormData(prev => ({ ...prev, features: { ...prev.features, arScan: true } }));
+                                  alert("Room scanned successfully! Dimensions saved.");
+                                }
+                              } catch (err) {
+                                console.error(err);
+                                alert("Scan failed. Is backend running?");
+                              } finally {
+                                setIsScanning(false);
+                              }
+                            }, 2000);
+                          }}
+                        >
+                          {isScanning ? "Scanning Room..." : "Scan Area"}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400">Use camera to map venue dimensions automatically.</p>
                   </div>
+                  <label className="custom-checkbox">
+                    <input type="checkbox" name="streaming" checked={formData.features.streaming} onChange={handleCheckboxChange} />
+                    <span className="checkmark"></span>
+                    Live Streaming
+                  </label>
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    {availableVendors.map((vendor) => (
-                      <div key={vendor._id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center hover:bg-white/10 cursor-pointer vendor-card" onClick={() => selectVendor(vendor)}>
-                        <div>
-                          <h3 className="font-bold text-lg">{vendor.name}</h3>
-                          <p className="text-gray-400 text-sm mb-1">{vendor.address || vendor.description || vendor.district || 'Service Provider'}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-yellow-400 font-bold flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                              {vendor.rating || (Math.random() * 1.5 + 3.5).toFixed(1)}
-                            </span>
-                            {vendor.reviewCount && (
-                              <a
-                                href={vendor.googleReviewsUrl || `https://www.google.com/search?q=${encodeURIComponent(vendor.name + ' reviews')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 flex items-center gap-1"
-                              >
-                                <span>G</span> {vendor.reviewCount} Reviews
-                              </a>
-                            )}
+              {/* Vendor Modal */}
+              {showVendorModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                  <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6 animate-fade-in">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold">Select {currentCategory}</h2>
+                      <button onClick={() => setShowVendorModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {availableVendors.map((vendor) => (
+                        <div key={vendor._id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center hover:bg-white/10 cursor-pointer vendor-card" onClick={() => selectVendor(vendor)}>
+                          <div>
+                            <h3 className="font-bold text-lg">{vendor.name}</h3>
+                            <p className="text-gray-400 text-sm mb-1">{vendor.address || vendor.description || vendor.district || 'Service Provider'}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-yellow-400 font-bold flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                {vendor.rating || (Math.random() * 1.5 + 3.5).toFixed(1)}
+                              </span>
+                              {vendor.reviewCount && (
+                                <a
+                                  href={vendor.googleReviewsUrl || `https://www.google.com/search?q=${encodeURIComponent(vendor.name + ' reviews')}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 flex items-center gap-1"
+                                >
+                                  <span>G</span> {vendor.reviewCount} Reviews
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-accent">₹{vendor.price}</p>
+                            <button className="text-sm text-green-400 mt-1">Select →</button>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-accent">₹{vendor.price}</p>
-                          <button className="text-sm text-green-400 mt-1">Select →</button>
-                        </div>
-                      </div>
-                    ))}
-                    {availableVendors.length === 0 && <p className="text-center text-gray-500 py-8">No vendors found for this category.</p>}
+                      ))}
+                      {availableVendors.length === 0 && <p className="text-center text-gray-500 py-8">No vendors found for this category.</p>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="wizard-actions">
-              <button className="btn-prev" onClick={handlePrev} disabled={isSubmitting}>Back</button>
-              <button
-                className="btn-submit"
-                type="submit"
-                disabled={isSubmitting}
-                onClick={async (e) => {
-                  e.preventDefault();
+              <div className="wizard-actions">
+                <button className="btn-prev" onClick={handlePrev} disabled={isSubmitting}>Back</button>
+                <button
+                  className="btn-submit"
+                  type="submit"
+                  disabled={isSubmitting}
+                  onClick={async (e) => {
+                    e.preventDefault();
 
-                  // Basic Validation
-                  if (new Date(formData.endDate) < new Date(formData.startDate)) {
-                    alert("End date cannot be before start date!");
-                    return;
-                  }
-
-                  try {
-                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                    if (!userInfo) {
-                      alert("Please login first");
-                      navigate("/login");
+                    // Basic Validation
+                    if (new Date(formData.endDate) < new Date(formData.startDate)) {
+                      alert("End date cannot be before start date!");
                       return;
                     }
 
-                    setIsSubmitting(true); // Start loading
+                    try {
+                      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                      if (!userInfo) {
+                        alert("Please login first");
+                        navigate("/login");
+                        return;
+                      }
 
-                    const payload = {
-                      ...formData,
-                      selectedVendors
-                    };
+                      setIsSubmitting(true); // Start loading
 
-                    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${userInfo?.token}`
-                      },
-                      body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
+                      const payload = {
+                        ...formData,
+                        selectedVendors
+                      };
 
-                    if (res.ok) {
-                      navigate(`/event-plan/${data._id}`);
-                    } else {
-                      alert(data.message || "Failed to create event");
+                      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${userInfo?.token}`
+                        },
+                        body: JSON.stringify(payload)
+                      });
+                      const data = await res.json();
+
+                      if (res.ok) {
+                        navigate(`/event-plan/${data._id}`);
+                      } else {
+                        alert(data.message || "Failed to create event");
+                      }
+                    } catch (error) {
+                      console.error("Fetch error detail:", error);
+                      alert(`Connection error: ${error.message}. Make sure backend is running.`);
+                    } finally {
+                      setIsSubmitting(false); // Stop loading
                     }
-                  } catch (error) {
-                    console.error("Fetch error detail:", error);
-                    alert(`Connection error: ${error.message}. Make sure backend is running.`);
-                  } finally {
-                    setIsSubmitting(false); // Stop loading
-                  }
-                }}
-              >
-                {isSubmitting ? "🚀 Launching..." : "🚀 Launch Event"}
-              </button>
+                  }}
+                >
+                  {isSubmitting ? "🚀 Launching..." : "🚀 Launch Event"}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
-      </form>
-    </div>
+      </form >
+    </div >
   );
 }
 
