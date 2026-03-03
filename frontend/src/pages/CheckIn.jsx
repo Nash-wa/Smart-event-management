@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import api from '../api';
 import '../css/checkin.css';
 
 const CheckIn = () => {
-    const { } = useParams();
+    const { eventId } = useParams();
     const [ticketInput, setTicketInput] = useState('');
     const [status, setStatus] = useState({ type: '', message: '' });
     const [lastCheckedIn, setLastCheckedIn] = useState(null);
@@ -16,27 +17,15 @@ const CheckIn = () => {
         setStatus({ type: 'loading', message: 'Validating ticket...' });
 
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/participants/validate/${ticketInput}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${userInfo?.token}`
-                }
-            });
+            const { data } = await api.put(`/participants/validate/${ticketInput}`);
 
-            const data = await res.json();
-
-            if (res.ok) {
-                setStatus({ type: 'success', message: data.message });
-                setLastCheckedIn(data.participant);
-                setTicketInput('');
-                // Clear success message after 3 seconds
-                setTimeout(() => setStatus({ type: '', message: '' }), 3000);
-            } else {
-                setStatus({ type: 'error', message: data.message });
-            }
+            setStatus({ type: 'success', message: data.message });
+            setLastCheckedIn(data.participant);
+            setTicketInput('');
+            // Clear success message after 3 seconds
+            setTimeout(() => setStatus({ type: '', message: '' }), 3000);
         } catch (error) {
-            setStatus({ type: 'error', message: 'Network error. Please try again.' });
+            setStatus({ type: 'error', message: error.response?.data?.message || 'Network error. Please try again.' });
         }
     };
 

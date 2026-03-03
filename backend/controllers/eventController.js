@@ -520,6 +520,17 @@ const getReadinessScore = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get all public events
+// @route   GET /api/events/public
+// @access  Public
+const getPublicEvents = asyncHandler(async (req, res) => {
+    const events = await Event.find({ isPublic: true })
+        .populate('user', 'name email')
+        .select('name category startDate venue capacity isPublic description')
+        .sort('-startDate');
+    res.json(events);
+});
+
 module.exports = {
     createEvent,
     getEvents,

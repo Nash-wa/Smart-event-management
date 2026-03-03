@@ -6,7 +6,6 @@ function VendorDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
     const [bookings, setBookings] = useState([]);
     const [myVendors, setMyVendors] = useState([]);
-    const [myReviews, setMyReviews] = useState([]); // New State
     const [formData, setFormData] = useState({
         name: "",
         category: "Photography",
@@ -20,26 +19,19 @@ function VendorDashboard() {
     const user = useMemo(() => JSON.parse(localStorage.getItem('userInfo') || '{}'), []);
 
     const fetchData = useCallback(async () => {
-
         try {
-            try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const headers = { Authorization: `Bearer ${userInfo?.token}` };
+            // Fetch My Vendor Listings
+            const vRes = await api.get(`/vendors`, { params: { owner: user._id } });
+            setMyVendors(Array.isArray(vRes.data) ? vRes.data : []);
 
-                // Fetch My Vendor Listings
-                const vRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?owner=${user._id}`, { headers });
-                const vData = await vRes.json();
-                setMyVendors(Array.isArray(vData) ? vData : []);
+            // Fetch Bookings/Requests received
+            const bRes = await api.get('/bookings/vendor');
+            setBookings(Array.isArray(bRes.data) ? bRes.data : []);
 
-                // Fetch Bookings/Requests received
-                const bRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/bookings/vendor`, { headers });
-                const bData = await bRes.json();
-                setBookings(Array.isArray(bData) ? bData : []);
-
-            } catch (error) {
-                console.error(error);
-            }
-        }, [user._id]);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [user._id]);
 
     useEffect(() => {
         fetchData();
@@ -47,19 +39,8 @@ function VendorDashboard() {
 
     const handleUpdateStatus = async (id, status) => {
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/bookings/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo.token}`
-                },
-                body: JSON.stringify({ status })
-            });
-
-            if (res.ok) {
-                fetchData();
-            }
+            await api.put(`/bookings/${id}`, { status });
+            fetchData();
         } catch (err) {
             console.error(err);
         }
@@ -68,21 +49,11 @@ function VendorDashboard() {
     const handlePublish = async (e) => {
         e.preventDefault();
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo?.token}`
-                },
-                body: JSON.stringify({ ...formData, owner: user._id })
-            });
-            if (res.ok) {
-                alert("Venture submitted! Waiting for Admin approval. ✨");
-                setFormData({ name: "", category: "Photography", price: "", description: "", district: "Default District" });
-                fetchData();
-                setActiveTab("overview");
-            }
+            await api.post(`/vendors`, { ...formData, owner: user._id });
+            alert("Venture submitted! Waiting for Admin approval. ✨");
+            setFormData({ name: "", category: "Photography", price: "", description: "", district: "Default District" });
+            fetchData();
+            setActiveTab("overview");
         } catch {
             alert("Error submitting listing");
         }
@@ -218,7 +189,7 @@ function TabButton({ id, label, icon, active, onClick, count }) {
     );
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value }) {
     return (
         <div className="glass-card p-10 rounded-[40px] border border-white/10 bg-gradient-to-br from-white/5 to-transparent">
             <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">{label}</span>

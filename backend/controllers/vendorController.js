@@ -108,54 +108,43 @@ const getVendorReviews = asyncHandler(async (req, res) => {
 // @desc    Add review to vendor
 // @route   POST /api/vendors/:id/reviews
 // @access  Private
+const Review = require('../models/reviewModel');
+
+// @desc    Add review to vendor
+// @route   POST /api/vendors/:id/reviews
+// @access  Private
 const createVendorReview = asyncHandler(async (req, res) => {
     const { rating, comment } = req.body;
     const vendor = await Vendor.findById(req.params.id);
 
     if (vendor) {
-        const review = {
+        // Check if user already reviewed
+        const alreadyReviewed = await Review.findOne({
+            user: req.user._id,
+            vendor: vendor._id
+        });
+
+        if (alreadyReviewed) {
+            res.status(400);
+            throw new Error('Vendor already reviewed');
+        }
+
+        const review = await Review.create({
             name: req.user.name,
             rating: Number(rating),
             comment,
             user: req.user._id,
-        };
+            vendor: vendor._id
+        });
 
-        vendor.reviews.push(review);
-        // Recalculate average rating if needed, but schema might not store it directly or it might be calculated.
-        // Vendor schema has rating field.
-        // Wait, vendor.reviews is array of ObjectId in schema? Or subdocuments?
-        // vendorModel says: reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }]
-        // BUT also createVendorReview pushes an object: { name, rating, comment, user }.
-        // This is INCONSISTENT. If reviews is Ref, we must create Review document first.
-        // The Review model exists.
+        vendor.reviews.push(review._id);
 
-        // Let's check Review model again.
-        // Review model has event, user, vendor, rating, comment.
-        // vendorModel has reviews: [ObjectId].
+        // Recalculate average rating
+        const numReviews = vendor.reviewCount || 0;
+        const currentRating = vendor.rating || 0;
 
-        // So correct logic:
-        // 1. Create Review doc.
-        // 2. Push review._id to vendor.reviews.
-
-        // However, looking at the code I read in Step 511, it pushes an object directly. 
-        // This implies the schema in Step 511 (which I haven't seen fully in use) might be different or the code is wrong.
-        // In Step 439 (vendorModel), reviews is `[{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }]`.
-        // So pushing an object `{ name, ... }` will FAIL or cause issues if Mongoose strict is on.
-
-        // But for now, I just fixing the "undefined export" error.
-        // I will keep the code as is but export it.
-        // Actually I should probably fix the logic if I can.
-        // But the primary goal is to fix the crash.
-
-        // I will implement a safe version that assumes the schema is correct.
-
-        // Wait, if I change logic I might break things. The crash is due to missing export. 
-        // I will just add the functions and export them.
-
-        vendor.rating = (vendor.rating * vendor.reviewCount + Number(rating)) / (vendor.reviewCount + 1);
-        vendor.reviewCount += 1;
-        // We can't push object to ref array. But maybe it's mixed?
-        // For now I'll just stick to defining the missing functions.
+        vendor.rating = (currentRating * numReviews + Number(rating)) / (numReviews + 1);
+        vendor.reviewCount = numReviews + 1;
 
         await vendor.save();
         res.status(201).json({ message: 'Review added' });

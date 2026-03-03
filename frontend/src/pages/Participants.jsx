@@ -122,7 +122,6 @@ function Participants() {
   const handleDeleteParticipant = async (id) => {
     if (!window.confirm("Are you sure you want to remove this participant?")) return;
     try {
-      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/${id}`, {
         method: 'DELETE',
         headers: {

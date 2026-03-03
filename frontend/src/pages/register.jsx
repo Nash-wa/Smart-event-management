@@ -53,20 +53,11 @@ function Register() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStep('otp');
-        setSuccess(`Verification code sent to ${formData.email}`);
-      } else {
-        setError(data.message || 'Registration failed. Please try again.');
-      }
-    } catch {
-      setError('Cannot connect to server. Is the backend running?');
+      await api.post('/auth/register', { ...formData, role });
+      setStep('otp');
+      setSuccess(`Verification code sent to ${formData.email}`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -80,25 +71,16 @@ function Register() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, otpCode: otp })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        setSuccess('Account verified! Redirecting...');
-        setTimeout(() => {
-          if (data.role === 'admin') navigate('/admin-dashboard');
-          else if (data.role === 'vendor') navigate('/vendor-dashboard');
-          else navigate('/dashboard');
-        }, 1000);
-      } else {
-        setError(data.message || 'Invalid OTP. Please try again.');
-      }
-    } catch {
-      setError('Cannot connect to server.');
+      const { data } = await api.post('/auth/verify-otp', { email: formData.email, otpCode: otp });
+      localStorage.setItem('userInfo', JSON.stringify(data));
+      setSuccess('Account verified! Redirecting...');
+      setTimeout(() => {
+        if (data.role === 'admin') navigate('/admin-dashboard');
+        else if (data.role === 'vendor') navigate('/vendor-dashboard');
+        else navigate('/dashboard');
+      }, 1000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -109,16 +91,10 @@ function Register() {
     setError(''); setSuccess('');
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role })
-      });
-      const data = await res.json();
-      if (res.ok) setSuccess('New OTP sent to your email.');
-      else setError(data.message || 'Could not resend OTP.');
-    } catch {
-      setError('Cannot connect to server.');
+      await api.post('/auth/register', { ...formData, role });
+      setSuccess('New OTP sent to your email.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not resend OTP.');
     } finally {
       setLoading(false);
     }

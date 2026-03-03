@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import api from "../api"; // Keeping consistent with HEAD's fetch approach for now to avoid breaking existing logic
+import api from "../api";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
@@ -22,33 +22,25 @@ function Services() {
     useEffect(() => {
         const fetchVendors = async () => {
             try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const headers = { 'Content-Type': 'application/json' };
-                if (userInfo?.token) {
-                    headers['Authorization'] = `Bearer ${userInfo.token}`;
-                }
-
                 let lat, lng;
                 // If accessed via /event-plan/:id/services, fetch event location to filter vendors
                 if (eventId) {
-                    const eventRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, { headers });
-                    const eventData = await eventRes.json();
-                    if (eventRes.ok && eventData.location) {
+                    const eventRes = await api.get(`/events/${eventId}`);
+                    const eventData = eventRes.data;
+                    if (eventData.location) {
                         lat = eventData.location.lat;
                         lng = eventData.location.lng;
                     }
                 }
 
-                let url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?sort=${sortBy}`;
-                if (filterCategory) {
-                    url += `&category=${encodeURIComponent(filterCategory)}`;
-                }
+                const params = { sort: sortBy };
+                if (filterCategory) params.category = filterCategory;
                 if (lat && lng) {
-                    url += `&lat=${lat}&lng=${lng}`;
+                    params.lat = lat;
+                    params.lng = lng;
                 }
 
-                const res = await fetch(url, { headers });
-                const data = await res.json();
+                const { data } = await api.get('/vendors', { params });
                 setVendors(Array.isArray(data) ? data : []);
                 setLoading(false);
             } catch (error) {
@@ -62,12 +54,7 @@ function Services() {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                if (!userInfo?.token) return;
-                const res = await fetch("http://localhost:5000/api/events", {
-                    headers: { 'Authorization': `Bearer ${userInfo.token}` }
-                });
-                const data = await res.json();
+                const { data } = await api.get("/events");
                 setEvents(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error(err);
@@ -88,28 +75,16 @@ function Services() {
         }
 
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch("http://localhost:5000/api/bookings", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${userInfo.token}`
-                },
-                body: JSON.stringify({
-                    vendorId: selectedVendor._id,
-                    eventId: selectedEventId,
-                    serviceDate: new Date().toISOString()
-                })
+            await api.post("/bookings", {
+                vendorId: selectedVendor._id,
+                eventId: selectedEventId,
+                serviceDate: new Date().toISOString()
             });
 
-            if (res.ok) {
-                alert(`Booking successful for ${selectedVendor.name}! Check your event dashboard.`);
-                setShowBookingModal(false);
-            } else {
-                const data = await res.json();
-                alert(data.message || "Booking failed");
-            }
+            alert(`Booking successful for ${selectedVendor.name}! Check your event dashboard.`);
+            setShowBookingModal(false);
         } catch (err) {
+            alert(err.response?.data?.message || "Booking failed");
             console.error(err);
         }
     };
