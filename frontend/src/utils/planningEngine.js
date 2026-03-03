@@ -231,7 +231,7 @@ export const getSuggestedRoles = (category) => {
     return roles.default;
 };
 
-export const calculateReadinessScore = (tasks = [], selectedVendors = {}) => {
+export const calculateReadinessScore = (tasks = []) => {
     if (!tasks || tasks.length === 0) return 0;
 
     const totalTasks = tasks.length;

@@ -2,13 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api';
 
-// Reusing assets for HUD if needed, or keeping them for fallback
-import imgStep1 from '../assets/ar/IMG_8777.JPG.jpeg';
-import imgStep2 from '../assets/ar/IMG_8778.JPG.jpeg';
-import imgStep3 from '../assets/ar/IMG_8779.JPG.jpeg';
-import imgStep4 from '../assets/ar/IMG_8780.JPG.jpeg';
-import imgStep5 from '../assets/ar/IMG_8781.JPG.jpeg';
-
 const RadarMap = ({ bearing }) => {
     return (
         <div className="absolute top-10 right-10 w-32 h-32 glass-card rounded-full border-primary/20 bg-primary/5 flex items-center justify-center overflow-hidden">

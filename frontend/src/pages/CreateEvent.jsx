@@ -303,15 +303,17 @@ function CreateEvent() {
 
     if (formData.isCollegeEvent && formData.district && step === 2) {
       fetchColleges();
-    } else {
+    } else if (collegeList.length > 0) {
       setCollegeList([]);
     }
-  }, [formData.isCollegeEvent, formData.district, step]);
+  }, [formData.isCollegeEvent, formData.district, step, collegeList.length]);
 
   // Debounced college search when typing
   useEffect(() => {
     if (!collegeQuery || collegeQuery.trim().length === 0) {
-      setCollegeSuggestions([]);
+      if (collegeSuggestions.length > 0) {
+        setCollegeSuggestions([]);
+      }
       return;
     }
 

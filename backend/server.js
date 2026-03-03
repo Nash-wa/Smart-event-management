@@ -20,6 +20,8 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/services', require('./routes/serviceRoutes'));
+app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));

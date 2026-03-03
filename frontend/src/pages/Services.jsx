@@ -1,43 +1,46 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import api from "../api"; // Keeping consistent with HEAD's fetch approach for now to avoid breaking existing logic
+import api from "../api";
 
 function Services() {
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filterCategory, setFilterCategory] = useState("");
+    const [events, setEvents] = useState([]);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const [sortBy, setSortBy] = useState("rating");
     const navigate = useNavigate();
     const { eventId } = useParams();
 
-    useEffect(() => {
-        const fetchEventAndVendors = async () => {
-            try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const headers = { 'Content-Type': 'application/json' };
-                if (userInfo?.token) {
-                    headers['Authorization'] = `Bearer ${userInfo.token}`;
-                }
+    // Modal state for booking
+    const [showBookingModal, setShowBookingModal] = useState(false);
+    const [selectedVendor, setSelectedVendor] = useState(null);
+    const [selectedEventId, setSelectedEventId] = useState(eventId || "");
 
+    const categories = ["Photography", "Catering", "Music/DJ", "Decoration", "Invitation", "Venue"];
+
+    useEffect(() => {
+        const fetchVendors = async () => {
+            try {
                 let lat, lng;
                 // If accessed via /event-plan/:id/services, fetch event location to filter vendors
                 if (eventId) {
-                    const eventRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, { headers });
-                    const eventData = await eventRes.json();
-                    if (eventRes.ok && eventData.location) {
-
+                    const eventRes = await api.get(`/events/${eventId}`);
+                    const eventData = eventRes.data;
+                    if (eventData.location) {
                         lat = eventData.location.lat;
                         lng = eventData.location.lng;
                     }
                 }
 
-                let url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?sort=${sortBy}`;
+                const params = { sort: sortBy };
+                if (filterCategory) params.category = filterCategory;
                 if (lat && lng) {
-                    url += `&lat=${lat}&lng=${lng}`;
+                    params.lat = lat;
+                    params.lng = lng;
                 }
 
-                const res = await fetch(url, { headers });
-                const data = await res.json();
+                const { data } = await api.get('/vendors', { params });
                 setVendors(Array.isArray(data) ? data : []);
                 setLoading(false);
             } catch (error) {
@@ -45,41 +48,90 @@ function Services() {
                 setLoading(false);
             }
         };
-        fetchEventAndVendors();
-    }, [eventId, sortBy]);
+        fetchVendors();
+    }, [filterCategory, eventId, sortBy]);
 
-    const categories = ["Photography", "Catering", "Music/DJ", "Decoration", "Invitation", "Venue"];
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const { data } = await api.get("/events");
+                setEvents(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchEvents();
+    }, []);
+
+    const openBookingModal = (vendor) => {
+        setSelectedVendor(vendor);
+        setShowBookingModal(true);
+    };
+
+    const confirmBooking = async () => {
+        if (!selectedEventId) {
+            alert("Please select an event");
+            return;
+        }
+
+        try {
+            await api.post("/bookings", {
+                vendorId: selectedVendor._id,
+                eventId: selectedEventId,
+                serviceDate: new Date().toISOString()
+            });
+
+            alert(`Booking successful for ${selectedVendor.name}! Check your event dashboard.`);
+            setShowBookingModal(false);
+        } catch (err) {
+            alert(err.response?.data?.message || "Booking failed");
+            console.error(err);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-black text-white p-6 pt-24">
-            {/* Navigation */}
+            {/* Fixed Navigation Overlay */}
             <nav className="fixed top-0 w-full z-50 glass-card border-x-0 border-t-0 rounded-none px-6 py-4 left-0">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                            <span className="text-sm font-bold">S</span>
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                            <span className="text-xl font-black">S</span>
                         </div>
-                        <span className="text-lg font-bold">Services & Teams</span>
+                        <span className="text-xl font-black uppercase tracking-tight">Expert Services</span>
                     </div>
-                    <button onClick={() => navigate("/dashboard")} className="text-sm text-gray-400 hover:text-white transition-colors">
-                        Back to Dashboard
+                    <button onClick={() => navigate("/dashboard")} className="text-sm font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all">
+                        ← Exit
                     </button>
                 </div>
             </nav>
 
             <div className="max-w-7xl mx-auto">
-                <div className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Elite Partners</h1>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                        <p className="text-muted-foreground text-lg">Browse professional teams across all departments.</p>
+                <div className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div>
+                        <h1 className="text-5xl font-black uppercase tracking-tighter mb-2">Our Elite Partners</h1>
+                        <p className="text-gray-500 text-lg uppercase tracking-widest font-bold">Discover · Book · Manage</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10">
+                            <select
+                                className="bg-transparent border-none text-sm font-bold uppercase tracking-widest focus:ring-0 cursor-pointer p-2"
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                            >
+                                <option value="">All Categories</option>
+                                {categories.map(c => <option key={c} value={c} className="bg-black">{c}</option>)}
+                            </select>
+                        </div>
 
                         {/* Sort Dropdown */}
-                        <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1 border border-white/10">
+                        <div className="flex items-center gap-2 bg-white/5 rounded-2xl p-2 border border-white/10">
                             <span className="text-xs font-bold text-gray-500 px-2 uppercase">Sort By</span>
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer"
+                                className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer p-1"
                             >
                                 <option value="rating" className="bg-black">Top Rated</option>
                                 <option value="price_low" className="bg-black">Price: Low to High</option>
@@ -88,170 +140,132 @@ function Services() {
                         </div>
                     </div>
                 </div>
-
-                {loading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                ) : (
-                    <div className="space-y-16">
-                        {categories.map((cat) => {
-                            const catVendors = vendors.filter((v) => v.category === cat);
-                            if (catVendors.length === 0) return null;
-
-                            return (
-                                <section key={cat}>
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <h2 className="text-2xl font-bold">{cat} Teams</h2>
-                                        <div className="h-px bg-white/10 flex-grow"></div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                        {catVendors.map((vendor) => (
-                                            <div
-                                                key={vendor._id}
-                                                className="glass-card p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group flex flex-col"
-                                            >
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex flex-col">
-                                                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform mb-2">
-                                                            {cat === "Photography" ? "📷" : cat === "Catering" ? "🍽️" : cat === "Music/DJ" ? "🎵" : cat === "Decoration" ? "✨" : cat === "Venue" ? "🏛️" : "💌"}
-                                                        </div>
-                                                        {vendor.distance && vendor.distance !== Infinity && (
-                                                            <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-2 py-1 rounded-lg self-start">
-                                                                📍 {vendor.distance.toFixed(1)} km away
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-yellow-400/10 text-yellow-500 text-sm font-bold">
-                                                            ★ {vendor.rating || '5.0'}
-                                                        </div>
-                                                        <div className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${(vendor.reliabilityScore || 100) >= 90 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                            (vendor.reliabilityScore || 100) >= 70 ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
-                                                                'bg-red-500/10 border-red-500/20 text-red-500'
-                                                            }`}>
-                                                            Reliability: {vendor.reliabilityScore || 100}%
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Performance Metrics Chips */}
-                                                <div className="flex gap-2 mb-6">
-                                                    <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
-                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter">Resp</span>
-                                                        <span className="text-[10px] font-bold text-white">{vendor.performanceMetrics?.responsiveness || 5}/5</span>
-                                                    </div>
-                                                    <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
-                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter">Punc</span>
-                                                        <span className="text-[10px] font-bold text-white">{vendor.performanceMetrics?.punctuality || 5}/5</span>
-                                                    </div>
-                                                    <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
-                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter">Qual</span>
-                                                        <span className="text-[10px] font-bold text-white">{vendor.performanceMetrics?.quality || 5}/5</span>
-                                                    </div>
-                                                </div>
-
-                                                <h3 className="text-xl font-bold mb-2">{vendor.name}</h3>
-                                                <p className="text-gray-400 text-sm mb-6 leading-relaxed line-clamp-3">
-                                                    {vendor.description}
-                                                </p>
-
-                                                {/* Reviews Preview */}
-                                                <div className="mb-4">
-                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{vendor.reviews_count || 0} Verified Reviews</p>
-                                                </div>
-
-                                                {/* Suggestions & External Data */}
-                                                <div className="flex gap-2 mb-4">
-                                                    {vendor.googleReviewsUrl && (
-                                                        <a
-                                                            href={vendor.googleReviewsUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex-1 p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-center"
-                                                        >
-                                                            🌐 Google Reviews
-                                                        </a>
-                                                    )}
-                                                    {vendor.instagramUrl && (
-                                                        <a
-                                                            href={vendor.instagramUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex-1 p-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-[10px] font-bold text-pink-400 hover:bg-pink-500 hover:text-white transition-all text-center"
-                                                        >
-                                                            📸 Instagram
-                                                        </a>
-                                                    )}
-                                                </div>
-
-                                                {/* Portfolio Preview */}
-                                                {vendor.portfolio && vendor.portfolio.length > 0 && (
-                                                    <button
-                                                        onClick={() => setSelectedPortfolio(vendor)}
-                                                        className="mb-4 w-full p-2 rounded-2xl bg-white/5 border border-white/5 hover:border-accent/50 transition-all text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white flex items-center justify-center gap-2"
-                                                    >
-                                                        🖼️ View Portfolio ({vendor.portfolio.length} works)
-                                                    </button>
-                                                )}
-
-                                                <div className="flex justify-between items-center mt-auto border-t border-white/10 pt-4">
-                                                    <div>
-                                                        <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Starting From</span>
-                                                        <p className="text-2xl font-bold text-accent">₹{vendor.price.toLocaleString()}</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (eventId) {
-                                                                try {
-                                                                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                                                                    // Get current event to update it
-                                                                    const eventRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, {
-                                                                        headers: { Authorization: `Bearer ${userInfo?.token}` }
-                                                                    });
-                                                                    const eventData = await eventRes.json();
-
-                                                                    const updatedVendors = {
-                                                                        ...(eventData.selectedVendors || {}),
-                                                                        [vendor.category]: {
-                                                                            _id: vendor._id,
-                                                                            name: vendor.name,
-                                                                            price: vendor.price,
-                                                                            status: 'Selected'
-                                                                        }
-                                                                    };
-
-                                                                    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, {
-                                                                        method: 'PUT',
-                                                                        headers: {
-                                                                            'Content-Type': 'application/json',
-                                                                            Authorization: `Bearer ${userInfo?.token}`
-                                                                        },
-                                                                        body: JSON.stringify({ selectedVendors: updatedVendors })
-                                                                    });
-                                                                    navigate(`/event-plan/${eventId}`);
-                                                                } catch (err) {
-                                                                    console.error("Selection failed", err);
-                                                                }
-                                                            } else {
-                                                                navigate("/create-event");
-                                                            }
-                                                        }}
-                                                        className="bg-white text-black px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors"
-                                                    >
-                                                        {eventId ? 'Select Team' : 'Book Now'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
+
+            {loading ? (
+                <div className="flex items-center justify-center h-64">
+                    <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {vendors.map((vendor) => (
+                        <div
+                            key={vendor._id}
+                            className="glass-card p-6 rounded-[40px] border border-white/10 bg-white/5 hover:bg-white/10 transition-all group flex flex-col relative overflow-hidden"
+                        >
+                            {/* Category Badge */}
+                            <div className="absolute top-6 right-6 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest group-hover:bg-accent/20 group-hover:border-accent/40 group-hover:text-accent transition-all">
+                                {vendor.category}
+                            </div>
+
+                            <div className="flex flex-col gap-4 mb-6">
+                                <div className="w-16 h-16 rounded-[24px] bg-white/5 border border-white/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-500">
+                                    {vendor.category === "Photography" ? "📷" : vendor.category === "Catering" ? "🍽️" : vendor.category === "Music/DJ" ? "🎵" : vendor.category === "Decoration" ? "✨" : vendor.category === "Venue" ? "🏛️" : "💌"}
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="px-2 py-1 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-[10px] font-black">
+                                            ★ {vendor.rating || '5.0'}
+                                        </div>
+                                        <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${(vendor.reliabilityScore || 100) >= 90 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'}`}>
+                                            REL: {vendor.reliabilityScore || 100}%
+                                        </div>
+                                    </div>
+                                    {vendor.distance && vendor.distance !== Infinity && (
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-2 py-1 rounded-lg self-start">
+                                            📍 {vendor.distance.toFixed(1)} km away
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <h3 className="text-2xl font-black mb-2 uppercase tracking-tight">{vendor.name}</h3>
+                            <p className="text-gray-500 text-sm mb-6 leading-relaxed line-clamp-3 font-medium">
+                                {vendor.description || "Top-tier service provider specialized in high-end events and precise execution."}
+                            </p>
+
+                            {/* Performance Metrics Chips */}
+                            <div className="flex gap-2 mb-8 bg-black/20 p-3 rounded-3xl border border-white/5">
+                                <Metric label="Resp" value={vendor.performanceMetrics?.responsiveness || 5} />
+                                <Metric label="Punc" value={vendor.performanceMetrics?.punctuality || 5} />
+                                <Metric label="Qual" value={vendor.performanceMetrics?.quality || 5} />
+                            </div>
+
+                            <div className="flex justify-between items-center mt-auto border-t border-white/10 pt-6">
+                                <div>
+                                    <span className="text-[10px] text-gray-500 uppercase tracking-widest font-black block mb-1">Fee Starts at</span>
+                                    <p className="text-2xl font-black text-white">₹{vendor.price.toLocaleString()}</p>
+                                </div>
+                                <button
+                                    onClick={() => openBookingModal(vendor)}
+                                    className="bg-white text-black px-8 py-3 rounded-2xl text-[12px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all shadow-xl shadow-white/5 active:scale-95"
+                                >
+                                    Book Now
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+
+            {/* Booking Modal Overlay */}
+            {
+                showBookingModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-fade-in" onClick={() => setShowBookingModal(false)}></div>
+                        <div className="relative glass-card max-w-lg w-full rounded-[40px] border border-white/10 bg-[#050505] p-10 animate-scale-up shadow-[0_0_100px_rgba(255,255,255,0.05)]">
+                            <button onClick={() => setShowBookingModal(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white text-xl">✕</button>
+
+                            <div className="text-center mb-10">
+                                <span className="text-accent font-black uppercase tracking-[0.3em] text-[10px] mb-2 block">{selectedVendor?.category} Experience</span>
+                                <h2 className="text-3xl font-black uppercase tracking-tighter">Reserve {selectedVendor?.name}</h2>
+                                <p className="text-gray-500 text-sm mt-2">Scale your event with professional talent.</p>
+                            </div>
+
+                            <div className="space-y-6 mb-10">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Target Event Portfolio</label>
+                                    <select
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-all appearance-none cursor-pointer"
+                                        value={selectedEventId}
+                                        onChange={(e) => setSelectedEventId(e.target.value)}
+                                    >
+                                        <option value="" className="bg-black">Choose an Active Event</option>
+                                        {events.map((ev) => (
+                                            <option key={ev._id} value={ev._id} className="bg-black">{ev.name.toUpperCase()} ({new Date(ev.startDate).toLocaleDateString()})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="p-6 rounded-3xl bg-white/5 border border-white/5">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Initial Investment</span>
+                                        <span className="text-xl font-black text-white">₹{selectedVendor?.price.toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase">Includes base operations & direct material costs.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setShowBookingModal(false)}
+                                    className="flex-1 py-4 border border-white/10 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-white/5 transition-all active:scale-95"
+                                >
+                                    Dismiss
+                                </button>
+                                <button
+                                    onClick={confirmBooking}
+                                    className="flex-1 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-[0_10px_30px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    Finalize Booking
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             {/* Portfolio Modal */}
             {
@@ -296,10 +310,19 @@ function Services() {
                 )
             }
 
-            <footer className="mt-20 py-12 border-t border-white/10 text-center text-muted-foreground">
-                <p>© 2026 Smart Event Management. All vendor works verified.</p>
+            <footer className="mt-20 py-12 border-t border-white/10 text-center">
+                <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.2em]">Verified Professional Network · © 2026</p>
             </footer>
         </div >
+    );
+}
+
+function Metric({ label, value }) {
+    return (
+        <div className="flex flex-col items-center flex-1 bg-white/5 p-2 rounded-xl border border-white/5">
+            <span className="text-[8px] font-black text-gray-600 uppercase tracking-tighter mb-1">{label}</span>
+            <span className="text-[12px] font-black text-white">{value}/5</span>
+        </div>
     );
 }
 

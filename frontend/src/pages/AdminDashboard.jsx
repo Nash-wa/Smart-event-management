@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function AdminDashboard() {
     const [activeTab, setActiveTab] = useState("stats");
@@ -12,51 +13,36 @@ function AdminDashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userInfo?.token}`
-            };
+            const [vRes, uRes, eRes, sRes] = await Promise.all([
+                api.get('/vendors', { params: { isApproved: false } }),
+                api.get('/admin/users'),
+                api.get('/events'),
+                api.get('/admin/stats')
+            ]);
 
-            const vRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?isApproved=false`, { headers });
-            const vData = await vRes.json();
-            setPendingVendors(Array.isArray(vData) ? vData : []);
+            setPendingVendors(Array.isArray(vRes.data) ? vRes.data : []);
+            setAllUsers(uRes.data);
+            setAllEvents(eRes.data);
+            setStats(sRes.data);
 
-            const uRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/users`, { headers });
-            const uData = await uRes.json();
-            setAllUsers(uData);
-
-            const eRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, { headers });
-            const eData = await eRes.json();
-            setAllEvents(eData);
-
-            const sRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/stats`, { headers });
-            const sData = await sRes.json();
-            setStats(sData);
-
-        } catch {
-            // ignore
+        } catch (error) {
+            console.error(error);
         }
     }, []);
 
     useEffect(() => {
-        setTimeout(() => fetchData(), 0);
+        let isMounted = true;
+        if (isMounted) {
+            fetchData();
+        }
+        return () => { isMounted = false; };
     }, [fetchData]);
 
     const handleApprove = async (id) => {
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors/${id}/approve`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userInfo?.token}`
-                }
-            });
-            if (res.ok) {
-                alert("Venture Approved! ✅");
-                fetchData();
-            }
+            await api.put(`/vendors/${id}/approve`);
+            alert("Venture Approved! ✅");
+            fetchData();
         } catch {
             alert("Error approving");
         }
@@ -65,22 +51,11 @@ function AdminDashboard() {
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/users/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${userInfo?.token}`
-                }
-            });
-            if (res.ok) {
-                alert("User deleted 🗑️");
-                fetchData();
-            } else {
-                const data = await res.json();
-                alert(data.message || "Delete failed");
-            }
-        } catch {
-            alert("Error deleting user");
+            await api.delete(`/admin/users/${id}`);
+            alert("User deleted 🗑️");
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || "Delete failed");
         }
     };
 

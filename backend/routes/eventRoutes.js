@@ -11,7 +11,9 @@ const {
     getPublicEventById,
     addNode,
     deleteNode,
-    getPublicNodes
+    getPublicNodes,
+    getReadinessScore,
+    getArNodes
 } = require('../controllers/eventController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -19,6 +21,7 @@ const { protect } = require('../middleware/authMiddleware');
 router.get('/public', getPublicEvents);
 router.get('/public/:id', getPublicEventById);
 router.get('/public/:id/nodes', getPublicNodes);
+router.get('/:id/arnodes', getArNodes);
 
 // Stats
 router.get('/stats/me', protect, getEventStats);
@@ -32,6 +35,8 @@ router.route('/:id')
     .get(protect, getEventById)
     .put(protect, updateEvent)
     .delete(protect, deleteEvent);
+
+router.get('/:id/readiness', protect, getReadinessScore);
 
 router.route('/:id/nodes')
     .post(protect, addNode);

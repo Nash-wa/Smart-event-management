@@ -262,6 +262,11 @@ const updateEvent = asyncHandler(async (req, res) => {
             event.nodes = req.body.arPoints;
         }
 
+        // Handle arNodes update
+        if (req.body.arNodes !== undefined) {
+            event.arNodes = req.body.arNodes;
+        }
+
         const updatedEvent = await event.save();
 
         // If plan timeline updated, and some tasks moved to Completed, mark related reminders as sent
@@ -430,6 +435,102 @@ const getPublicNodes = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get AR nodes for an event
+// @route   GET /api/events/:id/arnodes
+// @access  Public
+const getArNodes = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id);
+
+    if (event) {
+        res.json(event.arNodes || []);
+    } else {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+});
+
+
+// @desc    Get event readiness score
+// @route   GET /api/events/:id/readiness
+// @access  Private
+const getReadinessScore = asyncHandler(async (req, res) => {
+    const event = await Event.findById(req.params.id).populate('nodes');
+
+    if (!event) {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+
+    // Check authorization (event owner or admin)
+    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to view readiness for this event');
+    }
+
+    let score = 0;
+    const metrics = {};
+
+    // Check if venue booked (+20%)
+    metrics.venueBooked = !!event.venue;
+    if (event.venue) score += 20;
+
+    // Check if at least 2 services booked (+20%)
+    const Booking = require('../models/bookingModel');
+    const servicesCount = await Booking.countDocuments({
+        event: req.params.id,
+        status: { $in: ['pending', 'confirmed', 'completed'] }
+    });
+    metrics.servicesCount = servicesCount;
+    metrics.servicesBooked = servicesCount >= 2;
+    if (servicesCount >= 2) score += 20;
+
+    // Check if budget configured (+20%)
+    metrics.budgetConfigured = (event.budget && event.budget > 0);
+    if (event.budget && event.budget > 0) score += 20;
+
+    // Check if AR nodes exist (+20%)
+    const nodesCount = (event.nodes ? event.nodes.length : 0) + (event.arNodes ? event.arNodes.length : 0);
+    metrics.arNodesCount = nodesCount;
+    metrics.arNodesExist = nodesCount > 0;
+    if (nodesCount > 0) score += 20;
+
+    // Check Guest Count
+    const Participant = require('../models/participantModel');
+    const guestCount = await Participant.countDocuments({ event: req.params.id });
+    metrics.guestCount = guestCount;
+
+    // Check if reminder configured (+20%)
+    try {
+        const Reminder = require('../models/reminderModel');
+        const reminderExists = await Reminder.findOne({ event: req.params.id });
+        metrics.reminderConfigured = !!reminderExists;
+        if (reminderExists) score += 20;
+    } catch (err) {
+        console.error('Could not check reminder status', err);
+        metrics.reminderConfigured = false;
+    }
+
+    metrics.readinessScore = Math.min(score, 100); // Cap at 100%
+
+    res.status(200).json({
+        eventId: event._id,
+        eventName: event.name,
+        readinessScore: metrics.readinessScore,
+        metrics
+    });
+});
+
+// @desc    Get all public events
+// @route   GET /api/events/public
+// @access  Public
+const getPublicEvents = asyncHandler(async (req, res) => {
+    const events = await Event.find({ isPublic: true })
+        .populate('user', 'name email')
+        .select('name category startDate venue capacity isPublic description')
+        .sort('-startDate');
+    res.json(events);
+});
+
 module.exports = {
     createEvent,
     getEvents,
@@ -441,5 +542,7 @@ module.exports = {
     getEventStats,
     addNode,
     deleteNode,
-    getPublicNodes
+    getPublicNodes,
+    getReadinessScore,
+    getArNodes
 };
