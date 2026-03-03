@@ -156,10 +156,10 @@ function EventPlan() {
                 setEvent(prev => ({ ...prev, nodes: updatedNodes }));
                 setNewNode({ nodeId: '', anchorType: 'Entrance', latitude: null, longitude: null, instructions: '' });
             } else {
-                const err = await res.json();
-                setNodeError(err.message || 'Failed to deploy node.');
+                const errorData = await res.json();
+                setNodeError(errorData.message || 'Failed to deploy node.');
             }
-        } catch (err) {
+        } catch (error) {
             setNodeError('Network error. Please try again.');
         } finally {
             setNodeDeploying(false);

@@ -24,6 +24,8 @@ const eventSchema = mongoose.Schema({
     },
     capacity: { type: Number },
     budget: { type: Number },
+    usedBudget: { type: Number, default: 0 },
+    remainingBudget: { type: Number, default: 0 },
     location: {
         lat: { type: Number },
         lng: { type: Number },
@@ -36,6 +38,13 @@ const eventSchema = mongoose.Schema({
         latitude: { type: Number },
         longitude: { type: Number },
         instructions: { type: String }
+    }],
+    arNodes: [{
+        name: { type: String },
+        latitude: { type: Number },
+        longitude: { type: Number },
+        instruction: { type: String },
+        order: { type: Number }
     }],
     selectedVendors: { type: Map, of: Object }, // Store selected vendor details
     manualExpenses: [{

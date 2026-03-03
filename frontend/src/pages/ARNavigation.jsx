@@ -7,6 +7,40 @@ const IndoorNavigation = () => {
     const [event, setEvent] = useState(null);
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [userLocation, setUserLocation] = useState(null);
+    const [bearing, setBearing] = useState(0);
+    const [distance, setDistance] = useState(null);
+    const [proximityAlert, setProximityAlert] = useState(false);
+
+    // Calculate bearing from user location to target location
+    const calculateBearing = (userLat, userLng, targetLat, targetLng) => {
+        const toRad = (deg) => (deg * Math.PI) / 180;
+        const toDeg = (rad) => (rad * 180) / Math.PI;
+
+        const dLng = toRad(targetLng - userLng);
+        const y = Math.sin(dLng) * Math.cos(toRad(targetLat));
+        const x =
+            Math.cos(toRad(userLat)) * Math.sin(toRad(targetLat)) -
+            Math.sin(toRad(userLat)) * Math.cos(toRad(targetLat)) * Math.cos(dLng);
+
+        const bearing = (toDeg(Math.atan2(y, x)) + 360) % 360;
+        return bearing;
+    };
+
+    // Calculate distance between two points (Haversine formula)
+    const calculateDistance = (lat1, lng1, lat2, lng2) => {
+        const R = 6371; // Earth's radius in km
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLng = ((lng2 - lng1) * Math.PI) / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((lat1 * Math.PI) / 180) *
+                Math.cos((lat2 * Math.PI) / 180) *
+                Math.sin(dLng / 2) *
+                Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c * 1000; // Return in meters
+    };
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -25,10 +59,53 @@ const IndoorNavigation = () => {
         if (eventId) fetchEvent();
     }, [eventId]);
 
-    const steps = event?.arPoints || [];
+    // Watch user location
+    useEffect(() => {
+        const watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setUserLocation({ lat: latitude, lng: longitude });
+
+                // Calculate bearing and distance to current step
+                if (event && event.nodes && event.nodes[currentStep]) {
+                    const currentNode = event.nodes[currentStep];
+                    const newBearing = calculateBearing(
+                        latitude,
+                        longitude,
+                        currentNode.latitude,
+                        currentNode.longitude
+                    );
+                    const newDistance = calculateDistance(
+                        latitude,
+                        longitude,
+                        currentNode.latitude,
+                        currentNode.longitude
+                    );
+
+                    setBearing(newBearing);
+                    setDistance(newDistance);
+
+                    // Auto-advance if user is within 20 meters of current node
+                    if (newDistance < 20 && currentStep < event.nodes.length - 1) {
+                        setProximityAlert(true);
+                        setTimeout(() => {
+                            setCurrentStep(currentStep + 1);
+                            setProximityAlert(false);
+                        }, 2000);
+                    }
+                }
+            },
+            (error) => {
+                console.warn("Geolocation error:", error);
+            },
+            { enableHighAccuracy: true, maximumAge: 5000 }
+        );
+
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, [event, currentStep]);
 
     const handleNext = () => {
-        if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
+        if (currentStep < (event?.nodes?.length || 0) - 1) setCurrentStep(currentStep + 1);
     };
 
     const handlePrev = () => {
@@ -42,6 +119,8 @@ const IndoorNavigation = () => {
             </div>
         );
     }
+
+    const steps = event?.nodes || [];
 
     if (!event || steps.length === 0) {
         return (
@@ -93,24 +172,55 @@ const IndoorNavigation = () => {
                             backgroundSize: '40px 40px'
                         }} />
 
-                        <div className="z-10 flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-full bg-primary/20 border-4 border-primary/40 flex items-center justify-center text-4xl mb-4 animate-bounce">
-                                {currentPoint.pointType === 'Entrance' ? '🚪' :
-                                    currentPoint.pointType === 'Stage' ? '🎭' :
-                                        currentPoint.pointType === 'Restroom' ? '🚻' :
-                                            currentPoint.pointType === 'Exit' ? '🏃' :
-                                                currentPoint.pointType === 'HelpDesk' ? 'ℹ️' : '📍'}
+                        {/* Proximity Alert */}
+                        {proximityAlert && (
+                            <div className="absolute top-4 left-4 right-4 z-20 bg-green-500/20 border border-green-500/40 rounded-xl px-4 py-3 animate-pulse">
+                                <p className="text-sm font-bold text-green-300">✓ Node nearby! Advancing...</p>
                             </div>
-                            <h2 className="text-3xl font-black uppercase tracking-tighter text-center px-6">
-                                {currentPoint.label}
-                            </h2>
-                            <p className="text-xs font-mono text-gray-500 mt-2 uppercase">Node Coordinates: Locked</p>
+                        )}
+
+                        {/* Distance and GPS Status */}
+                        <div className="absolute top-4 right-4 z-20 bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur">
+                            <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">GPS Distance</p>
+                            <p className="text-lg font-black text-accent">
+                                {distance !== null ? `${Math.round(distance)}m` : 'Locating...'}
+                            </p>
                         </div>
 
-                        {/* Direction Arrow */}
-                        {currentStep < steps.length - 1 && (
-                            <div className="absolute bottom-8 right-8 animate-pulse text-white/40">
-                                <span className="text-6xl">→</span>
+                        <div className="z-10 flex flex-col items-center">
+                            <div className="w-24 h-24 rounded-full bg-primary/20 border-4 border-primary/40 flex items-center justify-center text-4xl mb-4 animate-bounce">
+                                {currentPoint.anchorType === 'Entrance' ? '🚪' :
+                                    currentPoint.anchorType === 'Stage' ? '🎭' :
+                                        currentPoint.anchorType === 'Restroom' ? '🚻' :
+                                            currentPoint.anchorType === 'Exit' ? '🏃' :
+                                                currentPoint.anchorType === 'HelpDesk' ? 'ℹ️' : '📍'}
+                            </div>
+                            <h2 className="text-3xl font-black uppercase tracking-tighter text-center px-6">
+                                {currentPoint.nodeId || `Node ${currentStep + 1}`}
+                            </h2>
+                            <p className="text-xs font-mono text-gray-500 mt-2 uppercase">
+                                {currentPoint.anchorType}
+                            </p>
+                        </div>
+
+                        {/* Dynamic Directional Arrow */}
+                        {userLocation && currentStep < steps.length - 1 && (
+                            <div
+                                className="absolute bottom-8 right-8 text-6xl transition-transform duration-300"
+                                style={{
+                                    transform: `rotate(${bearing}deg)`,
+                                    textShadow: '0 0 20px rgba(59,130,246,0.6)',
+                                    filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.4))'
+                                }}
+                            >
+                                ↑
+                            </div>
+                        )}
+
+                        {/* Direction Label */}
+                        {userLocation && (
+                            <div className="absolute bottom-8 left-8 text-xs font-bold bg-white/5 border border-white/10 px-3 py-2 rounded-lg">
+                                <p className="text-gray-400">Bearing: <span className="text-accent">{Math.round(bearing)}°</span></p>
                             </div>
                         )}
                     </div>
@@ -118,10 +228,18 @@ const IndoorNavigation = () => {
                     {/* Instruction Panel */}
                     <div className="p-10 flex-1 flex flex-col justify-between">
                         <div>
-                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-4 block">Instruction</span>
+                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-4 block">Navigation Instructions</span>
                             <p className="text-2xl font-bold leading-tight">
-                                {currentPoint.instruction || `Head towards the ${currentPoint.label}. Follow venue signs for the closest path.`}
+                                {currentPoint.instructions || `Head towards the ${currentPoint.anchorType}. Follow venue signs for the closest path.`}
                             </p>
+                            {userLocation && distance !== null && (
+                                <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                                    <p className="text-sm text-gray-300">
+                                        <span className="font-bold text-primary">Distance:</span> {Math.round(distance)}m away •
+                                        <span className="font-bold text-accent ml-2">Direction:</span> {Math.round(bearing)}° from north
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Controls */}

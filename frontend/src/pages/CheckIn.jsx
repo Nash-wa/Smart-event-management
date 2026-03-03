@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import '../css/checkin.css';
 
 const CheckIn = () => {
-    const { eventId } = useParams();
+    const { } = useParams();
     const [ticketInput, setTicketInput] = useState('');
     const [status, setStatus] = useState({ type: '', message: '' });
     const [lastCheckedIn, setLastCheckedIn] = useState(null);
@@ -35,7 +35,7 @@ const CheckIn = () => {
             } else {
                 setStatus({ type: 'error', message: data.message });
             }
-        } catch (err) {
+        } catch (error) {
             setStatus({ type: 'error', message: 'Network error. Please try again.' });
         }
     };

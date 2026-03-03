@@ -5,13 +5,14 @@ const Vendor = require('../models/vendorModel');
 // @route   GET /api/vendors
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
-    const district = req.query.district;
-    const category = req.query.category;
-    const isApproved = req.query.isApproved === 'false' ? false : true; // Default to approved
-
-    const { lat, lng } = req.query;
+    const { lat, lng, owner, district, category } = req.query;
+    const isApproved = req.query.isApproved === 'false' ? false : true;
 
     let query = { isApproved };
+
+    if (owner) {
+        query.owner = owner;
+    }
 
     if (category) {
         query.category = category;
@@ -60,7 +61,7 @@ function deg2rad(deg) {
 // @route   POST /api/vendors
 // @access  Private (Vendor)
 const createVendor = asyncHandler(async (req, res) => {
-    const { name, category, price, description, portfolio, location } = req.body;
+    const { name, category, price, description, portfolio, location, district } = req.body;
 
     const vendor = await Vendor.create({
         name,
@@ -69,6 +70,7 @@ const createVendor = asyncHandler(async (req, res) => {
         description,
         portfolio: portfolio || [],
         location,
+        district: district || 'Default District',
         owner: req.user._id, // Secured: uses authenticated user ID
         isApproved: false // Always false on creation
     });
@@ -109,7 +111,10 @@ const getVendorRequests = asyncHandler(async (req, res) => {
     // Filter events where any selected vendor ID matches our owner's vendors
     const requests = allEvents.filter(event => {
         if (!event.selectedVendors) return false;
-        return Array.from(event.selectedVendors.values()).some(v => vendorIds.includes(v._id?.toString()));
+        // Check both direct _id and vendorId field in the Map values
+        return Array.from(event.selectedVendors.values()).some(v =>
+            vendorIds.includes(v.vendorId?.toString()) || vendorIds.includes(v._id?.toString())
+        );
     });
 
     res.json(requests);

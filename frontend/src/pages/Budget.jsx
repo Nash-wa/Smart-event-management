@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { calculateBudgetAllocation } from "../utils/planningEngine";
+
 
 function Budget() {
     const { eventId } = useParams();
@@ -113,6 +115,17 @@ function Budget() {
     const remaining = totalBudget - totalExpenses;
     const expensePercentage = totalBudget > 0 ? (totalExpenses / totalBudget) * 100 : 0;
 
+    const recommendedAllocations = calculateBudgetAllocation(totalBudget, event.category);
+
+    const getBudgetStatus = () => {
+        if (expensePercentage > 100) return { label: "CRITICAL", color: "text-red-500", icon: "🚨" };
+        if (expensePercentage > 85) return { label: "WARNING", color: "text-orange-500", icon: "⚠️" };
+        if (expensePercentage > 50) return { label: "MODERATE", color: "text-blue-500", icon: "📊" };
+        return { label: "HEALTHY", color: "text-green-500", icon: "✅" };
+    };
+
+    const budgetStatus = getBudgetStatus();
+
 
     return (
         <div className="min-h-screen p-4 md:p-8">
@@ -150,13 +163,76 @@ function Budget() {
 
                     <div className="glass-card p-6 rounded-3xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 font-bold text-6xl">💳</div>
-                        <h3 className="text-muted-foreground text-sm font-medium mb-1">Net Balance</h3>
+                        <div className="flex justify-between items-start mb-1">
+                            <h3 className="text-muted-foreground text-sm font-medium">Net Balance</h3>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${budgetStatus.color.replace('text-', 'border-').replace('500', '500/50')} bg-black/40`}>
+                                {budgetStatus.icon} {budgetStatus.label}
+                            </span>
+                        </div>
                         <p className="text-3xl font-bold text-blue-400">₹{remaining.toLocaleString()}</p>
                         <div className="mt-4 w-full h-1 bg-white/10 rounded-full overflow-hidden">
                             <div className="h-full bg-blue-500" style={{ width: `${Math.max(0, 100 - expensePercentage)}%` }}></div>
                         </div>
                     </div>
                 </div>
+
+                {/* SMART INSIGHTS */}
+                <div className="mt-8 glass-card p-8 rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                <span className="p-2 bg-blue-500/20 rounded-lg text-blue-400 text-lg">💡</span>
+                                Smart Spending Insights
+                            </h3>
+                            <p className="text-muted-foreground text-sm max-w-xl">
+                                Based on your <span className="text-blue-400 font-bold uppercase tracking-tight">{event.category}</span> event profile,
+                                here is how your budget should ideally be distributed for maximum impact.
+                            </p>
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="bg-black/40 px-5 py-3 rounded-2xl border border-white/5 text-center">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Health Score</p>
+                                <p className="text-2xl font-black text-white">{Math.max(0, 100 - Math.round(expensePercentage))}%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {recommendedAllocations.map((alloc, idx) => {
+                            // Find if we have actual spending for this category
+                            const actualSpending = vendors
+                                .filter(v => v.category?.toLowerCase() === alloc.category.toLowerCase() ||
+                                    (alloc.category === "Venue & Decor" && (v.category === "Venue" || v.category === "Decor")))
+                                .reduce((sum, v) => sum + (v.price || 0), 0);
+
+                            const utilization = alloc.amount > 0 ? (actualSpending / alloc.amount) * 100 : 0;
+
+                            return (
+                                <div key={idx} className="bg-white/5 p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <p className="font-bold text-sm text-white/90">{alloc.category}</p>
+                                        <span className="text-[10px] text-blue-400 font-mono font-bold">{alloc.percentage}% Target</span>
+                                    </div>
+                                    <div className="flex justify-between items-baseline mb-1">
+                                        <p className="text-xs text-muted-foreground">Budgeted: <span className="text-white font-mono">₹{alloc.amount.toLocaleString()}</span></p>
+                                        {actualSpending > 0 && (
+                                            <p className={`text-[10px] font-bold ${utilization > 100 ? 'text-red-400' : 'text-green-400'}`}>
+                                                {utilization.toFixed(0)}% Used
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="mt-2 w-full h-1.5 bg-black/30 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full transition-all duration-500 rounded-full ${utilization > 100 ? 'bg-red-500' : 'bg-blue-500'}`}
+                                            style={{ width: `${Math.min(utilization || 0, 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                     {/* VENDOR SERVICES */}

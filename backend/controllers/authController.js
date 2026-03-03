@@ -5,7 +5,11 @@ const { sendOTPEmail, sendPasswordResetEmail } = require('../utils/emailService'
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const allowedDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'hotmail.com', 'protonmail.com'];
+const allowedDomains = [
+    'gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'hotmail.com',
+    'protonmail.com', 'zoho.com', 'yandex.com', 'mail.com', 'aol.com',
+    'gmx.com', 'fastmail.com'
+];
 
 // ─── Register ─────────────────────────────────────────────────────────────────
 // @route POST /api/auth/register
@@ -34,6 +38,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const otpCode = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    console.log(`[TESTING] OTP for ${email}: ${otpCode}`);
 
     if (existingUser && !existingUser.isVerified) {
         // Resend OTP to unverified account
@@ -165,6 +171,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     const otpCode = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    console.log(`[TESTING] Reset OTP for ${email}: ${otpCode}`);
 
     user.otpCode = otpCode;
     user.otpExpires = otpExpires;

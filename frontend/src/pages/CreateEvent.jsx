@@ -246,15 +246,17 @@ function CreateEvent() {
 
     if (formData.isCollegeEvent && formData.district && step === 2) {
       fetchColleges();
-    } else {
+    } else if (collegeList.length > 0) {
       setCollegeList([]);
     }
-  }, [formData.isCollegeEvent, formData.district, step]);
+  }, [formData.isCollegeEvent, formData.district, step, collegeList.length]);
 
   // Debounced college search when typing
   useEffect(() => {
     if (!collegeQuery || collegeQuery.trim().length === 0) {
-      setCollegeSuggestions([]);
+      if (collegeSuggestions.length > 0) {
+        setCollegeSuggestions([]);
+      }
       return;
     }
 
@@ -345,7 +347,7 @@ function CreateEvent() {
                   <option>Hybrid</option>
                 </select>
               </div>
-            
+
               <div className="form-group">
                 <label>Event Type</label>
                 <select name="eventType" value={formData.isCollegeEvent ? 'College' : 'General'} onChange={handleInputChange}>
@@ -515,7 +517,8 @@ function CreateEvent() {
                 {collegeSuggestions.length > 0 && (
                   <ul className="suggestions" style={{ maxHeight: 200, overflowY: 'auto', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginTop: 6, borderRadius: 6, padding: 6 }}>
                     {collegeSuggestions.map((c, idx) => (
-                      <li key={idx} style={{ padding: '8px 10px', cursor: 'pointer' }} onMouseDown={(e) => { e.preventDefault();
+                      <li key={idx} style={{ padding: '8px 10px', cursor: 'pointer' }} onMouseDown={(e) => {
+                        e.preventDefault();
                         setFormData(prev => ({
                           ...prev,
                           isCollegeEvent: true,
