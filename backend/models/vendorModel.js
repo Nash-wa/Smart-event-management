@@ -14,15 +14,20 @@ const vendorSchema = mongoose.Schema({
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     isApproved: { type: Boolean, default: false },
 
-    // Location Data
-    district: { type: String, required: true },
+    // Social & Reviews (from HEAD)
+    googleReviewsUrl: { type: String },
+    instagramUrl: { type: String },
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
+
+    // Location Data (from origin/main)
+    district: { type: String, required: false }, // Made optional to avoid validation errors on existing data
     address: { type: String },
     location: {
         lat: { type: Number },
         lng: { type: Number }
     },
 
-    // Ratings & Metrics
+    // Ratings & Metrics (from origin/main)
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
     reliabilityScore: { type: Number, default: 0 }, // 0-100 scale

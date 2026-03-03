@@ -32,7 +32,7 @@ function Participants() {
 
     const fetchEvent = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
         const data = await res.json();
         if (res.ok) setEvent(data);
       } catch (error) {
@@ -123,10 +123,10 @@ function Participants() {
     if (!window.confirm("Are you sure you want to remove this participant?")) return;
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`http://localhost:5000/api/participants/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${userInfo?.token}`
+          Authorization: `Bearer ${JSON.parse(localStorage.getItem('userInfo'))?.token}`
         }
       });
       if (res.ok) {

@@ -1,13 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Login from "./pages/login";
+import Register from "./pages/register";
 import ForgotPassword from "./pages/ForgotPassword";
-import Dashboard from "./pages/Dashboard";
-
+import Dashboard from "./pages/dashboard";
 import CreateEvent from "./pages/CreateEvent";
-import MyEvents from "./pages/MyEvents";
+import MyEvents from "./pages/myevents";
 import Profile from "./pages/Profile";
 import Participants from "./pages/Participants";
 import Budget from "./pages/Budget";
@@ -18,6 +17,8 @@ import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EventPlan from "./pages/EventPlan";
 import ARNavigation from "./pages/ARNavigation";
+import VentureAdvice from "./pages/VentureAdvice";
+import Chatbot from "./components/Chatbot";
 import GuestARNavigation from "./pages/GuestARNavigation";
 import RsvpPage from "./pages/RsvpPage";
 
@@ -31,7 +32,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -57,6 +59,7 @@ function App() {
         <Route path="/checkin/:eventId" element={<CheckIn />} />
 
       </Routes>
+      <Chatbot />
     </BrowserRouter>
   );
 }

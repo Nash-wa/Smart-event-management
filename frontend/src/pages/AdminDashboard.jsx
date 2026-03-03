@@ -7,6 +7,7 @@ function AdminDashboard() {
     const [allUsers, setAllUsers] = useState([]);
     const [allEvents, setAllEvents] = useState([]);
     const [stats, setStats] = useState({ users: 0, events: 0, vendors: 0, pending: 0 });
+
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
@@ -17,23 +18,24 @@ function AdminDashboard() {
                 'Authorization': `Bearer ${userInfo?.token}`
             };
 
-            const vRes = await fetch('http://localhost:5000/api/vendors?isApproved=false', { headers });
+            const vRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?isApproved=false`, { headers });
             const vData = await vRes.json();
             setPendingVendors(Array.isArray(vData) ? vData : []);
 
-            const uRes = await fetch('http://localhost:5000/api/admin/users', { headers });
+            const uRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/users`, { headers });
             const uData = await uRes.json();
             setAllUsers(uData);
 
-            const eRes = await fetch('http://localhost:5000/api/events', { headers });
+            const eRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, { headers });
             const eData = await eRes.json();
             setAllEvents(eData);
 
-            const sRes = await fetch('http://localhost:5000/api/admin/stats', { headers });
+            const sRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/stats`, { headers });
             const sData = await sRes.json();
             setStats(sData);
-        } catch (error) {
-            console.error(error);
+
+        } catch {
+            // ignore
         }
     }, []);
 
@@ -44,7 +46,7 @@ function AdminDashboard() {
     const handleApprove = async (id) => {
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/vendors/${id}/approve`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors/${id}/approve`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -64,7 +66,7 @@ function AdminDashboard() {
         if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/users/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${userInfo?.token}`

@@ -6,8 +6,7 @@ class ErrorBoundary extends React.Component {
         this.state = { hasError: false, error: null, errorInfo: null };
     }
 
-    // eslint-disable-next-line no-unused-vars
-    static getDerivedStateFromError(_error) {
+    static getDerivedStateFromError(error) {
         return { hasError: true };
     }
 
@@ -18,13 +17,14 @@ class ErrorBoundary extends React.Component {
 
     render() {
         if (this.state.hasError) {
+            const { error, errorInfo } = this.state; // Destructure error and errorInfo from state
             return (
                 <div style={{ padding: 20, color: 'white', background: 'darkred', height: '100vh' }}>
                     <h1>Something went wrong.</h1>
                     <details style={{ whiteSpace: 'pre-wrap' }}>
-                        {this.state.error && this.state.error.toString()}
+                        {error && error.toString()}
                         <br />
-                        {this.state.errorInfo && this.state.errorInfo.componentStack}
+                        {errorInfo && errorInfo.componentStack}
                     </details>
                 </div>
             );

@@ -1,0 +1,990 @@
+{
+    "Thiruvananthapuram": [
+        {
+            "name": "RDR Convention Centre",
+            "address": "Edapazhinji, Thiruvananthapuram"
+        },
+        {
+            "name": "Al Saj Convention Centre",
+            "address": "Kazhakkoottam, Thiruvananthapuram"
+        },
+        {
+            "name": "Girideepam Convention Centre",
+            "address": "Nalanchira, Thiruvananthapuram"
+        },
+        {
+            "name": "Udaya Samudra Leisure Beach Hotel",
+            "address": "Kovalam, Thiruvananthapuram"
+        },
+        {
+            "name": "Hycinth Hotels",
+            "address": "Manorama Road, Thiruvananthapuram"
+        },
+        {
+            "name": "Apollo Dimora",
+            "address": "Thampanoor, Thiruvananthapuram"
+        },
+        {
+            "name": "Classic Avenue",
+            "address": "Manjalikulam Road, Thiruvananthapuram"
+        },
+        {
+            "name": "B-Hub",
+            "address": "Mar Ivanios Vidya Nagar, Thiruvananthapuram"
+        },
+        {
+            "name": "Travancore International Convention Centre",
+            "address": "Karyavattom, Thiruvananthapuram"
+        },
+        {
+            "name": "St. Joseph's Auditorium",
+            "address": "Palayam, Thiruvananthapuram"
+        },
+        {
+            "name": "Vylopilly Samskrithi Bhavan",
+            "address": "Nalanda, Thiruvananthapuram"
+        },
+        {
+            "name": "Priyadarshini Hall",
+            "address": "East Fort, Thiruvananthapuram"
+        },
+        {
+            "name": "Hassan Marakar Hall",
+            "address": "Palayam, Thiruvananthapuram"
+        },
+        {
+            "name": "Karthika Thirunal Theatre",
+            "address": "East Fort, Thiruvananthapuram"
+        },
+        {
+            "name": "Tagore Theatre",
+            "address": "Vazhuthacaud, Thiruvananthapuram"
+        },
+        {
+            "name": "Jimmy George Indoor Stadium",
+            "address": "Vellayambalam, Thiruvananthapuram"
+        },
+        {
+            "name": "Sapphire Gardens",
+            "address": "Thiruvananthapuram"
+        },
+        {
+            "name": "BM Convention Centre",
+            "address": "Thiruvananthapuram"
+        },
+        {
+            "name": "Mascot Hotel",
+            "address": "PMGSY Road, Thiruvananthapuram"
+        },
+        {
+            "name": "International Convention Centre Veli",
+            "address": "Veli, Thiruvananthapuram"
+        }
+    ],
+    "Alappuzha": [
+        {
+            "name": "Camelot Convention Centre",
+            "address": "Pathirappally, Alappuzha"
+        },
+        {
+            "name": "Bhuvi Convention Center",
+            "address": "Nangyarkulangara, Alappuzha"
+        },
+        {
+            "name": "Grace Convention Centre",
+            "address": "Mavelikara, Alappuzha"
+        },
+        {
+            "name": "Alleppey Prince Hotel",
+            "address": "AS Road, Alappuzha"
+        },
+        {
+            "name": "Ramada by Wyndham",
+            "address": "Nehru Trophy Boat Race Finishing Point, Alappuzha"
+        },
+        {
+            "name": "Raheem Residency",
+            "address": "Beach Road, Alappuzha"
+        },
+        {
+            "name": "Lake Palace Resort",
+            "address": "Thirumala Ward, Alappuzha"
+        },
+        {
+            "name": "Pagoda Resort",
+            "address": "Chungham, Alappuzha"
+        },
+        {
+            "name": "Contour Backwaters",
+            "address": "Changanassery, Alappuzha"
+        },
+        {
+            "name": "KGA Elite Continental",
+            "address": "Thiruvalla, Alappuzha"
+        },
+        {
+            "name": "Vasundhara Sarovar Premiere",
+            "address": "Cherthala, Alappuzha"
+        },
+        {
+            "name": "Sterling Lake Palace",
+            "address": "Vembanad Lake, Alappuzha"
+        },
+        {
+            "name": "Abad Turtle Beach",
+            "address": "Mararikulam, Alappuzha"
+        },
+        {
+            "name": "Lemon Tree Vembanad",
+            "address": "Muhamma, Alappuzha"
+        },
+        {
+            "name": "Punnamada Resort",
+            "address": "Punnamada, Alappuzha"
+        }
+    ],
+    "Ernakulam": [
+        {
+            "name": "Lulu Bolgatty International Convention Center",
+            "address": "Mulavukad, Kochi"
+        },
+        {
+            "name": "Adlux International Convention & Exhibition Centre",
+            "address": "Angamaly, Ernakulam"
+        },
+        {
+            "name": "Cial Convention Centre",
+            "address": "Nedumbassery, Ernakulam"
+        },
+        {
+            "name": "Gokulam Park",
+            "address": "Kaloor, Kochi"
+        },
+        {
+            "name": "Rena Event Hub",
+            "address": "Kaloor, Kochi"
+        },
+        {
+            "name": "Udyan Convention Centre",
+            "address": "Vennala, Kochi"
+        },
+        {
+            "name": "Samudrika Hall",
+            "address": "Willingdon Island, Kochi"
+        },
+        {
+            "name": "Le Meridien Kochi",
+            "address": "Maradu, Kochi"
+        },
+        {
+            "name": "Crowne Plaza Kochi",
+            "address": "Kundannoor, Kochi"
+        },
+        {
+            "name": "Grand Hyatt Kochi Bolgatty",
+            "address": "Bolgatty Island, Kochi"
+        },
+        {
+            "name": "Dream Hotel",
+            "address": "Kadavanthra, Kochi"
+        },
+        {
+            "name": "Holiday Inn Cochin",
+            "address": "Vennala, Kochi"
+        },
+        {
+            "name": "Olive Downtown",
+            "address": "Kadavanthra, Kochi"
+        },
+        {
+            "name": "Presidency Hotel",
+            "address": "Paramara Road, Kochi"
+        },
+        {
+            "name": "The Avenue Regent",
+            "address": "MG Road, Kochi"
+        },
+        {
+            "name": "Bhaskareeyam Convention Centre",
+            "address": "Elamakkara, Kochi"
+        },
+        {
+            "name": "Kanoos Convention Center",
+            "address": "Elamkulam, Kochi"
+        },
+        {
+            "name": "Star Choyz Convention Centre",
+            "address": "Vyttila, Kochi"
+        },
+        {
+            "name": "Royal Convention Center",
+            "address": "Marampally, Ernakulam"
+        },
+        {
+            "name": "Bolgatty Palace",
+            "address": "Bolgatty Island, Kochi"
+        }
+    ],
+    "Idukki": [
+        {
+            "name": "Hirange Residency",
+            "address": "Thodupuzha, Idukki"
+        },
+        {
+            "name": "Merryget",
+            "address": "Thodupuzha, Idukki"
+        },
+        {
+            "name": "Green Berg Resort",
+            "address": "Kulamavu, Idukki"
+        },
+        {
+            "name": "Carmelia Haven",
+            "address": "Vandanmedu, Idukki"
+        },
+        {
+            "name": "Mountain Club Resort",
+            "address": "Chinnakanal, Idukki"
+        },
+        {
+            "name": "Silver Tips",
+            "address": "Munnar, Idukki"
+        },
+        {
+            "name": "Tea County",
+            "address": "Munnar, Idukki"
+        },
+        {
+            "name": "Club Mahindra",
+            "address": "Munnar, Idukki"
+        },
+        {
+            "name": "Sterling Munnar",
+            "address": "Chinnakanal, Idukki"
+        },
+        {
+            "name": "Blanket Hotel & Spa",
+            "address": "Pallivasal, Idukki"
+        },
+        {
+            "name": "The Elephant Court",
+            "address": "Thekkady, Idukki"
+        },
+        {
+            "name": "Wind Haven Resort",
+            "address": "Ramakkalmedu, Idukki"
+        },
+        {
+            "name": "Abad Copper Castle",
+            "address": "Munnar, Idukki"
+        },
+        {
+            "name": "Munnar Convention Center",
+            "address": "Chinnakanal, Idukki"
+        },
+        {
+            "name": "Parakkat Nature Resort",
+            "address": "Munnar, Idukki"
+        }
+    ],
+    "Kannur": [
+        {
+            "name": "Sreevalsam Auditorium",
+            "address": "Payyanur, Kannur"
+        },
+        {
+            "name": "Babil Greens Convention Centre",
+            "address": "Taliparamba, Kannur"
+        },
+        {
+            "name": "Dinesh Auditorium",
+            "address": "Kannur"
+        },
+        {
+            "name": "Dream Palace Auditorium",
+            "address": "Taliparamba, Kannur"
+        },
+        {
+            "name": "Luxotica International Convention Centre",
+            "address": "Kannur"
+        },
+        {
+            "name": "Riftha Hall",
+            "address": "Kannur"
+        },
+        {
+            "name": "Green Park Auditorium",
+            "address": "Kannur"
+        },
+        {
+            "name": "Sadhoo Kalyana Mandapam",
+            "address": "Kannur"
+        },
+        {
+            "name": "Parassinikadavu Muthappan Auditorium",
+            "address": "Parassinikadavu, Kannur"
+        },
+        {
+            "name": "Kuku's Nest",
+            "address": "Thalassery, Kannur"
+        },
+        {
+            "name": "Mascot Beach Resort",
+            "address": "Burnacherry, Kannur"
+        },
+        {
+            "name": "Kannur Beach House",
+            "address": "Thottada, Kannur"
+        },
+        {
+            "name": "Chera Rocks Beach House",
+            "address": "Thottada, Kannur"
+        },
+        {
+            "name": "Sky Pearl Beach Resort",
+            "address": "Kannur"
+        },
+        {
+            "name": "Malabar Beach Resort",
+            "address": "Kannur"
+        }
+    ],
+    "Kasaragod": [
+        {
+            "name": "Oryx Village",
+            "address": "Kanhangad, Kasaragod"
+        },
+        {
+            "name": "Grand Auditorium",
+            "address": "Manjeshwar, Kasaragod"
+        },
+        {
+            "name": "Malik Deenar Cultural Centre",
+            "address": "Thalangara, Kasaragod"
+        },
+        {
+            "name": "Municipal Town Hall",
+            "address": "Kasaragod"
+        },
+        {
+            "name": "Bekal Palace",
+            "address": "Bekal, Kasaragod"
+        },
+        {
+            "name": "The Lalit Resort & Spa",
+            "address": "Bekal, Kasaragod"
+        },
+        {
+            "name": "Taj Bekal Resort",
+            "address": "Bekal, Kasaragod"
+        },
+        {
+            "name": "Kanhangad Town Hall",
+            "address": "Kanhangad, Kasaragod"
+        },
+        {
+            "name": "Nalanda Auditorium",
+            "address": "Nileshwar, Kasaragod"
+        },
+        {
+            "name": "Soorya Auditorium",
+            "address": "Cheruvathur, Kasaragod"
+        },
+        {
+            "name": "Gateway Bekal",
+            "address": "Kasaragod"
+        },
+        {
+            "name": "Bekal Fort Resort",
+            "address": "Bekal, Kasaragod"
+        },
+        {
+            "name": "Saffron Hotel",
+            "address": "Kasaragod"
+        },
+        {
+            "name": "Hotel Highway Castle",
+            "address": "Kasaragod"
+        },
+        {
+            "name": "Neeleshwar Hermitage",
+            "address": "Nileshwar, Kasaragod"
+        }
+    ],
+    "Kollam": [
+        {
+            "name": "Grand Highness Convention Centre",
+            "address": "Kollam"
+        },
+        {
+            "name": "Sreedhareeyam Convention Centre",
+            "address": "Kollam"
+        },
+        {
+            "name": "Monaarch Convention Centre",
+            "address": "Kollam"
+        },
+        {
+            "name": "Lalas Convention Centre",
+            "address": "Kollam"
+        },
+        {
+            "name": "The Raviz",
+            "address": "Thevally, Kollam"
+        },
+        {
+            "name": "Quilon Beach Hotel",
+            "address": "Beach Road, Kollam"
+        },
+        {
+            "name": "Nani Hotel",
+            "address": "Chinnakada, Kollam"
+        },
+        {
+            "name": "Hotel Regant Lake Palace",
+            "address": "Neendakara, Kollam"
+        },
+        {
+            "name": "Kadappakada Sports Club Hall",
+            "address": "Kadappakada, Kollam"
+        },
+        {
+            "name": "Sree Narayana Guru Cultural Complex",
+            "address": "Kollam"
+        },
+        {
+            "name": "Ishal Convention Centre",
+            "address": "Kulathupuzha, Kollam"
+        },
+        {
+            "name": "Aiswarya Convention Center",
+            "address": "Ayoor, Kollam"
+        },
+        {
+            "name": "Pavithram Convention Centre",
+            "address": "Kundara, Kollam"
+        },
+        {
+            "name": "Hotel Allseason",
+            "address": "Kollam"
+        },
+        {
+            "name": "Beach Orchid",
+            "address": "Kollam"
+        }
+    ],
+    "Kottayam": [
+        {
+            "name": "Aithousa Convention Centre",
+            "address": "Kumaranalloor, Kottayam"
+        },
+        {
+            "name": "Windsor Castle Convention Centre",
+            "address": "Kottayam"
+        },
+        {
+            "name": "Mammen Mappilla Hall",
+            "address": "Kottayam"
+        },
+        {
+            "name": "Michaels Plaza",
+            "address": "Ramapuram, Kottayam"
+        },
+        {
+            "name": "Backwater Ripples",
+            "address": "Kumarakom, Kottayam"
+        },
+        {
+            "name": "The Zuri Kumarakom",
+            "address": "Kumarakom, Kottayam"
+        },
+        {
+            "name": "Kumarakom Lake Resort",
+            "address": "Kumarakom, Kottayam"
+        },
+        {
+            "name": "Hotel Arcadia",
+            "address": "Kottayam"
+        },
+        {
+            "name": "Chavara Kuriakose Elias Hall",
+            "address": "Mannanam, Kottayam"
+        },
+        {
+            "name": "Illikkalam Resort Hall",
+            "address": "Kumarakom, Kottayam"
+        },
+        {
+            "name": "Vivanta by Taj Kumarakom",
+            "address": "Kumarakom, Kottayam"
+        },
+        {
+            "name": "Lakesong Resort",
+            "address": "Kumarakom, Kottayam"
+        },
+        {
+            "name": "Sunstar Convention Centre",
+            "address": "Pala, Kottayam"
+        },
+        {
+            "name": "Fenn Hall",
+            "address": "Kottayam"
+        },
+        {
+            "name": "Orchid Residency",
+            "address": "Kottayam"
+        }
+    ],
+    "Kozhikode": [
+        {
+            "name": "Calicut Trade Centre",
+            "address": "Sarovaram, Kozhikode"
+        },
+        {
+            "name": "Tagore Centenary Hall",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "K Hills Heritage",
+            "address": "Ramanattukara, Kozhikode"
+        },
+        {
+            "name": "Lavandis Convention Centre",
+            "address": "Eranhikkal, Kozhikode"
+        },
+        {
+            "name": "Tripenta Hotel",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "The Raviz Kadavu",
+            "address": "Azhinjilam, Kozhikode"
+        },
+        {
+            "name": "Copper Folia",
+            "address": "Thondayad, Kozhikode"
+        },
+        {
+            "name": "Vasco Dagama Beach Resort",
+            "address": "Kappad, Kozhikode"
+        },
+        {
+            "name": "Marina Convention Centre",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "Nalanda Auditorium",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "Beach Hotel Calicut",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "Luxmore Convention Centre",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "Gokulam Park Kozhikode",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "Baywatch Beachside",
+            "address": "Kozhikode"
+        },
+        {
+            "name": "Miami Convention Centre",
+            "address": "Kozhikode"
+        }
+    ],
+    "Malappuram": [
+        {
+            "name": "Rose Lounge",
+            "address": "Malappuram"
+        },
+        {
+            "name": "Rio Convention Centre",
+            "address": "Anakkayam, Malappuram"
+        },
+        {
+            "name": "Shifa Convention Center",
+            "address": "Perinthalmanna, Malappuram"
+        },
+        {
+            "name": "Woodbine",
+            "address": "Manjeri, Malappuram"
+        },
+        {
+            "name": "Hotel Rydges Inn",
+            "address": "Kottakkal, Malappuram"
+        },
+        {
+            "name": "Emarald Ayurvedic Resort",
+            "address": "Pulamanthole, Malappuram"
+        },
+        {
+            "name": "Valluvanad Convention Centre",
+            "address": "Perinthalmanna, Malappuram"
+        },
+        {
+            "name": "Mahendra Puri",
+            "address": "Kottakkal, Malappuram"
+        },
+        {
+            "name": "Flora Fantasia Hall",
+            "address": "Valanchery, Malappuram"
+        },
+        {
+            "name": "Grand Auditorium",
+            "address": "Tirur, Malappuram"
+        },
+        {
+            "name": "Keyath Garden",
+            "address": "Manjeri, Malappuram"
+        },
+        {
+            "name": "Orchid Convention Centre",
+            "address": "Malappuram"
+        },
+        {
+            "name": "Malabar Heritage",
+            "address": "Manjeri, Malappuram"
+        },
+        {
+            "name": "KTDC Tamarind",
+            "address": "Kondotty, Malappuram"
+        },
+        {
+            "name": "Grace Auditorium",
+            "address": "Malappuram"
+        }
+    ],
+    "Palakkad": [
+        {
+            "name": "Udhaya Resort Open Auditorium",
+            "address": "Nila Nagar, West Yakkara, Palakkad"
+        },
+        {
+            "name": "Club 6 Convention Centre",
+            "address": "Kallepully Road, Ramanathapuram, Palakkad"
+        },
+        {
+            "name": "Mohamed Bagh Event Centre",
+            "address": "Sulaiman Sahib Road, Palakkad"
+        },
+        {
+            "name": "Prasanna Lakshmi Auditorium",
+            "address": "Thondikulam, Nurani, Palakkad"
+        },
+        {
+            "name": "N.N.S Convention Centre",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Hi-Tech Auditorium",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Kalarikkal Convention Centre",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Aswathy Auditorium",
+            "address": "Palakkad"
+        },
+        {
+            "name": "K.R.K Auditorium",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Parvathy Auditorium",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Sultan Flavours Restaurant Hall",
+            "address": "Kunnathurmedu, Palakkad"
+        },
+        {
+            "name": "Hotel Ats Grand Kera",
+            "address": "Yakkara, Palakkad"
+        },
+        {
+            "name": "Gameo Convention Center",
+            "address": "Vavanoor, Palakkad"
+        },
+        {
+            "name": "Sterling Wayanad",
+            "address": "Ottappalam, Palakkad"
+        },
+        {
+            "name": "Gateway Bekal",
+            "address": "Palakkad City"
+        },
+        {
+            "name": "Sterling Govardhana Malampuzha",
+            "address": "Malampuzha, Palakkad"
+        },
+        {
+            "name": "ARK Hotel & Convention Centre",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Tuskers Hill by Poppys",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Distrikt 9 Hotels and Resorts",
+            "address": "Kanjikode, Palakkad"
+        },
+        {
+            "name": "Hill Palace Convention Centre",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Bougainvillea Heritage",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Ahalia Heritage Village",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Brookside Garden Event Space & Farm Stay",
+            "address": "Palakkad"
+        },
+        {
+            "name": "M S Convention Center",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Noor Mahal",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Sumangali Kalyana Mandapam",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Sri Chakra International",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Mothi Mahal Kalyana Mandapam",
+            "address": "Palakkad"
+        },
+        {
+            "name": "United Convention Centre",
+            "address": "Palakkad"
+        },
+        {
+            "name": "Alva Convention Center",
+            "address": "Akalur, Palakkad"
+        }
+    ],
+    "Pathanamthitta": [
+        {
+            "name": "Loyal Convention Centre",
+            "address": "Thiruvalla, Pathanamthitta"
+        },
+        {
+            "name": "Balakrishna Convention Centre",
+            "address": "Pathanamthitta"
+        },
+        {
+            "name": "M Convention Centre",
+            "address": "Pathanamthitta"
+        },
+        {
+            "name": "Club 7 Hotel",
+            "address": "Thiruvalla, Pathanamthitta"
+        },
+        {
+            "name": "Hotel Elite Continental",
+            "address": "Thiruvalla, Pathanamthitta"
+        },
+        {
+            "name": "Mannil Regency",
+            "address": "Pathanamthitta"
+        },
+        {
+            "name": "Hey Day Hotel",
+            "address": "Pathanamthitta"
+        },
+        {
+            "name": "Tharangam Auditorium",
+            "address": "Ranni, Pathanamthitta"
+        },
+        {
+            "name": "Konni Town Hall",
+            "address": "Konni, Pathanamthitta"
+        },
+        {
+            "name": "Adoor Town Hall",
+            "address": "Adoor, Pathanamthitta"
+        },
+        {
+            "name": "Morning Star Convention Centre",
+            "address": "Adoor, Pathanamthitta"
+        },
+        {
+            "name": "St. Mary's Convention Centre",
+            "address": "Pathanamthitta"
+        },
+        {
+            "name": "Wyte Portico",
+            "address": "Adoor, Pathanamthitta"
+        },
+        {
+            "name": "Hotel Hills Park",
+            "address": "Pathanamthitta"
+        },
+        {
+            "name": "Abad Whispering Palms",
+            "address": "Pathanamthitta"
+        }
+    ],
+    "Thrissur": [
+        {
+            "name": "Lulu International Convention Center",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Joys Palace",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Hyatt Regency",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Casino Hotels",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Trichur Towers",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Dass Continental",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Kousthubham Auditorium",
+            "address": "Guruvayoor, Thrissur"
+        },
+        {
+            "name": "Rugmini Regency",
+            "address": "Guruvayoor, Thrissur"
+        },
+        {
+            "name": "Sree Krishna Hall",
+            "address": "Guruvayoor, Thrissur"
+        },
+        {
+            "name": "Elite International",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Sobha City Mall Auditorium",
+            "address": "Puzhakkal, Thrissur"
+        },
+        {
+            "name": "Kanoos Residency",
+            "address": "Guruvayur, Thrissur"
+        },
+        {
+            "name": "Nattika Beach Resort",
+            "address": "Nattika, Thrissur"
+        },
+        {
+            "name": "Telcon International Convention Centre",
+            "address": "Thrissur"
+        },
+        {
+            "name": "ARV convention centre",
+            "address": "Guruvayur, Thrissur"
+        },
+        {
+            "name": "LA Mirage Koratty",
+            "address": "Koratty, Thrissur"
+        },
+        {
+            "name": "Aiswarya Convention Centre",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Kalyan Silks Convention Center",
+            "address": "Thrissur"
+        },
+        {
+            "name": "Sterling Guruvayur",
+            "address": "Guruvayur, Thrissur"
+        },
+        {
+            "name": "Neelambari Resorts",
+            "address": "Thrissur"
+        }
+    ],
+    "Wayanad": [
+        {
+            "name": "Vythiri Village Resort",
+            "address": "Vythiri, Wayanad"
+        },
+        {
+            "name": "The Windflower Resort & Spa",
+            "address": "Vythiri, Wayanad"
+        },
+        {
+            "name": "Upavan Resort",
+            "address": "Lakkidi, Wayanad"
+        },
+        {
+            "name": "Green Gates Hotel",
+            "address": "Kalpetta, Wayanad"
+        },
+        {
+            "name": "Wayanad Silver Woods",
+            "address": "Kalpetta, Wayanad"
+        },
+        {
+            "name": "Banasura Hill Resort",
+            "address": "Vellamunda, Wayanad"
+        },
+        {
+            "name": "Sharoy Resort",
+            "address": "Banasura Sagar, Wayanad"
+        },
+        {
+            "name": "Vythiri Holiday Resort",
+            "address": "Vythiri, Wayanad"
+        },
+        {
+            "name": "Raindrops Resort",
+            "address": "Sultan Bathery, Wayanad"
+        },
+        {
+            "name": "Le Villagio Holiday Apartments",
+            "address": "Sultan Bathery, Wayanad"
+        },
+        {
+            "name": "Mount Xanadu Resort",
+            "address": "Wayanad"
+        },
+        {
+            "name": "The Woods Resort",
+            "address": "Wayanad"
+        },
+        {
+            "name": "Vythiri Convention Centre",
+            "address": "Vythiri, Wayanad"
+        },
+        {
+            "name": "Pepper Trail",
+            "address": "Sulthan Bathery, Wayanad"
+        },
+        {
+            "name": "Wayanad Gate",
+            "address": "Lakkidi, Wayanad"
+        }
+    ]
+}

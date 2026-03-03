@@ -5,6 +5,9 @@ const {
     getEvents,
     getEventById,
     updateEvent,
+    deleteEvent,
+    getEventStats,
+    getPublicEvents,
     getPublicEventById,
     addNode,
     deleteNode,
@@ -15,9 +18,13 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 
 // Public routes
+router.get('/public', getPublicEvents);
 router.get('/public/:id', getPublicEventById);
 router.get('/public/:id/nodes', getPublicNodes);
 router.get('/:id/arnodes', getArNodes);
+
+// Stats
+router.get('/stats/me', protect, getEventStats);
 
 // Protected routes
 router.route('/')
@@ -26,7 +33,8 @@ router.route('/')
 
 router.route('/:id')
     .get(protect, getEventById)
-    .put(protect, updateEvent);
+    .put(protect, updateEvent)
+    .delete(protect, deleteEvent);
 
 router.get('/:id/readiness', protect, getReadinessScore);
 

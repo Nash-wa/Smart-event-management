@@ -135,6 +135,26 @@ function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Quick Analytics Bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            {[
+              { label: 'Upcoming', val: events.filter(e => new Date(e.startDate) > new Date()).length.toString(), icon: '🚀', color: 'blue' },
+              { label: 'Completed', val: events.filter(e => new Date(e.startDate) <= new Date()).length.toString(), icon: '✅', color: 'emerald' },
+              { label: 'Active', val: events.length.toString(), icon: '🤝', color: 'purple' },
+              { label: 'Budget', val: `₹${events.reduce((acc, curr) => acc + (Number(curr.budget) || 0), 0).toLocaleString()}`, icon: '💎', color: 'amber' }
+            ].map((stat, i) => (
+              <div key={i} className="glass-card p-4 rounded-3xl border-white/5 bg-white/5 flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center text-xl`}>
+                  {stat.icon}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase">{stat.label}</span>
+                  <span className="text-lg font-black text-white leading-none">{stat.val}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Live Feed Banner */}

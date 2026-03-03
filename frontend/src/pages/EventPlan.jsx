@@ -74,9 +74,14 @@ function EventPlan() {
         const fetchEvent = async () => {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const res = await fetch(`http://localhost:5000/api/events/${id}`, {
-                    headers: { Authorization: `Bearer ${userInfo?.token}` }
-                });
+                const res = await fetch(
+                    `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${userInfo?.token}`
+                        }
+                    }
+                );
                 const data = await res.json();
                 if (res.ok) {
                     setEvent(data);
@@ -92,8 +97,8 @@ function EventPlan() {
                         }));
                     }
 
-                    // Fetch participants
-                    const pRes = await fetch(`http://localhost:5000/api/participants/${id}`, {
+                    // Fetch actual participants
+                    const pRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/${id}`, {
                         headers: { Authorization: `Bearer ${userInfo?.token}` }
                     });
                     if (pRes.ok) {
@@ -118,10 +123,10 @@ function EventPlan() {
                             readinessScore: calculateReadinessScore(timeline, data.selectedVendors)
                         };
                         setPlanningData(newPlan);
-                        const userInfo2 = JSON.parse(localStorage.getItem('userInfo'));
-                        await fetch(`http://localhost:5000/api/events/${id}`, {
+                        // Persist the initialized plan to backend
+                        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo2?.token}` },
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
                             body: JSON.stringify({ plan: newPlan })
                         });
                     }
@@ -146,7 +151,7 @@ function EventPlan() {
         setNodeDeploying(true);
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${id}/nodes`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}/nodes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
                 body: JSON.stringify(newNode)
@@ -170,7 +175,7 @@ function EventPlan() {
     const deleteNode = async (nodeId) => {
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${id}/nodes/${nodeId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}/nodes/${nodeId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${userInfo?.token}` }
             });
@@ -193,7 +198,7 @@ function EventPlan() {
         const updatedEvent = { ...event, plan: updatedPlan, readinessScore: newReadiness };
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
                 body: JSON.stringify(updatedEvent)
@@ -209,7 +214,7 @@ function EventPlan() {
         setAnnouncementStatus({ type: 'loading', message: 'Broadcasting...' });
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch('http://localhost:5000/api/messages/broadcast', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/messages/broadcast`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
                 body: JSON.stringify({ event: id, text: announcement.text, type: announcement.type })

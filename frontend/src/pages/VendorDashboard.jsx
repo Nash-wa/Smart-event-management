@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 function VendorDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
     const [bookings, setBookings] = useState([]);
     const [myVendors, setMyVendors] = useState([]);
+    const [myReviews, setMyReviews] = useState([]); // New State
     const [formData, setFormData] = useState({
         name: "",
         category: "Photography",
@@ -13,31 +15,31 @@ function VendorDashboard() {
         district: "Default District"
     });
 
+
     const navigate = useNavigate();
     const user = useMemo(() => JSON.parse(localStorage.getItem('userInfo') || '{}'), []);
 
     const fetchData = useCallback(async () => {
+
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const headers = { Authorization: `Bearer ${userInfo?.token}` };
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                const headers = { Authorization: `Bearer ${userInfo?.token}` };
 
-            // Fetch My Vendor Listings (the "Services")
-            const vRes = await fetch(`http://localhost:5000/api/vendors?owner=${user._id}`, { headers }); // Adjusted to find owner in DB if controller supports it, or filter here
-            const vData = await vRes.json();
+                // Fetch My Vendor Listings
+                const vRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?owner=${user._id}`, { headers });
+                const vData = await vRes.json();
+                setMyVendors(Array.isArray(vData) ? vData : []);
 
-            // If the API doesn't filter by owner, we do it here
-            const filtered = Array.isArray(vData) ? vData.filter(v => v.owner === user._id) : [];
-            setMyVendors(filtered);
+                // Fetch Bookings/Requests received
+                const bRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/bookings/vendor`, { headers });
+                const bData = await bRes.json();
+                setBookings(Array.isArray(bData) ? bData : []);
 
-            // Fetch Bookings received
-            const bRes = await fetch(`http://localhost:5000/api/bookings/vendor`, { headers });
-            const bData = await bRes.json();
-            setBookings(Array.isArray(bData) ? bData : []);
-
-        } catch (error) {
-            console.error(error);
-        }
-    }, [user._id]);
+            } catch (error) {
+                console.error(error);
+            }
+        }, [user._id]);
 
     useEffect(() => {
         fetchData();
@@ -67,16 +69,16 @@ function VendorDashboard() {
         e.preventDefault();
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch('http://localhost:5000/api/vendors', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${userInfo?.token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ ...formData, owner: user._id })
             });
             if (res.ok) {
-                alert("Vendor Listing published! ✨");
+                alert("Venture submitted! Waiting for Admin approval. ✨");
                 setFormData({ name: "", category: "Photography", price: "", description: "", district: "Default District" });
                 fetchData();
                 setActiveTab("overview");
@@ -97,9 +99,9 @@ function VendorDashboard() {
 
                 <nav className="flex flex-col gap-2">
                     <TabButton id="overview" label="Dashboard" icon="📊" active={activeTab} onClick={setActiveTab} />
-                    <TabButton id="bookings" label="Bookings" icon="🔔" active={activeTab} onClick={setActiveTab} count={bookings.filter(b => b.status === 'pending').length} />
-                    <TabButton id="listings" label="Add Listing" icon="➕" active={activeTab} onClick={setActiveTab} />
-                    <TabButton id="mywork" label="My Assets" icon="🛡️" active={activeTab} onClick={setActiveTab} />
+                    <TabButton id="bookings" label="Requests" icon="🔔" active={activeTab} onClick={setActiveTab} count={bookings.filter(b => b.status === 'pending').length} />
+                    <TabButton id="listings" label="Add Venture" icon="➕" active={activeTab} onClick={setActiveTab} />
+                    <TabButton id="mywork" label="Portfolio" icon="�️" active={activeTab} onClick={setActiveTab} />
                 </nav>
 
                 <button

@@ -1,289 +1,346 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import api from '../api';
 
-const IndoorNavigation = () => {
-    const { eventId } = useParams();
-    const navigate = useNavigate();
-    const [event, setEvent] = useState(null);
-    const [currentStep, setCurrentStep] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [userLocation, setUserLocation] = useState(null);
-    const [bearing, setBearing] = useState(0);
-    const [distance, setDistance] = useState(null);
-    const [proximityAlert, setProximityAlert] = useState(false);
-
-    // Calculate bearing from user location to target location
-    const calculateBearing = (userLat, userLng, targetLat, targetLng) => {
-        const toRad = (deg) => (deg * Math.PI) / 180;
-        const toDeg = (rad) => (rad * 180) / Math.PI;
-
-        const dLng = toRad(targetLng - userLng);
-        const y = Math.sin(dLng) * Math.cos(toRad(targetLat));
-        const x =
-            Math.cos(toRad(userLat)) * Math.sin(toRad(targetLat)) -
-            Math.sin(toRad(userLat)) * Math.cos(toRad(targetLat)) * Math.cos(dLng);
-
-        const bearing = (toDeg(Math.atan2(y, x)) + 360) % 360;
-        return bearing;
-    };
-
-    // Calculate distance between two points (Haversine formula)
-    const calculateDistance = (lat1, lng1, lat2, lng2) => {
-        const R = 6371; // Earth's radius in km
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLng = ((lng2 - lng1) * Math.PI) / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos((lat1 * Math.PI) / 180) *
-                Math.cos((lat2 * Math.PI) / 180) *
-                Math.sin(dLng / 2) *
-                Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c * 1000; // Return in meters
-    };
-
-    useEffect(() => {
-        const fetchEvent = async () => {
-            try {
-                const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
-                const data = await res.json();
-                if (res.ok) {
-                    setEvent(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch event for Navigation", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (eventId) fetchEvent();
-    }, [eventId]);
-
-    // Watch user location
-    useEffect(() => {
-        const watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                setUserLocation({ lat: latitude, lng: longitude });
-
-                // Calculate bearing and distance to current step
-                if (event && event.nodes && event.nodes[currentStep]) {
-                    const currentNode = event.nodes[currentStep];
-                    const newBearing = calculateBearing(
-                        latitude,
-                        longitude,
-                        currentNode.latitude,
-                        currentNode.longitude
-                    );
-                    const newDistance = calculateDistance(
-                        latitude,
-                        longitude,
-                        currentNode.latitude,
-                        currentNode.longitude
-                    );
-
-                    setBearing(newBearing);
-                    setDistance(newDistance);
-
-                    // Auto-advance if user is within 20 meters of current node
-                    if (newDistance < 20 && currentStep < event.nodes.length - 1) {
-                        setProximityAlert(true);
-                        setTimeout(() => {
-                            setCurrentStep(currentStep + 1);
-                            setProximityAlert(false);
-                        }, 2000);
-                    }
-                }
-            },
-            (error) => {
-                console.warn("Geolocation error:", error);
-            },
-            { enableHighAccuracy: true, maximumAge: 5000 }
-        );
-
-        return () => navigator.geolocation.clearWatch(watchId);
-    }, [event, currentStep]);
-
-    const handleNext = () => {
-        if (currentStep < (event?.nodes?.length || 0) - 1) setCurrentStep(currentStep + 1);
-    };
-
-    const handlePrev = () => {
-        if (currentStep > 0) setCurrentStep(currentStep - 1);
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
-            </div>
-        );
-    }
-
-    const steps = event?.nodes || [];
-
-    if (!event || steps.length === 0) {
-        return (
-            <div className="min-h-screen bg-[#020202] p-6 flex flex-col items-center justify-center text-center">
-                <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
-                    <span className="text-3xl text-red-500">📍</span>
-                </div>
-                <h2 className="text-2xl font-black text-white uppercase mb-4">Navigation Unavailable</h2>
-                <p className="text-zinc-500 max-w-md mb-8">No navigation nodes have been configured for this venue. Please contact the event organizer.</p>
-                <button
-                    onClick={() => navigate(-1)}
-                    className="px-8 py-3 bg-white text-black font-black rounded-xl uppercase hover:bg-primary hover:text-white transition-all"
-                >
-                    Return
-                </button>
-            </div>
-        );
-    }
-
-    const currentPoint = steps[currentStep];
-
+const RadarMap = ({ bearing }) => {
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans overflow-hidden">
-            <div className="max-w-4xl mx-auto h-full flex flex-col">
-
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div onClick={() => navigate(-1)} className="cursor-pointer group flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all">
-                            <span>←</span>
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-black uppercase tracking-tight">{event.name}</h1>
-                            <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Indoor Navigation</p>
-                        </div>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-xs font-mono">
-                        STEP {currentStep + 1} / {steps.length}
-                    </div>
-                </div>
-
-                {/* Main Navigation Card */}
-                <div className="flex-1 glass-card rounded-[3rem] border-white/10 bg-white/5 overflow-hidden flex flex-col">
-
-                    {/* Visual Reference / Fallback */}
-                    <div className="relative aspect-video bg-zinc-900 flex flex-col items-center justify-center overflow-hidden">
-                        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
-                            backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)',
-                            backgroundSize: '40px 40px'
-                        }} />
-
-                        {/* Proximity Alert */}
-                        {proximityAlert && (
-                            <div className="absolute top-4 left-4 right-4 z-20 bg-green-500/20 border border-green-500/40 rounded-xl px-4 py-3 animate-pulse">
-                                <p className="text-sm font-bold text-green-300">✓ Node nearby! Advancing...</p>
-                            </div>
-                        )}
-
-                        {/* Distance and GPS Status */}
-                        <div className="absolute top-4 right-4 z-20 bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur">
-                            <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">GPS Distance</p>
-                            <p className="text-lg font-black text-accent">
-                                {distance !== null ? `${Math.round(distance)}m` : 'Locating...'}
-                            </p>
-                        </div>
-
-                        <div className="z-10 flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-full bg-primary/20 border-4 border-primary/40 flex items-center justify-center text-4xl mb-4 animate-bounce">
-                                {currentPoint.anchorType === 'Entrance' ? '🚪' :
-                                    currentPoint.anchorType === 'Stage' ? '🎭' :
-                                        currentPoint.anchorType === 'Restroom' ? '🚻' :
-                                            currentPoint.anchorType === 'Exit' ? '🏃' :
-                                                currentPoint.anchorType === 'HelpDesk' ? 'ℹ️' : '📍'}
-                            </div>
-                            <h2 className="text-3xl font-black uppercase tracking-tighter text-center px-6">
-                                {currentPoint.nodeId || `Node ${currentStep + 1}`}
-                            </h2>
-                            <p className="text-xs font-mono text-gray-500 mt-2 uppercase">
-                                {currentPoint.anchorType}
-                            </p>
-                        </div>
-
-                        {/* Dynamic Directional Arrow */}
-                        {userLocation && currentStep < steps.length - 1 && (
-                            <div
-                                className="absolute bottom-8 right-8 text-6xl transition-transform duration-300"
-                                style={{
-                                    transform: `rotate(${bearing}deg)`,
-                                    textShadow: '0 0 20px rgba(59,130,246,0.6)',
-                                    filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.4))'
-                                }}
-                            >
-                                ↑
-                            </div>
-                        )}
-
-                        {/* Direction Label */}
-                        {userLocation && (
-                            <div className="absolute bottom-8 left-8 text-xs font-bold bg-white/5 border border-white/10 px-3 py-2 rounded-lg">
-                                <p className="text-gray-400">Bearing: <span className="text-accent">{Math.round(bearing)}°</span></p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Instruction Panel */}
-                    <div className="p-10 flex-1 flex flex-col justify-between">
-                        <div>
-                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-4 block">Navigation Instructions</span>
-                            <p className="text-2xl font-bold leading-tight">
-                                {currentPoint.instructions || `Head towards the ${currentPoint.anchorType}. Follow venue signs for the closest path.`}
-                            </p>
-                            {userLocation && distance !== null && (
-                                <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
-                                    <p className="text-sm text-gray-300">
-                                        <span className="font-bold text-primary">Distance:</span> {Math.round(distance)}m away •
-                                        <span className="font-bold text-accent ml-2">Direction:</span> {Math.round(bearing)}° from north
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Controls */}
-                        <div className="flex gap-4 mt-12">
-                            <button
-                                onClick={handlePrev}
-                                disabled={currentStep === 0}
-                                className={`flex-1 py-5 rounded-2xl font-black uppercase tracking-widest transition-all ${currentStep === 0 ? 'bg-white/5 text-gray-700 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20'
-                                    }`}
-                            >
-                                Back
-                            </button>
-                            <button
-                                onClick={handleNext}
-                                className={`flex-[2] py-5 rounded-2xl font-black uppercase tracking-widest transition-all ${currentStep === steps.length - 1 ? 'bg-green-500 text-black' : 'bg-primary text-white hover:scale-[1.02] shadow-[0_0_30px_rgba(59,130,246,0.3)]'
-                                    }`}
-                            >
-                                {currentStep === steps.length - 1 ? 'Destination Reached' : 'Next Step →'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Progress */}
-                <div className="mt-8 flex gap-2">
-                    {steps.map((_, i) => (
-                        <div
-                            key={i}
-                            className={`h-1 flex-1 rounded-full transition-all duration-500 ${i <= currentStep ? 'bg-primary' : 'bg-white/10'
-                                }`}
-                        />
-                    ))}
+        <div className="absolute top-10 right-10 w-32 h-32 glass-card rounded-full border-primary/20 bg-primary/5 flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 border border-white/10 rounded-full" />
+            <div className="absolute inset-0 opacity-20" style={{
+                backgroundImage: 'repeating-conic-gradient(from 0deg, #3b82f6 0deg 1deg, transparent 1deg 30deg)',
+                transform: `rotate(${-bearing}deg)`
+            }} />
+            <div className="w-full h-0.5 bg-primary/40 absolute animate-[spin_4s_linear_infinite]" />
+            <div className="relative w-20 h-20 border border-primary/20 rounded-full flex items-center justify-center">
+                <div
+                    className="absolute w-3 h-3 bg-accent rounded-full shadow-[0_0_15px_#10b981] transition-all duration-300"
+                    style={{ transform: `rotate(${bearing}deg) translateY(-35px)` }}
+                />
+                <div className="w-2 h-2 bg-primary rounded-full relative z-10">
+                    <div className="absolute inset-[-4px] border border-primary/50 rounded-full animate-ping" />
                 </div>
             </div>
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .glass-card {
-                    backdrop-filter: blur(20px);
-                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-                }
-            ` }} />
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-mono text-primary/60">NAV_SAT_ALPHA</div>
         </div>
     );
 };
 
-export default IndoorNavigation;
+const ARHUD = ({ label, distance, isLast, currentStep, totalSteps, bearing }) => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(255,255,255,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] z-10 opacity-30" />
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 glass-card px-8 py-2 rounded-full border-primary/20 flex items-center gap-6 backdrop-blur-xl z-20">
+            <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">GPS Lock: ACTIVE</span>
+                <div className="flex gap-1">
+                    {Array.from({ length: totalSteps }).map((_, i) => (
+                        <div key={i} className={`w-3 h-1 rounded-full ${i <= currentStep ? 'bg-primary' : 'bg-white/10'}`} />
+                    ))}
+                </div>
+            </div>
+            <div className="h-6 w-px bg-white/10" />
+            <div className="font-mono text-xs font-bold text-white uppercase italic">
+                BRG: {bearing.toFixed(1)}° • {isLast ? "ARRIVED" : "IN_TRANSIT"}
+            </div>
+        </div>
+        {label && (
+            <div
+                className="absolute top-1/3 left-1/2 -translate-x-1/2 flex flex-col items-center animate-fade-in-up transition-transform duration-300"
+                style={{ transform: `rotateY(${(bearing > 180 ? bearing - 360 : bearing) * -2}deg) translateZ(200px)` }}
+            >
+                <div className="glass-card px-8 py-4 rounded-[2rem] border-primary/40 shadow-[0_0_80px_rgba(59,130,246,0.2)] backdrop-blur-2xl flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-primary animate-ping absolute" />
+                        <div className="w-4 h-4 rounded-full bg-primary relative" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-white font-black tracking-widest text-xl uppercase italic">{label}</span>
+                        <span className="text-primary/60 text-[10px] uppercase font-mono tracking-tighter">Target Anchor Locked</span>
+                    </div>
+                </div>
+                <div className="w-0.5 h-32 bg-gradient-to-b from-primary via-primary/50 to-transparent mt-1 animate-pulse" />
+            </div>
+        )}
+        {!isLast && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                <div className="w-64 h-64 relative flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 border-2 border-dashed border-primary/10 rounded-full transition-transform duration-500"
+                        style={{ transform: `rotate(${bearing}deg)` }}
+                    >
+                        <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_#3b82f6]" />
+                    </div>
+                    <div className="absolute inset-0 border-[0.5px] border-primary/20 rounded-full animate-[spin_10s_linear_infinite]" />
+                    <svg
+                        viewBox="0 0 24 24"
+                        className={`w-24 h-24 transition-all duration-300 ${Math.abs(bearing % 360) < 20 ? 'text-accent drop-shadow-[0_0_50px_#10b981] scale-110' : 'text-white drop-shadow-[0_0_30px_rgba(59,130,246,1)]'}`}
+                    >
+                        <path fill="currentColor" d="M12 2L2 12h5v8h10v-8h5L12 2z" />
+                    </svg>
+                    <div className="absolute -bottom-12 flex flex-col items-center">
+                        <span className={`text-[10px] font-black uppercase mb-1 tracking-widest ${Math.abs(bearing % 360) < 20 ? 'text-accent' : 'text-primary/60'}`}>
+                            {Math.abs(bearing % 360) < 20 ? '— TARGET ACQUIRED —' : 'Target Proximity'}
+                        </span>
+                        <div className={`glass-card px-8 py-3 rounded-full font-black text-3xl border-primary/40 backdrop-blur-3xl shadow-[0_0_40px_rgba(59,130,246,0.2)] ${parseInt(distance) < 5 ? 'text-accent animate-bounce' : 'text-white'}`}>
+                            {parseInt(distance) < 3 ? 'ARRIVED' : distance}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+);
+
+const NavigationStep = ({ instruction, distance, nextStep, prevStep, isLast, label, currentStep, totalSteps, bearing }) => {
+    const videoRef = useRef(null);
+    const [cameraActive, setCameraActive] = useState(false);
+    const [glitch, setGlitch] = useState(false);
+
+    useEffect(() => {
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    setCameraActive(true);
+                }
+            } catch (err) {
+                console.error("Camera access failed", err);
+                setCameraActive(false);
+            }
+        };
+
+        startCamera();
+        const glitchTimer = setTimeout(() => setGlitch(true), 10);
+        const timer = setTimeout(() => setGlitch(false), 500);
+
+        return () => {
+            if (videoRef.current && videoRef.current.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            }
+            clearTimeout(glitchTimer);
+            clearTimeout(timer);
+        };
+    }, [currentStep]);
+
+    return (
+        <div className={`relative w-full h-[calc(100vh-120px)] overflow-hidden bg-black rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/5 transition-all duration-700 ${glitch ? 'animate-pulse opacity-80' : ''}`}>
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className={`absolute inset-0 w-full h-full object-cover grayscale-[15%] brightness-[90%] contrast-[110%] transition-opacity duration-1000 ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
+            />
+            {!cameraActive && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050505]">
+                    <div className="w-24 h-24 rounded-full border-2 border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
+                        <span className="text-4xl text-red-500 shadow-glow">⚠️</span>
+                    </div>
+                    <h3 className="text-white font-mono text-xl font-black uppercase italic tracking-widest">Feed Connection Error</h3>
+                    <p className="text-zinc-500 font-mono text-[10px] mt-2">REQUESTING PERMISSIONS...</p>
+                </div>
+            )}
+            <RadarMap bearing={bearing} />
+            <ARHUD
+                label={label}
+                distance={distance}
+                isLast={isLast}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                bearing={bearing}
+            />
+            <div className="absolute bottom-10 inset-x-10 p-1 bg-gradient-to-r from-transparent via-white/5 to-transparent backdrop-blur-sm rounded-[2rem] z-30">
+                <div className="flex items-center justify-between gap-6 max-w-4xl mx-auto glass-card p-6 rounded-[2rem] border-white/5">
+                    <div className="flex-1 flex items-center gap-6">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-accent to-purple-800 flex items-center justify-center text-3xl shadow-[0_0_40px_rgba(59,130,246,0.5)]">
+                            {isLast ? '👑' : '🎯'}
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-white font-black text-2xl tracking-tighter uppercase italic line-clamp-1">{instruction}</h3>
+                            <div className="flex items-center gap-3">
+                                <span className="text-primary font-mono text-[9px] tracking-widest font-black uppercase">Sensor: Geo_Spatial_V8</span>
+                                <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                                <span className="text-gray-500 font-mono text-[9px] tracking-widest uppercase">{isLast ? "Anchor Reached" : `Proximity: ${distance}`}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={prevStep} className="w-14 h-16 rounded-2xl glass-card border-white/10 flex items-center justify-center text-xl hover:bg-white/10 transition-all font-black">←</button>
+                        <button onClick={nextStep} className="w-20 h-16 rounded-2xl bg-white text-black flex flex-col items-center justify-center hover:bg-primary hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95 group">
+                            <span className="text-2xl font-black group-hover:translate-x-1 transition-transform">→</span>
+                            <span className="text-[7px] font-black uppercase tracking-tighter mt-1">Next</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-primary/40 animate-[scan_4s_linear_infinite] z-[100] shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+        </div>
+    );
+};
+
+const ARNavigation = () => {
+    const [step, setStep] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
+    const [event, setEvent] = useState(null);
+    const [userLoc, setUserLoc] = useState(null);
+    const [rawCompass, setRawCompass] = useState(0);
+    const [loading, setLoading] = useState(true);
+
+    const navigate = useNavigate();
+    const { eventId } = useParams();
+
+    const getDistance = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return "...";
+        const R = 6371e3; // metres
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.round(R * c) > 1000 ? `${(R * c / 1000).toFixed(1)}km` : `${Math.round(R * c)}m`;
+    };
+
+    const getBearing = (lat1, lon1, lat2, lon2) => {
+        const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+        const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos((lon2 - lon1) * Math.PI / 180);
+        return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    };
+
+    useEffect(() => {
+        const fetchEvent = async () => {
+            if (!eventId) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
+                const data = await res.json();
+                if (res.ok) setEvent(data);
+            } catch (error) {
+                console.error("Failed to fetch event for AR", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEvent();
+
+        const watchId = navigator.geolocation.watchPosition(
+            (pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (err) => console.error("GPS Error", err),
+            { enableHighAccuracy: true }
+        );
+
+        const handleOrientation = (e) => {
+            const compass = e.webkitCompassHeading || e.alpha;
+            if (compass) setRawCompass(360 - compass);
+        };
+
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+            window.removeEventListener('deviceorientation', handleOrientation);
+            window.removeEventListener('deviceorientationabsolute', handleOrientation);
+        };
+    }, [eventId]);
+
+    const steps = (event?.arPoints && event.arPoints.length > 0)
+        ? event.arPoints.map((pt, i) => {
+            const dist = userLoc ? getDistance(userLoc.lat, userLoc.lng, pt.lat, pt.lng) : "GPS Lock...";
+            const targetBrng = userLoc ? getBearing(userLoc.lat, userLoc.lng, pt.lat, pt.lng) : 0;
+            const relativeBearing = (targetBrng + rawCompass) % 360;
+            return {
+                instruction: pt.instruction || `Head towards ${pt.label}`,
+                label: pt.label,
+                distance: dist,
+                isLast: i === event.arPoints.length - 1,
+                bearing: relativeBearing
+            };
+        })
+        : [];
+
+    const saveLayout = async () => {
+        setIsSaving(true);
+        try {
+            const layoutData = {
+                completedSteps: step,
+                totalSteps: steps.length,
+                lastPosition: steps[step]?.instruction,
+                timestamp: new Date().toISOString()
+            };
+            await api.post('/ar-layout', {
+                event_id: eventId || "65d000000000000000000001",
+                layoutData
+            });
+            alert("AR Layout Blueprint Saved to Cloud! 🚀");
+        } catch (err) {
+            console.error("Save failed", err);
+            alert("Failed to save layout.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">INITIALIZING AR SENSORS...</div>;
+
+    if (!eventId || !event?.arPoints?.length) {
+        return (
+            <div className="min-h-screen bg-[#020202] p-6 flex flex-col items-center justify-center text-center">
+                <div className="w-24 h-24 rounded-full border-2 border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
+                    <span className="text-4xl">⚠️</span>
+                </div>
+                <h2 className="text-2xl font-black text-white uppercase italic mb-4">Navigation Offline</h2>
+                <p className="text-zinc-500 max-w-md mb-8">No navigation nodes have been configured for this venue.</p>
+                <button onClick={() => navigate(`/event-plan/${eventId}`)} className="px-8 py-3 bg-white text-black font-black rounded-xl uppercase tracking-tighter hover:bg-primary hover:text-white transition-all">Back to Event Plan</button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#020202] p-6 lg:p-12 flex flex-col items-center">
+            <header className="w-full max-w-6xl flex justify-between items-center mb-8">
+                <div onClick={() => navigate('/dashboard')} className="cursor-pointer group flex flex-col">
+                    <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary" />
+                        <h1 className="text-3xl font-black text-white tracking-tight italic group-hover:text-primary transition-colors uppercase">Venue Navigator V8</h1>
+                    </div>
+                    <span className="text-zinc-600 text-[10px] font-mono tracking-[0.4em] mt-1">LOCATION_SYNC: ACTIVE // OPERATIONAL_FEED</span>
+                </div>
+                <div className="flex gap-4">
+                    <button onClick={saveLayout} disabled={isSaving} className="glass-card px-6 py-3 rounded-2xl border-primary/20 bg-primary/10 flex items-center gap-2 hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50">
+                        <span className="text-lg">{isSaving ? '⌛' : '💾'}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{isSaving ? 'Saving...' : 'Save Blueprint'}</span>
+                    </button>
+                    <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-end">
+                        <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Target Point</span>
+                        <span className="text-primary font-black text-xl italic font-mono leading-none">{step + 1} / {steps.length}</span>
+                    </div>
+                </div>
+            </header>
+            <div className="w-full max-w-6xl relative">
+                <NavigationStep
+                    {...steps[step]}
+                    currentStep={step}
+                    totalSteps={steps.length}
+                    nextStep={() => step < steps.length - 1 && setStep(step + 1)}
+                    prevStep={() => step > 0 && setStep(step - 1)}
+                />
+            </div>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes scan { 0% { top: 0% } 100% { top: 100% } }
+                .shadow-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+            `}} />
+        </div>
+    );
+};
+
+export default ARNavigation;

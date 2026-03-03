@@ -25,8 +25,14 @@ app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
+app.use('/api/registrations', require('./routes/registrationRoutes'));
+app.use('/api/ar-layout', require('./routes/arRoutes'));
 app.use('/api/participants', require('./routes/participantRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/spatial', require('./routes/spatialRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/venues', require('./routes/venueRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/colleges', require('./routes/collegeRoutes'));
 app.use('/api/admin/colleges', require('./routes/adminCollegeRoutes'));
@@ -57,4 +63,9 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+// Export for Vercel Serverless Functions
+module.exports = app;

@@ -1,0 +1,42 @@
+[
+  {
+    "_id": "co5ccwa9f",
+    "createdAt": "2026-02-17T03:47:40.777Z",
+    "name": "nashwa",
+    "email": "spnashwa@gmail.com",
+    "password": "$2b$10$WiJLN3GfbImsd2Frc2.mPOjDPuya6/f/QBSa97dbvVKvOfmG2yxfm",
+    "role": "vendor"
+  },
+  {
+    "_id": "plri71c5i",
+    "createdAt": "2026-02-21T19:57:00.252Z",
+    "name": "nashwa",
+    "email": "rashasp@gmail.com",
+    "password": "$2b$10$RsHBaz009PsLjKEnZdVc7eerZWAiFTdYciav.jysAdduiyeJxLsj.",
+    "role": "vendor"
+  },
+  {
+    "_id": "2qz3y60nh",
+    "createdAt": "2026-02-22T09:36:17.608Z",
+    "name": "nashwa sp",
+    "email": "23f3001903@ds.study.iitm.ac.in",
+    "password": "$2b$10$GgJGjDZoNGG8U8wVXW6eteePSMYYxNaidy2h6myImO6RgLS2ftrOm",
+    "role": "user"
+  },
+  {
+    "_id": "v8zy046hl",
+    "createdAt": "2026-02-22T09:36:21.569Z",
+    "name": "nashwa sp",
+    "email": "23f3001903@ds.study.iitm.ac.in",
+    "password": "$2b$10$fIJNQRWYqHS4DZNCNn2t2ONmpKVB5NWCc7jr.MaluhOiO8WC8Y37O",
+    "role": "user"
+  },
+  {
+    "_id": "2lp4qha2r",
+    "createdAt": "2026-02-22T09:36:22.969Z",
+    "name": "nashwa sp",
+    "email": "23f3001903@ds.study.iitm.ac.in",
+    "password": "$2b$10$5Z4lMeuz5xiWypbpFgJtPucOhVHJfFB/.zeBN5b.PO1WDJg3V8VnW",
+    "role": "user"
+  }
+]

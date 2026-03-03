@@ -1,9 +1,15 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 const generateToken = require('../utils/generateToken');
+const mongoose = require('mongoose');
+const storage = require('../utils/storage');
+const bcrypt = require('bcryptjs');
 const { sendOTPEmail, sendPasswordResetEmail } = require('../utils/emailService');
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// Helper to check if DB is connected
+const isDbConnected = () => mongoose.connection.readyState === 1;
 
 const allowedDomains = [
     'gmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'hotmail.com',
@@ -16,6 +22,32 @@ const allowedDomains = [
 // @access Public
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
+
+    if (!isDbConnected()) {
+        const userExists = storage.findOne('users', { email });
+        if (userExists) {
+            res.status(400);
+            throw new Error('User already exists');
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const user = storage.create('users', {
+            name,
+            email,
+            password: hashedPassword,
+            role: role === 'vendor' ? 'vendor' : 'user',
+        });
+
+        return res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            token: generateToken(user._id),
+        });
+    }
 
     if (!name || !email || !password) {
         res.status(400);
@@ -76,6 +108,112 @@ const registerUser = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Auth user & get token
+// @route   POST /api/auth/login
+// @access  Public
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!isDbConnected()) {
+        const user = storage.findOne('users', { email });
+        if (user && (await bcrypt.compare(password, user.password))) {
+            return res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                token: generateToken(user._id),
+            });
+        } else {
+            res.status(401);
+            throw new Error('Invalid email or password');
+        }
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(401);
+        throw new Error('No account found with this email.');
+    }
+
+    if (!user.isVerified) {
+        res.status(403);
+        throw new Error('Please verify your email before logging in. Check your inbox for the OTP.');
+    }
+
+    if (!(await user.matchPassword(password))) {
+        res.status(401);
+        throw new Error('Incorrect password.');
+    }
+
+    res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user._id)
+    });
+});
+
+// @desc    Get user profile
+// @route   GET /api/auth/profile
+// @access  Private
+const getUserProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            bio: user.bio,
+            profilePic: user.profilePic,
+            phoneNumber: user.phoneNumber,
+            isVerified: user.isVerified,
+        });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateUserProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        user.bio = req.body.bio !== undefined ? req.body.bio : user.bio;
+        user.profilePic = req.body.profilePic || user.profilePic;
+        user.phoneNumber = req.body.phoneNumber || user.phoneNumber;
+
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            bio: updatedUser.bio,
+            profilePic: updatedUser.profilePic,
+            phoneNumber: updatedUser.phoneNumber,
+            token: generateToken(updatedUser._id),
+        });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
 // ─── Verify OTP (Registration) ────────────────────────────────────────────────
 // @route POST /api/auth/verify-otp
 // @access Public
@@ -119,37 +257,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
     });
 });
 
-// ─── Login ────────────────────────────────────────────────────────────────────
-// @route POST /api/auth/login
-// @access Public
-const loginUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-        res.status(401);
-        throw new Error('No account found with this email.');
-    }
-
-    if (!user.isVerified) {
-        res.status(403);
-        throw new Error('Please verify your email before logging in. Check your inbox for the OTP.');
-    }
-
-    if (!(await user.matchPassword(password))) {
-        res.status(401);
-        throw new Error('Incorrect password.');
-    }
-
-    res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id)
-    });
-});
 
 // ─── Forgot Password — Send OTP ───────────────────────────────────────────────
 // @route POST /api/auth/forgot-password
@@ -239,6 +346,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 module.exports = {
     registerUser,
     loginUser,
+    getUserProfile,
+    updateUserProfile,
     verifyOTP,
     forgotPassword,
     verifyResetOTP,

@@ -69,9 +69,45 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: hsl(var(--background));
+    background: radial-gradient(circle at 50% 50%, #1c0e35 0%, #06030b 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 15s ease-in-out infinite;
+    position: relative;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* Immersive 3D Grid Space Theme Background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200vw;
+    height: 200vh;
+    background-image:
+      linear-gradient(rgba(200, 50, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(50, 200, 255, 0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(600px) rotateX(60deg) translateY(0) translateZ(-200px);
+    animation: grid-move-3d 5s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  body::after {
+    /* Shadow overlay to fade the grid out in the distance */
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(ellipse at bottom, transparent 10%, #06030b 80%);
+    z-index: -1;
+    pointer-events: none;
   }
 
   /* Custom Scrollbar */
@@ -260,6 +296,16 @@
 
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes grid-move-3d {
+  0% {
+    transform: perspective(600px) rotateX(60deg) translateY(0) translateZ(-200px);
+  }
+
+  100% {
+    transform: perspective(600px) rotateX(60deg) translateY(60px) translateZ(-200px);
   }
 }
 

@@ -1,32 +1,33 @@
-Instant Smart Event Management System
+# Smart Event Management
 
-Project Overview
-A web-based platform designed to help event organizers manage events efficiently using machine learning for service recommendations and budget optimization. The platform also has future scope for integrating augmented reality to help users navigate event venues.
+A full-stack event management platform facilitating connection between event organizers and reliable vendors (photographers, caterers, etc.).
 
-Features
-Event Creation and Management: Allows organizers to create and manage events through a user-friendly web interface.
-AI Recommendations: Utilizes machine learning to recommend services like catering, decoration, and photography based on the event type and budget.
-Budget Optimization: Helps optimize event expenses to stay within budget.
-Admin Dashboard: Provides analytics and insights for organizers.
-Future AR Navigation: Plans to integrate augmented reality to guide attendees within large venues (future scope).
+## 🚀 Features
+- **3-Level Dashboard**: Admin, Vendor, User.
+- **AI-Powered Recommendations**: Set a budget and get suggested vendor categories.
+- **AR Spatial Scan**: Scan your venue dimensions (simulated).
+- **Vendor Marketplace**: Browse, filter, and book vendors.
+- **Event Planning Wizard**: Step-by-step event creation.
 
-Installation
-Clone the repository:
-git clone https://github.com/your-org/InstantSmartEvent.git
+## 🛠️ Tech Stack
+- **Frontend**: React (Vite), TailwindCSS
+- **Backend**: Node.js, Express, MongoDB
+- **AI/AR**: Integrated Node.js modules
 
-Navigate to the project directory:
-cd InstantSmartEvent
+## 📦 Installation & Run
+1. **Clone the repo**
+2. **Install Dependencies**:
+   ```bash
+   npm run install-all
+   ```
+   (Or install separately in `frontend` and `backend`).
 
-Install the required dependencies (for example, if using Python and Flask):
-pip install -r requirements.txt
+3. **Environment Setup**:
+   - Create `.env` in `backend/` (optional, defaults provided).
+   - Create `.env` in `frontend/` with `VITE_API_URL=http://localhost:5000/api`.
 
-Usage
-Run the backend server:
-python backend/app.py
-Open the frontend in your browser to start creating and managing events.
-
-Contributing
-Feel free to contribute by forking the repository and creating pull requests. For major changes, please open an issue first to discuss what you would like to change.
-
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
+4. **Start Application**:
+   ```bash
+   npm start
+   ```
+   This runs both backend and frontend concurrently.
