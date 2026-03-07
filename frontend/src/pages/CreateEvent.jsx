@@ -144,7 +144,7 @@ function CreateEvent() {
     setShowVendorModal(true);
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?category=${category}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/vendors?category=${category}`, {
         headers: {
           'Authorization': `Bearer ${userInfo?.token}`
         }
@@ -212,12 +212,12 @@ function CreateEvent() {
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        let url = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/venues/search?district=${formData.district}`;
+        let url = `${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/venues/search?district=${formData.district}`;
         if (userLocation) {
           url += `&lat=${userLocation[0]}&lng=${userLocation[1]}`;
         }
 
-        const localUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?category=Venue&district=${formData.district}`;
+        const localUrl = `${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/vendors?category=Venue&district=${formData.district}`;
 
         const [apiRes, localRes] = await Promise.all([
           fetch(url),
@@ -292,7 +292,7 @@ function CreateEvent() {
   useEffect(() => {
     const fetchColleges = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/colleges?district=${encodeURIComponent(formData.district)}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/colleges?district=${encodeURIComponent(formData.district)}`);
         if (!res.ok) return;
         const data = await res.json();
         setCollegeList(data || []);
@@ -320,7 +320,7 @@ function CreateEvent() {
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/colleges?q=${encodeURIComponent(collegeQuery)}&district=${encodeURIComponent(formData.district)}`, { signal: controller.signal });
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/colleges?q=${encodeURIComponent(collegeQuery)}&district=${encodeURIComponent(formData.district)}`, { signal: controller.signal });
         if (!res.ok) return;
         const data = await res.json();
         setCollegeSuggestions(data || []);
@@ -836,7 +836,7 @@ function CreateEvent() {
                     }
                     setIsSubmitting(true);
                     const payload = { ...formData, selectedVendors };
-                    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, {
+                    const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/events`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',

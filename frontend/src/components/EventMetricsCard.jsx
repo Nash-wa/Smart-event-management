@@ -14,7 +14,7 @@ const EventMetricsCard = ({ event, token }) => {
         setError(null);
 
         const readinessRes = await fetch(
-          `http://localhost:5000/api/events/${event._id}/readiness`,
+          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${event._id}/readiness`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -27,7 +27,7 @@ const EventMetricsCard = ({ event, token }) => {
         }
 
         const bookingsRes = await fetch(
-          `http://localhost:5000/api/bookings/event/${event._id}`,
+          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/bookings/event/${event._id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (bookingsRes.ok) {

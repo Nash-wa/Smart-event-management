@@ -112,6 +112,14 @@ function Services() {
                         <h1 className="text-5xl font-black uppercase tracking-tighter mb-2">Our Elite Partners</h1>
                         <p className="text-gray-500 text-lg uppercase tracking-widest font-bold">Discover · Book · Manage</p>
                     </div>
+                    <button
+                        onClick={() => navigate('/vendor-discovery')}
+                        className="flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
+                        style={{ background: 'linear-gradient(135deg, #06b6d4, #0284c7)', boxShadow: '0 0 20px rgba(6,182,212,0.3)', color: '#0f172a' }}
+                    >
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        Live Discovery Map
+                    </button>
 
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10">

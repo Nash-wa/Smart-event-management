@@ -19,7 +19,7 @@ const GuestARNavigation = () => {
     useEffect(() => {
         const fetchNodes = async () => {
             try {
-                const res = await fetch(`http://localhost:5000/api/events/${eventId}/arnodes`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}/arnodes`);
                 if (!res.ok) throw new Error("Failed to fetch AR nodes");
                 const data = await res.json();
 

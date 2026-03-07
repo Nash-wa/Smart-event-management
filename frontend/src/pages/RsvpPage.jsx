@@ -13,7 +13,7 @@ function RsvpPage() {
     useEffect(() => {
         const fetchEventDetails = async () => {
             try {
-                const res = await fetch(`http://localhost:5000/api/events/public/${eventId}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
                 const data = await res.json();
                 if (res.ok) setEvent(data);
             } catch (error) {
@@ -29,7 +29,7 @@ function RsvpPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:5000/api/participants/rsvp`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/rsvp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...formData, event: eventId })
