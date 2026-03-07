@@ -16,7 +16,7 @@ function Participants() {
     const fetchParticipants = async () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const res = await fetch(`http://localhost:5000/api/participants/${eventId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/${eventId}`, {
           headers: {
             Authorization: `Bearer ${userInfo?.token}`
           }
@@ -32,7 +32,7 @@ function Participants() {
 
     const fetchEvent = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/events/public/${eventId}`);
         const data = await res.json();
         if (res.ok) setEvent(data);
       } catch (error) {
@@ -48,7 +48,7 @@ function Participants() {
     e.preventDefault();
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`http://localhost:5000/api/participants`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ function Participants() {
         }
 
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const res = await fetch(`http://localhost:5000/api/participants/bulk`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/bulk`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ function Participants() {
   const handleDeleteParticipant = async (id) => {
     if (!window.confirm("Are you sure you want to remove this participant?")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/participants/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${JSON.parse(localStorage.getItem('userInfo'))?.token}`

@@ -16,32 +16,35 @@ const Chatbot = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!input.trim()) return;
 
         const userMessage = { text: input, isBot: false };
         setMessages(prev => [...prev, userMessage]);
         setInput('');
 
-        // Mock bot response logic
-        setTimeout(() => {
-            let botText = "I'm here to help you customize your event communication. What specific details would you like to refine?";
-            const lowerInput = input.toLowerCase();
+        // Provide context to the bot if user is planning an event
+        const activeEventStr = localStorage.getItem('activeEventId');
+        let eventContext = null;
+        if (activeEventStr) {
+            // Ideally we'd fetch event full details, but we can pass whatever we know 
+            // from the activeEvent or simple local state. 
+            // For now, simple context:
+            eventContext = { note: `User is managing event ID: ${activeEventStr}` };
+        }
 
-            if (lowerInput.includes('event')) {
-                botText = "I can help you build an event timeline or suggest themes. Just choose 'Create Event' in your dashboard to start!";
-            } else if (lowerInput.includes('vendor')) {
-                botText = "Our vendors are specialists in communication. You can check their social handles in the Services section.";
-            } else if (lowerInput.includes('ar')) {
-                botText = "The AR Explorer is great for showing customers the venue. It makes communication visually stunning!";
-            } else if (lowerInput.includes('budget')) {
-                botText = "Budget clarity is key to good customer relations. Our analytics tool calculates everything for you.";
-            } else if (lowerInput.includes('hello') || lowerInput.includes('hi')) {
-                botText = "Hi there! Ready to make your next event extraordinary?";
-            }
-
-            setMessages(prev => [...prev, { text: botText, isBot: true }]);
-        }, 1000);
+        try {
+            const apiRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/ai/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input, eventContext })
+            });
+            const data = await apiRes.json();
+            setMessages(prev => [...prev, { text: data.response || "I didn't quite catch that.", isBot: true }]);
+        } catch (err) {
+            console.error(err);
+            setMessages(prev => [...prev, { text: "Oh no! Seems my servers are momentarily down.", isBot: true }]);
+        }
     };
 
     return (
@@ -66,8 +69,8 @@ const Chatbot = () => {
                             {messages.map((m, i) => (
                                 <div key={i} className={`flex ${m.isBot ? 'justify-start' : 'justify-end'} animate-fade-in`}>
                                     <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${m.isBot
-                                            ? 'bg-white/10 text-white rounded-tl-none border border-white/5'
-                                            : 'bg-primary text-white rounded-tr-none'
+                                        ? 'bg-white/10 text-white rounded-tl-none border border-white/5'
+                                        : 'bg-primary text-white rounded-tr-none'
                                         } shadow-lg backdrop-blur-md`}>
                                         {m.text}
                                     </div>

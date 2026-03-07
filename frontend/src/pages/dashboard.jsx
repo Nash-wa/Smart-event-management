@@ -18,7 +18,7 @@ function Dashboard() {
 
     const fetchFeed = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/messages/feed', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/messages/feed`, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         const data = await res.json();
@@ -28,7 +28,7 @@ function Dashboard() {
 
     const fetchEvents = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/events', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         const data = await res.json();

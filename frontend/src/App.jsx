@@ -21,6 +21,7 @@ import VentureAdvice from "./pages/VentureAdvice";
 import Chatbot from "./components/Chatbot";
 import GuestARNavigation from "./pages/GuestARNavigation";
 import RsvpPage from "./pages/RsvpPage";
+import VendorDiscovery from "./pages/VendorDiscovery";
 
 import TicketView from "./pages/TicketView";
 import CheckIn from "./pages/CheckIn";
@@ -54,6 +55,7 @@ function App() {
         <Route path="/ar-navigation/:eventId?" element={<ARNavigation />} />
         <Route path="/ar/:eventId" element={<GuestARNavigation />} />
         <Route path="/rsvp/:eventId" element={<RsvpPage />} />
+        <Route path="/vendor-discovery" element={<VendorDiscovery standalone />} />
 
         <Route path="/ticket/:ticketId" element={<TicketView />} />
         <Route path="/checkin/:eventId" element={<CheckIn />} />

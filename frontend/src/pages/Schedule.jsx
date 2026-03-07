@@ -18,7 +18,7 @@ function Schedule() {
         const fetchEventData = async () => {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const res = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, {
                     headers: {
                         'Authorization': `Bearer ${userInfo?.token}`
                     }
@@ -42,7 +42,7 @@ function Schedule() {
 
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            const res = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

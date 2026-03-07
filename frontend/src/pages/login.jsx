@@ -29,8 +29,8 @@ function Login() {
       } else {
         setError(data.message || 'Login failed. Please try again.');
       }
-    } catch {
-      setError('Cannot connect to server. Is the backend running?');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Cannot connect to server. Is the backend running?');
     } finally {
       setLoading(false);
     }

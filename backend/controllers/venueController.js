@@ -1,7 +1,9 @@
 const asyncHandler = require('express-async-handler');
 const axios = require('axios');
 
-// @desc    Search for venues using OpenStreetMap (Nominatim)
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+
+// @desc    Search for venues using Google Places API (with OSM fallback)
 // @route   GET /api/venues/search
 // @access  Public
 const searchVenues = asyncHandler(async (req, res) => {
@@ -9,11 +11,71 @@ const searchVenues = asyncHandler(async (req, res) => {
 
     console.log(`Searching venues for: ${district} ${query}`);
 
-    let results = [];
+    // ── 1. Google Places Text Search ──────────────────────────────────────────
+    if (GOOGLE_API_KEY) {
+        try {
+            const searchQuery = query
+                ? `${query} in ${district}, Kerala, India`
+                : `event venue auditorium convention hall in ${district}, Kerala, India`;
 
-    // 1. Nominatim Search (OpenStreetMap)
+            const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
+            const response = await axios.get(placesUrl, {
+                params: {
+                    query: searchQuery,
+                    key: GOOGLE_API_KEY,
+                    region: 'in',
+                    ...(lat && lng ? { location: `${lat},${lng}`, radius: 30000 } : {})
+                }
+            });
+
+            if (response.data.results && response.data.results.length > 0) {
+                const results = response.data.results.map(place => {
+                    // Build photo URL if available
+                    const photoRef = place.photos?.[0]?.photo_reference;
+                    const photoUrl = photoRef
+                        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=${GOOGLE_API_KEY}`
+                        : getVenueImage(place.types?.[0], place.name);
+
+                    const distance = (lat && lng)
+                        ? calculateDistance(parseFloat(lat), parseFloat(lng),
+                            place.geometry.location.lat, place.geometry.location.lng)
+                        : null;
+
+                    return {
+                        id: place.place_id,
+                        name: place.name,
+                        address: place.formatted_address,
+                        location: {
+                            lat: place.geometry.location.lat,
+                            lng: place.geometry.location.lng
+                        },
+                        rating: place.rating || null,
+                        totalRatings: place.user_ratings_total || 0,
+                        category: place.types?.[0]?.replace(/_/g, ' ') || 'Venue',
+                        image: photoUrl,
+                        source: 'Google Places',
+                        mapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+                        ...(distance !== null ? { distance } : {})
+                    };
+                });
+
+                // Sort by distance if location provided, else by rating
+                if (lat && lng) {
+                    results.sort((a, b) => (a.distance || 999) - (b.distance || 999));
+                } else {
+                    results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                }
+
+                return res.json(results);
+            }
+        } catch (error) {
+            console.error('Google Places Error:', error.response?.data?.error_message || error.message);
+            // Fall through to OSM fallback
+        }
+    }
+
+    // ── 2. Fallback: OpenStreetMap Nominatim ──────────────────────────────────
     try {
-        // Construct search query
         const searchQuery = query
             ? `${query} in ${district}`
             : `auditorium convention center in ${district}`;
@@ -21,9 +83,10 @@ const searchVenues = asyncHandler(async (req, res) => {
         const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=20`;
 
         const response = await axios.get(nominatimUrl, {
-            headers: { 'User-Agent': 'SmartEventManagement/1.0' } // Required by OSM
+            headers: { 'User-Agent': 'SmartEventManagement/1.0' }
         });
 
+        let results = [];
         if (response.data && response.data.length > 0) {
             results = response.data.map(item => ({
                 id: item.place_id,
@@ -35,42 +98,33 @@ const searchVenues = asyncHandler(async (req, res) => {
                 },
                 category: item.type || 'Venue',
                 source: 'OpenStreetMap',
-                // Generate a relevant image URL based on category/name
-                image: getVenueImage(item.type, item.display_name.split(',')[0])
+                image: getVenueImage(item.type, item.display_name.split(',')[0]),
+                mapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lon}`
             }));
         }
+
+        if (lat && lng) {
+            const userLat = parseFloat(lat);
+            const userLng = parseFloat(lng);
+            results = results.map(venue => ({
+                ...venue,
+                distance: calculateDistance(userLat, userLng, venue.location.lat, venue.location.lng)
+            })).sort((a, b) => a.distance - b.distance);
+        }
+
+        return res.json(results);
     } catch (error) {
-        console.error("OSM Search Error:", error.message);
+        console.error('OSM Search Error:', error.message);
+        return res.json([]);
     }
-
-    // 2. Add Distance if user location provided
-    if (lat && lng) {
-        const userLat = parseFloat(lat);
-        const userLng = parseFloat(lng);
-
-        results = results.map(venue => {
-            const dist = calculateDistance(userLat, userLng, venue.location.lat, venue.location.lng);
-            return { ...venue, distance: dist };
-        }).sort((a, b) => a.distance - b.distance);
-    }
-
-    res.json(results);
 });
 
-// Helper: Get Image URL (Free Source)
+// Helper: Fallback image
 const getVenueImage = (category, name) => {
-    // Using Unsplash Source (Random but relevant) or similar
-    // Since 'source.unsplash.com' is deprecated, we use specific curated keywords or a robust placeholder service
-    // For production, this should connect to Unsplash API with a key. 
-    // Here we use a reliable placeholder that generates nice images.
-
-    const keywords = [category, 'convention', 'hall', 'auditorium', 'event'].join(',');
-    // Pixabay or Unsplash API would go here. 
-    // Fallback to static relevant images for demo reliability without API keys
-    return `https://loremflickr.com/640/480/auditorium,building,hall/all?lock=${name.length}`;
+    return `https://loremflickr.com/640/480/auditorium,building,hall/all?lock=${(name || '').length}`;
 };
 
-// Helper: Haversine Distance
+// Helper: Haversine Distance (km)
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = deg2rad(lat2 - lat1);
@@ -87,6 +141,4 @@ function deg2rad(deg) {
     return deg * (Math.PI / 180);
 }
 
-module.exports = {
-    searchVenues
-};
+module.exports = { searchVenues };

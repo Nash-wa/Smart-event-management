@@ -14,12 +14,12 @@ const TicketView = () => {
             try {
                 // We'll create a public endpoint for ticket retrieval or just use the participant one if we can
                 // For now, let's assume we fetch by ticketId
-                const res = await fetch(`http://localhost:5000/api/participants/ticket/${ticketId}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/participants/ticket/${ticketId}`);
                 const data = await res.json();
                 if (res.ok) {
                     setTicketData(data);
                     // Fetch messages for this event
-                    const msgRes = await fetch(`http://localhost:5000/api/messages/${data.event._id}`);
+                    const msgRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/messages/${data.event._id}`);
                     const msgData = await msgRes.json();
                     if (msgRes.ok) setMessages(msgData);
                 } else {

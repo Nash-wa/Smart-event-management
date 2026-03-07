@@ -219,7 +219,7 @@ const ARNavigation = () => {
                 return;
             }
             try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/events/public/${eventId}`);
                 const data = await res.json();
                 if (res.ok) setEvent(data);
             } catch (error) {
