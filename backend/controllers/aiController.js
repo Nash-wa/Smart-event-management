@@ -1,43 +1,85 @@
 const asyncHandler = require('express-async-handler');
+const Event = require('../models/eventModel');
 
-// @desc    Analyze budget
+// @desc    Analyze event budget and give recommendations
 // @route   GET /api/ai/analyze-budget
-// @access  Public
+// @access  Private
 const analyzeBudget = asyncHandler(async (req, res) => {
-    const total = parseInt(req.query.total) || 50000;
+    const { eventId } = req.query;
 
-    const allocation = {
-        venue: total * 0.4,
-        food: total * 0.3,
-        decor: total * 0.2,
-        media: total * 0.1
-    };
+    if (!eventId) {
+        return res.status(400).json({ message: 'eventId is required' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const budget = event.budget || 0;
+    const used = event.usedBudget || 0;
+    const remaining = Math.max(0, budget - used);
+    const usedPercent = budget > 0 ? ((used / budget) * 100).toFixed(1) : 0;
+
+    let status = 'On Track';
+    let advice = 'Your budget is well managed.';
+
+    if (usedPercent > 90) {
+        status = 'Critical';
+        advice = 'You have used over 90% of your budget. Avoid adding new expenses.';
+    } else if (usedPercent > 70) {
+        status = 'Warning';
+        advice = 'You have used over 70% of your budget. Review remaining expenses carefully.';
+    } else if (usedPercent > 50) {
+        status = 'Moderate';
+        advice = 'Half your budget is spent. Keep an eye on upcoming costs.';
+    }
 
     res.json({
-        success: true,
-        allocation,
-        tip: "Based on this budget, we recommend local community halls."
+        eventId,
+        eventName: event.name,
+        budget,
+        used,
+        remaining,
+        usedPercent: parseFloat(usedPercent),
+        status,
+        advice
     });
 });
 
-// @desc    Get recommendations based on budget
+// @desc    Recommend services based on event category & budget
 // @route   POST /api/ai/recommend
-// @access  Public
+// @access  Private
 const recommendServices = asyncHandler(async (req, res) => {
-    const { budget } = req.body;
-    const budgetVal = parseInt(budget);
+    const { category, budget } = req.body;
 
-    let services = [];
+    const recommendations = [];
 
-    if (budgetVal < 10000) {
-        services = ["Community Hall", "Basic Catering", "Simple Decoration"];
-    } else if (budgetVal < 30000) {
-        services = ["Banquet Hall", "Buffet Catering", "Premium Decoration"];
+    if (category === 'Wedding') {
+        recommendations.push(
+            { service: 'Photography', suggestedBudget: budget * 0.2, priority: 'High' },
+            { service: 'Catering', suggestedBudget: budget * 0.35, priority: 'High' },
+            { service: 'Decoration', suggestedBudget: budget * 0.2, priority: 'Medium' },
+            { service: 'Music/DJ', suggestedBudget: budget * 0.1, priority: 'Medium' },
+            { service: 'Venue', suggestedBudget: budget * 0.15, priority: 'High' }
+        );
+    } else if (category === 'Corporate' || category === 'Conference') {
+        recommendations.push(
+            { service: 'Venue', suggestedBudget: budget * 0.4, priority: 'High' },
+            { service: 'Catering', suggestedBudget: budget * 0.3, priority: 'High' },
+            { service: 'Photography', suggestedBudget: budget * 0.15, priority: 'Medium' },
+            { service: 'Decoration', suggestedBudget: budget * 0.15, priority: 'Low' }
+        );
     } else {
-        services = ["Resort Venue", "Luxury Catering", "Theme Decoration"];
+        recommendations.push(
+            { service: 'Venue', suggestedBudget: budget * 0.3, priority: 'High' },
+            { service: 'Catering', suggestedBudget: budget * 0.3, priority: 'High' },
+            { service: 'Photography', suggestedBudget: budget * 0.2, priority: 'Medium' },
+            { service: 'Music/DJ', suggestedBudget: budget * 0.2, priority: 'Medium' }
+        );
     }
 
-    res.json({ recommended_services: services });
+    res.json({ category, budget, recommendations });
 });
 
 module.exports = { analyzeBudget, recommendServices };
