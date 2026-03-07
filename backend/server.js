@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const helmet = require('helmet');
 const connectDB = require('./config/db');
 
 dotenv.config();
@@ -9,10 +10,12 @@ connectDB();
 
 const app = express();
 
-app.use(express.json());
-app.use(cors());
-const helmet = require('helmet');
 app.use(helmet());
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
+}));
+app.use(express.json());
 
 app.get('/', (req, res) => {
     res.send('API is running...');

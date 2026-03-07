@@ -7,7 +7,8 @@ const connectDB = async () => {
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error(`❌ MongoDB Connection Error: ${error.message}`);
-        process.exit(1);
+        console.warn(`⚠️  Running in offline/in-memory mode. Data will NOT persist.`);
+        // Do NOT exit — controllers have an isDbConnected() fallback to in-memory storage
     }
 };
 

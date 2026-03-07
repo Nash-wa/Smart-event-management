@@ -76,9 +76,10 @@ const registerUser = asyncHandler(async (req, res) => {
     if (existingUser && !existingUser.isVerified) {
         // Resend OTP to unverified account
         existingUser.name = name;
-        existingUser.password = password;
+        existingUser.password = password; // pre-save hook will hash this
         existingUser.otpCode = otpCode;
         existingUser.otpExpires = otpExpires;
+        existingUser.markModified('password');
         await existingUser.save();
     } else {
         // Create new unverified user
