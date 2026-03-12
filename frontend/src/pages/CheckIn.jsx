@@ -4,7 +4,7 @@ import api from '../api';
 import '../css/checkin.css';
 
 const CheckIn = () => {
-    const { eventId } = useParams();
+    useParams();
     const [ticketInput, setTicketInput] = useState('');
     const [status, setStatus] = useState({ type: '', message: '' });
     const [lastCheckedIn, setLastCheckedIn] = useState(null);

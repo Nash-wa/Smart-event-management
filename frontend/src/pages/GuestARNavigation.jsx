@@ -19,12 +19,12 @@ const GuestARNavigation = () => {
     useEffect(() => {
         const fetchNodes = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${eventId}/arnodes`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}/nodes`);
                 if (!res.ok) throw new Error("Failed to fetch AR nodes");
                 const data = await res.json();
 
-                if (data && data.length > 0) {
-                    const sortedNodes = data.sort((a, b) => (a.order || 0) - (b.order || 0));
+                if (data && data.nodes && data.nodes.length > 0) {
+                    const sortedNodes = data.nodes.sort((a, b) => (a.order || 0) - (b.order || 0));
                     setNodes(sortedNodes);
                 } else {
                     setError("No AR nodes configured for this event.");
@@ -123,7 +123,7 @@ const GuestARNavigation = () => {
     const requestCameraPermission = async () => {
         try {
             await navigator.mediaDevices.getUserMedia({ video: true });
-        } catch (err) {
+        } catch {
             setError("Camera permission denied. Please allow camera access.");
         }
     };

@@ -56,11 +56,11 @@ export const calculateTimeline = (startDate, category, selectedVendors = {}, fea
             { task: "Exhibitor Briefing", daysBefore: 1, priority: "Medium" }
         ],
         party: [
-            { task: "Theme & Decor Concept", daysBefore: 45, priority: "Medium" },
-            { task: "Entertainment & DJ Booking", daysBefore: 30, priority: "High" },
-            { task: "Beverage & Menu Selection", daysBefore: 20, priority: "Medium" },
-            { task: "Invitations & RSVP Management", daysBefore: 15, priority: "Medium" },
-            { task: "Lighting & Sound Setup", daysBefore: 1, priority: "High" }
+            { task: "Theme & Decor Concept", description: "Define the visual style, color palette, and overall atmosphere of the party.", daysBefore: 45, priority: "Medium" },
+            { task: "Entertainment & DJ Booking", description: "Secure music, performers, or a DJ to keep the guests engaged throughout the event.", daysBefore: 30, priority: "High" },
+            { task: "Beverage & Menu Selection", description: "Finalize the drink list and food menu based on the theme and attendee preferences.", daysBefore: 20, priority: "Medium" },
+            { task: "Invitations & RSVP Management", description: "Send out digital or physical invites and track guest confirmations real-time.", daysBefore: 15, priority: "Medium" },
+            { task: "Lighting & Sound Setup", description: "Coordinating the technical setup to ensure the party has the right mood and audio quality.", daysBefore: 1, priority: "High" }
         ],
         hackathon: [
             { task: "Theme & Challenge Definition", daysBefore: 60, priority: "High" },
@@ -95,9 +95,12 @@ export const calculateTimeline = (startDate, category, selectedVendors = {}, fea
 
         let status = "Pending";
         const taskLower = t.task.toLowerCase();
-        if (taskLower.includes('vendor') || taskLower.includes('venue') || taskLower.includes('catering') || taskLower.includes('confirm')) {
-            const vendorCats = Object.keys(vendors).map(c => c.toLowerCase());
-            if (vendorCats.some(cat => taskLower.includes(cat))) {
+        const vendorCats = Object.keys(vendors).map(c => c.toLowerCase());
+
+        // Sync logic with backend
+        const relevantKeywords = ['vendor', 'venue', 'catering', 'decor', 'photography', 'music', 'dj', 'entertainment', 'invitation', 'sound', 'lighting'];
+        if (relevantKeywords.some(kw => taskLower.includes(kw)) || taskLower.includes('confirm')) {
+            if (vendorCats.some(cat => taskLower.includes(cat) || (cat === 'music/dj' && (taskLower.includes('dj') || taskLower.includes('entertainment'))))) {
                 status = "Completed";
             }
         }
@@ -241,7 +244,8 @@ export const calculateReadinessScore = (tasks = []) => {
     let score = (completedTasks / totalTasks) * 100;
 
     // Vendor penalty: If vendors are required (based on category tasks) but not confirmed, reduce score
-    const vendorTasks = tasks.filter(t => t.task.toLowerCase().includes('vendor') || t.task.toLowerCase().includes('catering'));
+    const relevantKeywords = ['vendor', 'venue', 'catering', 'decor', 'photography', 'music', 'dj', 'entertainment', 'invitation', 'sound', 'lighting'];
+    const vendorTasks = tasks.filter(t => relevantKeywords.some(kw => t.task.toLowerCase().includes(kw)));
     const pendingVendorTasks = vendorTasks.filter(t => t.status !== "Completed").length;
 
     if (pendingVendorTasks > 0) {

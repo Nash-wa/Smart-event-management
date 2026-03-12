@@ -5,32 +5,47 @@ import api from "../api";
 function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
+
     const email = e.target.email.value.trim();
     const password = e.target.password.value;
 
-    if (!email || !password) { setError('Please fill in all fields.'); return; }
+    if (!email || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
 
     setLoading(true);
+
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post("/auth/login", { email, password });
       const data = response.data;
 
       console.log("Server Response:", data);
+
       if (response.status === 200) {
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        if (data.role === 'admin') navigate('/admin-dashboard');
-        else if (data.role === 'vendor') navigate('/vendor-dashboard');
-        else navigate('/dashboard');
+        localStorage.setItem("userInfo", JSON.stringify(data));
+
+        if (data.role === "admin") {
+          navigate("/admin-dashboard");
+        } else if (data.role === "vendor") {
+          navigate("/vendor-dashboard");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
-        setError(data.message || 'Login failed. Please try again.');
+        setError(data.message || "Login failed. Please try again.");
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Cannot connect to server. Is the backend running?');
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.message) {
+        setError(error.response.data.message);
+      } else {
+        setError("Cannot connect to server. Is the backend running?");
+      }
     } finally {
       setLoading(false);
     }
@@ -47,7 +62,9 @@ function Login() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
             Welcome Back
           </h1>
-          <p className="text-muted-foreground">Sign in to manage your events</p>
+          <p className="text-muted-foreground">
+            Sign in to manage your events
+          </p>
         </div>
 
         {error && (
@@ -72,7 +89,7 @@ function Login() {
             <div className="flex justify-between items-center ml-1">
               <label className="text-sm font-medium">Password</label>
               <span
-                onClick={() => navigate('/forgot-password')}
+                onClick={() => navigate("/forgot-password")}
                 className="text-xs text-primary hover:text-accent cursor-pointer font-semibold transition-colors"
               >
                 Forgot Password?
@@ -92,14 +109,14 @@ function Login() {
             disabled={loading}
             className="gradient-button w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? '⏳ Signing in...' : 'Sign In'}
+            {loading ? "⏳ Signing in..." : "Sign In"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <span
-            onClick={() => navigate('/register')}
+            onClick={() => navigate("/register")}
             className="text-primary hover:text-accent cursor-pointer font-semibold transition-colors"
           >
             Register

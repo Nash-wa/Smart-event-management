@@ -55,7 +55,7 @@ function VerifyOtp() {
             } else {
                 setError(data.message || "Verification failed");
             }
-        } catch (err) {
+        } catch {
             setError("Error connecting to server");
         } finally {
             setLoading(false);

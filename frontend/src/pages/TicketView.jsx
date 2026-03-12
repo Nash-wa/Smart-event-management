@@ -25,7 +25,7 @@ const TicketView = () => {
                 } else {
                     setError(data.message || 'Ticket not found');
                 }
-            } catch (error) {
+            } catch {
                 setError('Failed to load ticket');
             } finally {
                 setLoading(false);

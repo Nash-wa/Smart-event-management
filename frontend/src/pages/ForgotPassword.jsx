@@ -50,6 +50,10 @@ function ForgotPassword() {
                 body: JSON.stringify({ email })
             });
             const data = await res.json();
+            if (!res.ok) {
+                setError(data.message || 'Failed to send reset email.');
+                return;
+            }
             setSuccess(data.message || 'If an account exists, a code has been sent.');
             setStep('otp');
         } catch {

@@ -7,23 +7,32 @@ function AdminDashboard() {
     const [pendingVendors, setPendingVendors] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
     const [allEvents, setAllEvents] = useState([]);
+    const [allVendors, setAllVendors] = useState([]);
     const [stats, setStats] = useState({ users: 0, events: 0, vendors: 0, pending: 0 });
+    const [expandedUser, setExpandedUser] = useState(null);
+    const [userEvents, setUserEvents] = useState([]);
+    const [loadingUserEvents, setLoadingUserEvents] = useState(false);
+    const [expandedVendor, setExpandedVendor] = useState(null);
+    const [vendorBookings, setVendorBookings] = useState([]);
+    const [loadingVendorBookings, setLoadingVendorBookings] = useState(false);
 
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
         try {
-            const [vRes, uRes, eRes, sRes] = await Promise.all([
+            const [vRes, uRes, eRes, sRes, avRes] = await Promise.all([
                 api.get('/vendors', { params: { isApproved: false } }),
                 api.get('/admin/users'),
                 api.get('/events'),
-                api.get('/admin/stats')
+                api.get('/admin/stats'),
+                api.get('/admin/vendors')
             ]);
 
             setPendingVendors(Array.isArray(vRes.data) ? vRes.data : []);
             setAllUsers(uRes.data);
             setAllEvents(eRes.data);
             setStats(sRes.data);
+            setAllVendors(avRes.data);
 
         } catch (error) {
             console.error(error);
@@ -59,6 +68,44 @@ function AdminDashboard() {
         }
     };
 
+    const fetchUserEvents = async (userId) => {
+        if (expandedUser === userId) {
+            setExpandedUser(null);
+            return;
+        }
+
+        setLoadingUserEvents(true);
+        try {
+            const { data } = await api.get(`/admin/users/${userId}/events`);
+            setUserEvents(data);
+            setExpandedUser(userId);
+        } catch (error) {
+            console.error(error);
+            alert("Error fetching user events");
+        } finally {
+            setLoadingUserEvents(false);
+        }
+    };
+
+    const fetchVendorBookings = async (vendorId) => {
+        if (expandedVendor === vendorId) {
+            setExpandedVendor(null);
+            return;
+        }
+
+        setLoadingVendorBookings(true);
+        try {
+            const { data } = await api.get(`/admin/vendors/${vendorId}/bookings`);
+            setVendorBookings(data);
+            setExpandedVendor(vendorId);
+        } catch (error) {
+            console.error(error);
+            alert("Error fetching vendor bookings");
+        } finally {
+            setLoadingVendorBookings(false);
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('userInfo');
         navigate("/");
@@ -79,6 +126,7 @@ function AdminDashboard() {
                     <TabButton id="stats" label="Analytics" icon="📊" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="approvals" label="Approvals" icon="⏳" active={activeTab} onClick={setActiveTab} count={pendingVendors.length} />
                     <TabButton id="users" label="Users" icon="👥" active={activeTab} onClick={setActiveTab} />
+                    <TabButton id="vendors" label="Vendors" icon="🏪" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="events" label="Events" icon="📅" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="settings" label="System" icon="⚙️" active={activeTab} onClick={setActiveTab} />
                 </nav>
@@ -102,6 +150,7 @@ function AdminDashboard() {
                 <MobileTab active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon="📊" />
                 <MobileTab active={activeTab === 'approvals'} onClick={() => setActiveTab('approvals')} icon="⏳" count={pendingVendors.length} />
                 <MobileTab active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon="👥" />
+                <MobileTab active={activeTab === 'vendors'} onClick={() => setActiveTab('vendors')} icon="🏪" />
                 <MobileTab active={activeTab === 'events'} onClick={() => setActiveTab('events')} icon="📅" />
                 <MobileTab active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="⚙️" />
             </nav>
@@ -135,6 +184,10 @@ function AdminDashboard() {
                         <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-yellow-500/5 to-transparent">
                             <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Pending</span>
                             <p className="text-4xl md:text-5xl font-bold mt-2 font-mono">{stats.pending}</p>
+                        </div>
+                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-primary/5 to-transparent">
+                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Platform Revenue</span>
+                            <p className="text-4xl md:text-5xl font-bold mt-2 font-mono text-accent">₹{stats.totalRevenue?.toLocaleString() || '0'}</p>
                         </div>
                     </div>
                 )}
@@ -184,33 +237,191 @@ function AdminDashboard() {
                                     <tr>
                                         <th className="p-6">User Identity</th>
                                         <th className="p-6">Role</th>
+                                        <th className="p-6">Events</th>
                                         <th className="p-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {allUsers.map(u => (
-                                        <tr key={u._id} className="hover:bg-white/5 transition-all group">
-                                            <td className="p-6">
-                                                <div className="font-semibold text-white group-hover:text-accent transition-colors">{u.name}</div>
-                                                <div className="text-gray-500 text-xs truncate max-w-[100px] md:max-w-none">{u.email}</div>
-                                            </td>
-                                            <td className="p-6">
-                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter ${u.role === 'admin' ? 'bg-red-500/20 text-red-500 border border-red-500/30' : u.role === 'vendor' ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30' : 'bg-white/10 text-gray-400 border border-white/5'}`}>
-                                                    {u.role}
-                                                </span>
-                                            </td>
-                                            <td className="p-6 text-right">
-                                                {u.role !== 'admin' && (
-                                                    <button onClick={() => handleDeleteUser(u._id)} className="px-4 py-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-bold transition-all">
-                                                        Remove
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
+                                        <>
+                                            <tr key={u._id} className={`hover:bg-white/5 transition-all group cursor-pointer ${expandedUser === u._id ? 'bg-white/5' : ''}`} onClick={() => fetchUserEvents(u._id)}>
+                                                <td className="p-6">
+                                                    <div className="font-semibold text-white group-hover:text-accent transition-colors flex items-center gap-2">
+                                                        {u.name}
+                                                        {expandedUser === u._id ? <span>🔼</span> : <span>🔽</span>}
+                                                    </div>
+                                                    <div className="text-gray-500 text-xs truncate max-w-[100px] md:max-w-none">{u.email}</div>
+                                                </td>
+                                                <td className="p-6">
+                                                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter ${u.role === 'admin' ? 'bg-red-500/20 text-red-500 border border-red-500/30' : u.role === 'vendor' ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30' : 'bg-white/10 text-gray-400 border border-white/5'}`}>
+                                                        {u.role}
+                                                    </span>
+                                                </td>
+                                                <td className="p-6">
+                                                    <span className="text-xs font-bold text-gray-400">
+                                                        {u.eventCount || 0} Events
+                                                    </span>
+                                                </td>
+                                                <td className="p-6 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={(e) => { e.stopPropagation(); fetchUserEvents(u._id); }} className="px-4 py-2 rounded-lg bg-accent/20 text-accent hover:bg-accent hover:text-white text-[10px] font-bold transition-all">
+                                                            {expandedUser === u._id ? 'Close' : 'View Events'}
+                                                        </button>
+                                                        {u.role !== 'admin' && (
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteUser(u._id); }} className="px-4 py-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-[10px] font-bold transition-all">
+                                                                Remove
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedUser === u._id && (
+                                                <tr className="bg-white/[0.02]">
+                                                    <td colSpan="4" className="p-6 border-b border-white/10">
+                                                        <div className="animate-in slide-in-from-top-2 duration-300">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h4 className="text-sm font-bold uppercase tracking-widest text-accent">Active Missions for {u.name}</h4>
+                                                                {loadingUserEvents && <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>}
+                                                            </div>
+
+                                                            {userEvents.length > 0 ? (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                    {userEvents.map(event => (
+                                                                        <div key={event._id} className="glass-card p-4 rounded-2xl border border-white/10 bg-black/40 hover:border-accent/40 transition-all group/card">
+                                                                            <div className="flex justify-between items-start mb-2">
+                                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{event.category}</span>
+                                                                                <span className="text-[10px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded">₹{event.budget?.toLocaleString()}</span>
+                                                                            </div>
+                                                                            <h5 className="font-bold text-white group-hover/card:text-accent transition-colors">{event.name}</h5>
+                                                                            <div className="flex items-center gap-2 mt-3 text-[10px] text-gray-500 font-bold uppercase">
+                                                                                <span>📅 {new Date(event.startDate).toLocaleDateString()}</span>
+                                                                                <span>•</span>
+                                                                                <span>📍 {event.district || 'Remote'}</span>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => navigate(`/event-plan/${event._id}`)}
+                                                                                className="w-full mt-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                                                                            >
+                                                                                Inspect Plan
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : !loadingUserEvents && (
+                                                                <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-40">
+                                                                    <p className="text-xs font-bold uppercase tracking-widest">No deployments linked to this asset.</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === "vendors" && (
+                    <div className="glass-card rounded-3xl border border-white/10 overflow-hidden animate-fade-in shadow-2xl">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-white/5 text-gray-400 text-[10px] uppercase font-bold tracking-widest border-b border-white/10">
+                                    <tr>
+                                        <th className="p-6">Vendor</th>
+                                        <th className="p-6">Owner</th>
+                                        <th className="p-6">Performance</th>
+                                        <th className="p-6 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {allVendors.map(v => (
+                                        <>
+                                            <tr key={v._id} className={`hover:bg-white/5 transition-all group cursor-pointer ${expandedVendor === v._id ? 'bg-white/5' : ''}`} onClick={() => fetchVendorBookings(v._id)}>
+                                                <td className="p-6">
+                                                    <div className="font-semibold text-white group-hover:text-accent transition-colors flex items-center gap-2 text-lg">
+                                                        {v.name}
+                                                        {expandedVendor === v._id ? <span>🔼</span> : <span>🔽</span>}
+                                                    </div>
+                                                    <div className="text-gray-500 text-xs">{v.category} • Base: ₹{v.price.toLocaleString()}</div>
+                                                </td>
+                                                <td className="p-6">
+                                                    <div className="text-sm font-medium">{v.owner?.name || 'Unknown'}</div>
+                                                    <div className="text-gray-500 text-xs">{v.owner?.email || ''}</div>
+                                                </td>
+                                                <td className="p-6">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Orders:</span>
+                                                            <span className="text-xs font-black text-white">{v.bookingCount || 0}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Revenue:</span>
+                                                            <span className="text-xs font-black text-accent">₹{(v.totalRevenue || 0).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-6 text-right">
+                                                    <button onClick={(e) => { e.stopPropagation(); fetchVendorBookings(v._id); }} className="px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary hover:text-white text-[10px] font-bold transition-all uppercase tracking-widest">
+                                                        {expandedVendor === v._id ? 'Close' : 'View Bookings'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {expandedVendor === v._id && (
+                                                <tr className="bg-white/[0.02]">
+                                                    <td colSpan="4" className="p-6 border-b border-white/10">
+                                                        <div className="animate-in slide-in-from-top-2 duration-300">
+                                                            <div className="flex items-center justify-between mb-6">
+                                                                <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary">Booking Manifest for {v.name}</h4>
+                                                                {loadingVendorBookings && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>}
+                                                            </div>
+
+                                                            {vendorBookings.length > 0 ? (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                                    {vendorBookings.map(booking => (
+                                                                        <div key={booking._id} className="glass-card p-6 rounded-[2rem] border border-white/10 bg-black/40 hover:border-primary/40 transition-all group/card shadow-xl">
+                                                                            <div className="flex justify-between items-start mb-4">
+                                                                                <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
+                                                                                    booking.status === 'confirmed' ? 'bg-green-500/20 text-green-500 border border-green-500/30' :
+                                                                                    booking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30' :
+                                                                                    'bg-red-500/20 text-red-500 border border-red-500/30'
+                                                                                }`}>
+                                                                                    {booking.status}
+                                                                                </span>
+                                                                                <span className="text-[10px] font-black text-white bg-white/10 px-3 py-1 rounded-lg italic">₹{booking.totalPrice?.toLocaleString()}</span>
+                                                                            </div>
+                                                                            <h5 className="font-bold text-lg text-white group-hover/card:text-primary transition-colors mb-4">{booking.event?.name || 'Untitled Event'}</h5>
+                                                                            
+                                                                            <div className="space-y-3">
+                                                                                <div className="flex items-center gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                                                    <span className="opacity-50">👤 Client:</span>
+                                                                                    <span className="text-white">{booking.user?.name}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                                                    <span className="opacity-50">📅 Date:</span>
+                                                                                    <span className="text-white">{new Date(booking.serviceDate).toLocaleDateString()}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : !loadingVendorBookings && (
+                                                                <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-[2.5rem] opacity-40">
+                                                                    <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-500">No confirmed assignments detected.</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {allVendors.length === 0 && <p className="p-20 text-center text-gray-500 font-bold uppercase tracking-widest">No registered entities found.</p>}
                     </div>
                 )}
 

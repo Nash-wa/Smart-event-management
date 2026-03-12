@@ -51,6 +51,7 @@ function EventPlan() {
     const [loading, setLoading] = useState(true);
     const [participants, setParticipants] = useState([]);
     const [planningData, setPlanningData] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // New node form state
     const [newNode, setNewNode] = useState({
@@ -66,6 +67,8 @@ function EventPlan() {
     const [announcement, setAnnouncement] = useState({ text: '', type: 'Info' });
     const [announcementStatus, setAnnouncementStatus] = useState({ type: '', message: '' });
     const [showQR, setShowQR] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState({ name: '', budget: 0 });
 
     const guestARUrl = `${window.location.origin}/ar/${id}`;
 
@@ -85,6 +88,8 @@ function EventPlan() {
                 const data = await res.json();
                 if (res.ok) {
                     setEvent(data);
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                    if (userInfo?.role === 'admin') setIsAdmin(true);
 
                     // Pre-fill node latitude/longitude from venue
                     if (data.location?.lat && !(data.nodes?.length)) {
@@ -164,7 +169,7 @@ function EventPlan() {
                 const errorData = await res.json();
                 setNodeError(errorData.message || 'Failed to deploy node.');
             }
-        } catch (error) {
+        } catch {
             setNodeError('Network error. Please try again.');
         } finally {
             setNodeDeploying(false);
@@ -229,6 +234,91 @@ function EventPlan() {
         } catch { setAnnouncementStatus({ type: 'error', message: 'Network error.' }); }
     };
 
+    // ─── Add custom milestone ──────────────────────────────────────
+    const addMilestone = async () => {
+        const newTask = {
+            task: "New Strategic Task",
+            deadline: new Date().toLocaleDateString(),
+            priority: "Medium",
+            status: "Pending",
+            description: "Custom administrative milestone"
+        };
+        const updatedTimeline = [...planningData.timeline, newTask];
+        const newReadiness = calculateReadinessScore(updatedTimeline);
+        const updatedPlan = { ...planningData, timeline: updatedTimeline, readinessScore: newReadiness };
+        const updatedEvent = { ...event, plan: updatedPlan, readinessScore: newReadiness };
+
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
+                body: JSON.stringify(updatedEvent)
+            });
+            if (res.ok) {
+                setEvent(updatedEvent);
+                setPlanningData(updatedPlan);
+            }
+        } catch (err) {
+            console.error("Failed to add milestone", err);
+        }
+    };
+
+    // ─── Delete milestone ──────────────────────────────────────────
+    const deleteMilestone = async (index) => {
+        const updatedTimeline = planningData.timeline.filter((_, i) => i !== index);
+        const newReadiness = calculateReadinessScore(updatedTimeline);
+        const updatedPlan = { ...planningData, timeline: updatedTimeline, readinessScore: newReadiness };
+        const updatedEvent = { ...event, plan: updatedPlan, readinessScore: newReadiness };
+
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
+                body: JSON.stringify(updatedEvent)
+            });
+            if (res.ok) {
+                setEvent(updatedEvent);
+                setPlanningData(updatedPlan);
+            }
+        } catch (err) {
+            console.error("Failed to delete milestone", err);
+        }
+    };
+
+    // ─── Update Event Details ──────────────────────────────────────
+    const handleUpdateDetails = async (e) => {
+        e.preventDefault();
+        const updatedEvent = { 
+            ...event, 
+            name: editForm.name, 
+            budget: parseInt(editForm.budget) 
+        };
+
+        // Recalculate derived plan data
+        const newBudget = calculateBudgetAllocation(updatedEvent.budget, updatedEvent.category);
+        const newResources = estimateResources(updatedEvent.capacity, updatedEvent.venueType, updatedEvent.category);
+        const newPlan = { ...planningData, budget: newBudget, resources: newResources };
+        updatedEvent.plan = newPlan;
+
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo?.token}` },
+                body: JSON.stringify(updatedEvent)
+            });
+            if (res.ok) {
+                setEvent(updatedEvent);
+                setPlanningData(newPlan);
+                setShowEditModal(false);
+            }
+        } catch (err) {
+            console.error("Update failed", err);
+        }
+    };
+
     // ─── Loading / error states ────────────────────────────────────
     if (loading) {
         return (
@@ -270,9 +360,20 @@ function EventPlan() {
                                 🚀 Launch Guest AR
                             </button>
                         </div>
-                        <h1 className="text-6xl md:text-7xl font-black mb-6 tracking-tighter text-white">
-                            {event?.name || "Event"}
-                        </h1>
+                        <div className="flex items-center gap-6 mb-6">
+                            <h1 className="text-6xl md:text-7xl font-black tracking-tighter text-white">
+                                {event?.name || "Event"}
+                            </h1>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => { setEditForm({ name: event.name, budget: event.budget }); setShowEditModal(true); }}
+                                    className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-white transition-all shadow-xl"
+                                    title="Edit Event Properties"
+                                >
+                                    ⚙️
+                                </button>
+                            )}
+                        </div>
                         <div className="flex flex-wrap gap-8 text-gray-400">
                             <div className="flex items-center gap-3">
                                 <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
@@ -400,6 +501,11 @@ function EventPlan() {
                             <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg uppercase tracking-widest">
                                 {(planningData?.timeline || []).filter(t => t.status === 'Completed').length} / {planningData?.timeline?.length || 0} COMPLETED
                             </span>
+                            {isAdmin && (
+                                <button onClick={addMilestone} className="px-4 py-2 bg-primary/20 border border-primary/40 text-primary text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-primary/30 transition-all">
+                                    + Add Milestone
+                                </button>
+                            )}
                         </div>
                         <div className="space-y-8">
                             {(planningData?.timeline || []).map((item, index) => (
@@ -419,14 +525,24 @@ function EventPlan() {
                                                 <h3 className={`font-bold text-lg leading-tight uppercase ${item?.status === 'Completed' ? 'text-gray-500 line-through' : 'text-white'}`}>
                                                     {item?.task || "Untitled Task"}
                                                 </h3>
-                                                <div className="flex gap-4 mt-1">
+                                                {item?.description && (
+                                                    <p className="text-[10px] text-gray-400 mt-1 italic leading-relaxed max-w-lg">
+                                                        {item.description}
+                                                    </p>
+                                                )}
+                                                <div className="flex gap-4 mt-2">
                                                     <p className="text-[10px] font-mono text-gray-500 uppercase">Deadline: {item?.deadline}</p>
                                                     <span className={`text-[8px] font-black uppercase tracking-widest ${item?.priority === 'High' ? 'text-red-500' : 'text-gray-600'}`}>Priority: {item?.priority}</span>
                                                 </div>
                                             </div>
-                                            {item?.priority === 'High' && item?.status !== 'Completed' && (
-                                                <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-black rounded uppercase animate-pulse">Critical</span>
-                                            )}
+                                            <div className="flex items-center gap-3">
+                                                {isAdmin && (
+                                                    <button onClick={() => deleteMilestone(index)} className="text-gray-600 hover:text-red-500 transition-colors p-1" title="Delete Milestone">🗑️</button>
+                                                )}
+                                                {item?.priority === 'High' && item?.status !== 'Completed' && (
+                                                    <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-black rounded uppercase animate-pulse">Critical</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -733,6 +849,40 @@ function EventPlan() {
                 </div>
             </div>
 
+            {/* Edit Details Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[1000] p-6">
+                    <div className="glass-card p-10 rounded-[3rem] border-white/10 bg-zinc-950 max-w-lg w-full shadow-2xl animate-fade-in-up">
+                        <h2 className="text-3xl font-black uppercase mb-8 italic tracking-tighter">Event Configuration Override</h2>
+                        <form onSubmit={handleUpdateDetails} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Event Identity</label>
+                                <input
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:border-primary outline-none"
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                                    placeholder="Event Name"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resource Ceiling (Budget ₹)</label>
+                                <input
+                                    type="number"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:border-primary outline-none"
+                                    value={editForm.budget}
+                                    onChange={(e) => setEditForm({...editForm, budget: e.target.value})}
+                                    placeholder="Budget"
+                                />
+                            </div>
+                            <div className="flex gap-4 pt-4">
+                                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 py-4 bg-white/5 text-gray-400 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-white/10">Abort</button>
+                                <button type="submit" className="flex-2 px-10 py-4 bg-primary text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl shadow-primary/20">Commit Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -741,6 +891,11 @@ function EventPlan() {
                 .map-tiles-dark { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
                 .leaflet-popup-content-wrapper { background: #111; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
                 .leaflet-popup-tip { background: #111; }
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
                 @keyframes pulse {
                     0%,100% { transform: scale(1); opacity: 1; }
                     50% { transform: scale(1.3); opacity: 0.7; }

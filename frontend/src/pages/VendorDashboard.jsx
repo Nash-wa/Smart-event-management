@@ -21,8 +21,9 @@ function VendorDashboard() {
     const fetchData = useCallback(async () => {
         try {
             // Fetch My Vendor Listings
-            const vRes = await api.get(`/vendors`, { params: { owner: user._id } });
-            setMyVendors(Array.isArray(vRes.data) ? vRes.data : []);
+            const vRes = await api.get(`/vendors`, { params: { owner: user._id, isApproved: false } }); // Get both approved and pending
+            const vRes2 = await api.get(`/vendors`, { params: { owner: user._id, isApproved: true } });
+            setMyVendors([...(vRes.data || []), ...(vRes2.data || [])]);
 
             // Fetch Bookings/Requests received
             const bRes = await api.get('/bookings/vendor');
@@ -33,8 +34,14 @@ function VendorDashboard() {
         }
     }, [user._id]);
 
+    const totalRevenue = useMemo(() => {
+        return bookings
+            .filter(b => b.status === 'confirmed')
+            .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    }, [bookings]);
+
     useEffect(() => {
-        fetchData();
+        fetchData(); // eslint-disable-line react-hooks/set-state-in-effect
     }, [fetchData]);
 
     const handleUpdateStatus = async (id, status) => {
@@ -91,10 +98,11 @@ function VendorDashboard() {
                 </header>
 
                 {activeTab === "overview" && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-fade-in">
-                        <StatCard label="Live Requests" value={bookings.length} color="blue" />
-                        <StatCard label="Pending Orders" value={bookings.filter(b => b.status === 'pending').length} color="yellow" />
-                        <StatCard label="Growth Points" value={myVendors.length * 100} color="green" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-fade-in">
+                        <StatCard label="Live Requests" value={bookings.length} />
+                        <StatCard label="Pending Orders" value={bookings.filter(b => b.status === 'pending').length} />
+                        <StatCard label="Total Revenue" value={`₹${totalRevenue.toLocaleString()}`} />
+                        <StatCard label="My Ventures" value={myVendors.length} />
                     </div>
                 )}
 

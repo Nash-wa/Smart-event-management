@@ -16,7 +16,7 @@ const markAsRead = asyncHandler(async (req, res) => {
     const notification = await Notification.findById(req.params.id);
 
     if (notification) {
-        if (notification.user.toString() !== req.user._id.toString()) {
+        if (notification.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             res.status(401);
             throw new Error('Not authorized');
         }

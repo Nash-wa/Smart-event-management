@@ -15,7 +15,7 @@ const broadcastMessage = asyncHandler(async (req, res) => {
 
     // Verify event ownership
     const event = await Event.findById(eventId);
-    if (!event || event.user.toString() !== req.user._id.toString()) {
+    if (!event || (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin')) {
         res.status(401);
         throw new Error('Unauthorized to broadcast for this event');
     }
