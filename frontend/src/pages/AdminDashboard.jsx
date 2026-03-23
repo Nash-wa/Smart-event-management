@@ -18,40 +18,40 @@ function AdminDashboard() {
 
     const navigate = useNavigate();
 
-    const fetchData = useCallback(async () => {
-        try {
-            const [vRes, uRes, eRes, sRes, avRes] = await Promise.all([
-                api.get('/vendors', { params: { isApproved: false } }),
-                api.get('/admin/users'),
-                api.get('/events'),
-                api.get('/admin/stats'),
-                api.get('/admin/vendors')
-            ]);
-
-            setPendingVendors(Array.isArray(vRes.data) ? vRes.data : []);
-            setAllUsers(uRes.data);
-            setAllEvents(eRes.data);
-            setStats(sRes.data);
-            setAllVendors(avRes.data);
-
-        } catch (error) {
-            console.error(error);
-        }
-    }, []);
-
     useEffect(() => {
         let isMounted = true;
-        if (isMounted) {
-            fetchData();
-        }
+        
+        const loadInitialData = async () => {
+            try {
+                const [vRes, uRes, eRes, sRes, avRes] = await Promise.all([
+                    api.get('/vendors', { params: { isApproved: false } }),
+                    api.get('/admin/users'),
+                    api.get('/events'),
+                    api.get('/admin/stats'),
+                    api.get('/admin/vendors')
+                ]);
+
+                if (isMounted) {
+                    setPendingVendors(Array.isArray(vRes.data) ? vRes.data : []);
+                    setAllUsers(uRes.data);
+                    setAllEvents(eRes.data);
+                    setStats(sRes.data);
+                    setAllVendors(avRes.data);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        loadInitialData();
         return () => { isMounted = false; };
-    }, [fetchData]);
+    }, []);
 
     const handleApprove = async (id) => {
         try {
             await api.put(`/vendors/${id}/approve`);
             alert("Venture Approved! ✅");
-            fetchData();
+            window.location.reload();
         } catch {
             alert("Error approving");
         }
@@ -62,7 +62,8 @@ function AdminDashboard() {
         try {
             await api.delete(`/admin/users/${id}`);
             alert("User deleted 🗑️");
-            fetchData();
+            // NOTE: Reload page instead of calling fetchData since it was moved to useEffect
+            window.location.reload();
         } catch (err) {
             alert(err.response?.data?.message || "Delete failed");
         }
@@ -162,7 +163,7 @@ function AdminDashboard() {
                         <h1 className="text-2xl md:text-3xl font-bold capitalize tracking-tight">{activeTab}</h1>
                         <p className="text-gray-500 text-sm">Central command for website creators.</p>
                     </div>
-                    <button onClick={fetchData} className="w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                    <button onClick={() => window.location.reload()} className="w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
                         🔄
                     </button>
                 </header>
