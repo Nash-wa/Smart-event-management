@@ -12,6 +12,19 @@ const saveARLayout = asyncHandler(async (req, res) => {
         throw new Error('Please provide event ID and layout data');
     }
 
+    // Verify event ownership
+    const Event = require('../models/eventModel');
+    const event = await Event.findById(event_id);
+    if (!event) {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+
+    if (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to modify this event layout');
+    }
+
     const layout = await ARLayout.findOneAndUpdate(
         { event: event_id },
         { layoutData },

@@ -15,7 +15,7 @@ const addParticipant = asyncHandler(async (req, res) => {
 
     // Verify event ownership
     const targetEvent = await Event.findById(event);
-    if (!targetEvent || targetEvent.user.toString() !== req.user._id.toString()) {
+    if (!targetEvent || (targetEvent.user.toString() !== req.user._id.toString() && req.user.role !== 'admin')) {
         res.status(401);
         throw new Error('Unauthorized or event not found');
     }
@@ -65,7 +65,7 @@ const bulkAddParticipants = asyncHandler(async (req, res) => {
 
     // Verify event ownership
     const targetEvent = await Event.findById(eventId);
-    if (!targetEvent || targetEvent.user.toString() !== req.user._id.toString()) {
+    if (!targetEvent || (targetEvent.user.toString() !== req.user._id.toString() && req.user.role !== 'admin')) {
         res.status(401);
         throw new Error('Unauthorized or event not found');
     }

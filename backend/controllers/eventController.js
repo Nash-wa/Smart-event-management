@@ -16,7 +16,7 @@ const createEvent = asyncHandler(async (req, res) => {
         name, description, category, mode, startDate, endDate,
         startTime, endTime, district, venue, address, capacity,
         budget, location, arPoints, selectedVendors, features,
-        tags, bannerImage, isPublic, status
+        tags, bannerImage, isPublic, status, isCollegeEvent, college
     } = req.body;
 
     if (!name || !category || !startDate) {
@@ -45,6 +45,8 @@ const createEvent = asyncHandler(async (req, res) => {
             budget,
             features,
             selectedVendors,
+            isCollegeEvent,
+            college,
             plan,
             platformCommission,
             status: status || 'pending',
@@ -71,6 +73,8 @@ const createEvent = asyncHandler(async (req, res) => {
         capacity,
         budget,
         location,
+        isCollegeEvent,
+        college,
         nodes: arPoints || [],
         selectedVendors,
         features,

@@ -1,0 +1,6 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+--- User Verification Status ---
+- Prarthana PK (prarthanapk7@gmail.com) Verified: true
+- vishnu (vishnu@gmail.com) Verified: false
+- Prarthana PK (prarthanavijayan123@gmail.com) Verified: false
+--------------------------------

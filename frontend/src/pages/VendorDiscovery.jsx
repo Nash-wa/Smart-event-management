@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion"; // eslint-disable-line no-unused-vars
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -308,12 +308,12 @@ function ZeroState({ category, onReset }) {
 // ──────────────────────────────────────────────
 // Main Component
 // ──────────────────────────────────────────────
-export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendorsSelected, standalone }) {
+export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendorsSelected }) {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
     // Venue coords — from props OR url params
-    const [venue, setVenue] = useState(() => {
+    const [venue] = useState(() => {
         const lat = venueLat || parseFloat(searchParams.get("lat"));
         const lng = venueLng || parseFloat(searchParams.get("lng"));
         const name = venueName || searchParams.get("venue") || "Event Venue";

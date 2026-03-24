@@ -286,6 +286,7 @@ function CreateEvent() {
     if (formData.district && step === 2) {
       fetchVenues();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.district, step, userLocation]);
 
   // Fetch colleges list for the district when event type is College
@@ -303,10 +304,10 @@ function CreateEvent() {
 
     if (formData.isCollegeEvent && formData.district && step === 2) {
       fetchColleges();
-    } else if (collegeList.length > 0) {
+    } else {
       setCollegeList([]);
     }
-  }, [formData.isCollegeEvent, formData.district, step, collegeList.length]);
+  }, [formData.isCollegeEvent, formData.district, step]);
 
   // Debounced college search when typing
   useEffect(() => {
@@ -333,6 +334,7 @@ function CreateEvent() {
       controller.abort();
       clearTimeout(timeout);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collegeQuery, formData.district]);
 
   return (
@@ -755,10 +757,11 @@ function CreateEvent() {
                           setIsScanning(true);
                           setTimeout(async () => {
                             try {
-                              const res = await api.post("/spatial/save-scan", { coordinates: "10.5276, 76.2144 (Thrissur)" });
+                              const coords = formData.location ? `${formData.location.lat}, ${formData.location.lng} (${formData.venue || formData.district || 'Location'})` : "10.5276, 76.2144 (Thrissur)";
+                              const res = await api.post("/spatial/save-scan", { coordinates: coords });
                               if (res.status === 200) {
                                 setFormData(prev => ({ ...prev, features: { ...prev.features, arScan: true } }));
-                                alert("Room scanned successfully! Dimensions saved.");
+                                alert(`Room scanned successfully at ${coords}! Dimensions saved.`);
                               }
                             } catch (err) {
                               console.error(err);

@@ -1,0 +1,67 @@
+lint-errors.json: C:\Users\HP\OneDrive\Desktop\smart-event\Smart-event-management\frontend\src\pages\AdminDashboard.jsx
+  10:12 'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u.
+  46:9 Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  44 |
+  45 |     useEffect(() => {
+> 46 |         fetchData();
+     |         ^^^^^^^^^ Avoid calling setState() directly within an effect
+  47 |     }, [fetchData]);
+  48 |
+  49 |     const handleApprove = async (id) => {
+lint-errors.json: C:\Users\HP\OneDrive\Desktop\smart-event\Smart-event-management\frontend\src\pages\Home.jsx
+  11:7 Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   9 |     const userInfo = localStorage.getItem('userInfo');
+  10 |     if (userInfo) {
+> 11 |       setUser(JSON.parse(userInfo));
+     |       ^^^^^^^ Avoid calling setState() directly within an effect
+  12 |     }
+  13 |   }, []);
+  14 |
+lint-errors.json: C:\Users\HP\OneDrive\Desktop\smart-event\Smart-event-management\frontend\src\pages\VendorDashboard.jsx
+  16:12 'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u.
+  52:9 Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  50 |
+  51 |     useEffect(() => {
+> 52 |         fetchData();
+     |         ^^^^^^^^^ Avoid calling setState() directly within an effect
+  53 |     }, [fetchData]);
+  54 |
+  55 |     const addImage = () => {
+lint.json error parsing
+lint_report.json: C:\Users\HP\OneDrive\Desktop\smart-event\Smart-event-management\frontend\src\pages\Home.jsx
+  11:7 Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   9 |     const userInfo = localStorage.getItem('userInfo');
+  10 |     if (userInfo) {
+> 11 |       setUser(JSON.parse(userInfo));
+     |       ^^^^^^^ Avoid calling setState() directly within an effect
+  12 |     }
+  13 |   }, []);
+  14 |

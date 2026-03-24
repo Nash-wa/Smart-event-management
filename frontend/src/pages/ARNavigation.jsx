@@ -117,8 +117,10 @@ const NavigationStep = ({ instruction, distance, nextStep, prevStep, isLast, lab
         const timer = setTimeout(() => setGlitch(false), 500);
 
         return () => {
-            if (videoRef.current && videoRef.current.srcObject) {
-                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            const videoEl = videoRef.current;
+            if (videoEl && videoEl.srcObject) {
+                videoEl.srcObject.getTracks().forEach(track => track.stop());
             }
             clearTimeout(glitchTimer);
             clearTimeout(timer);
@@ -252,16 +254,16 @@ const ARNavigation = () => {
         };
     }, [eventId]);
 
-    const steps = (event?.arPoints && event.arPoints.length > 0)
-        ? event.arPoints.map((pt, i) => {
-            const dist = userLoc ? getDistance(userLoc.lat, userLoc.lng, pt.lat, pt.lng) : "GPS Lock...";
-            const targetBrng = userLoc ? getBearing(userLoc.lat, userLoc.lng, pt.lat, pt.lng) : 0;
+    const steps = (event?.nodes && event.nodes.length > 0)
+        ? event.nodes.map((pt, i) => {
+            const dist = userLoc ? getDistance(userLoc.lat, userLoc.lng, pt.latitude, pt.longitude) : "GPS Lock...";
+            const targetBrng = userLoc ? getBearing(userLoc.lat, userLoc.lng, pt.latitude, pt.longitude) : 0;
             const relativeBearing = (targetBrng + rawCompass) % 360;
             return {
-                instruction: pt.instruction || `Head towards ${pt.label}`,
-                label: pt.label,
+                instruction: pt.instructions || `Head towards ${pt.anchorType || 'Point'}`,
+                label: pt.anchorType || pt.nodeId || 'Point',
                 distance: dist,
-                isLast: i === event.arPoints.length - 1,
+                isLast: i === event.nodes.length - 1,
                 bearing: relativeBearing
             };
         })
@@ -291,7 +293,7 @@ const ARNavigation = () => {
 
     if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">INITIALIZING AR SENSORS...</div>;
 
-    if (!eventId || !event?.arPoints?.length) {
+    if (!eventId || !event?.nodes?.length) {
         return (
             <div className="min-h-screen bg-[#020202] p-6 flex flex-col items-center justify-center text-center">
                 <div className="w-24 h-24 rounded-full border-2 border-red-500/20 flex items-center justify-center mb-6 animate-pulse">

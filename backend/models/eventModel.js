@@ -58,8 +58,8 @@ const eventSchema = mongoose.Schema({
     platformCommission: { type: Number, default: 0 }, // 10% commission
     status: {
         type: String,
-        enum: ['draft', 'published', 'active', 'completed', 'cancelled'],
-        default: 'published'
+        enum: ['pending', 'draft', 'published', 'active', 'completed', 'cancelled'],
+        default: 'pending'
     },
     tags: [{ type: String }],
     bannerImage: { type: String, default: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=1200' },

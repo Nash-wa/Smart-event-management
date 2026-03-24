@@ -1,0 +1,210 @@
+﻿diff --git a/backend/.env b/backend/.env
+index 365f405..05cf95b 100644
+--- a/backend/.env
++++ b/backend/.env
+@@ -1,11 +1,11 @@
+ PORT=5000
+-# MongoDB Atlas connection string (password updated)
+-MONGO_URI=mongodb+srv://admin:STRONGTEAM123@cluster0.7xwslgo.mongodb.net/smart-event-management?retryWrites=true&w=majority
++
++# Local MongoDB ΓÇö your original database
++MONGO_URI=mongodb://127.0.0.1:27017/smart-event
++
+ JWT_SECRET=smart_event_secret_key_2024
+ NODE_ENV=development
+ 
+-# Email (Gmail) ΓÇö Update these with your Gmail credentials
+-# For Gmail: Enable 2FA ΓåÆ Go to Google Account ΓåÆ Security ΓåÆ App Passwords ΓåÆ Generate one
++# Email (Gmail) credentials
+ EMAIL_USER=pkprarthana7@gmail.com
+ EMAIL_PASS=bcht qzpp wxbg daec
+-NODE_ENV=development
+diff --git a/backend/config/db.js b/backend/config/db.js
+index df02e87..abef4bf 100644
+--- a/backend/config/db.js
++++ b/backend/config/db.js
+@@ -1,66 +1,13 @@
+ const mongoose = require('mongoose');
+-const { MongoMemoryServer } = require('mongodb-memory-server');
+-
+-let mongoServer = null;
+ 
+ const connectDB = async () => {
+     try {
+-        let uri = process.env.MONGO_URI;
+-
+-        if (!uri) {
+-            console.warn('ΓÜá∩╕Å MONGO_URI not defined in environment variables');
+-            // Allow fallback if URI is missing
+-        }
+-
+-        // 1. Try to connect to configured MongoDB (Atlas or Local)
+-        if (uri) {
+-            try {
+-                const conn = await mongoose.connect(uri, {
+-                    serverSelectionTimeoutMS: 5000 // 5 second timeout for Atlas
+-                });
+-
+-                if (uri.includes('mongodb+srv://') || uri.includes('mongodb.net')) {
+-                    console.log(`Γ£à MongoDB Connected (Atlas Cloud): ${conn.connection.host}`);
+-                    console.log('≡ƒÆ╛ Data will persist permanently in the cloud!');
+-                } else {
+-                    console.log(`Γ£à MongoDB Connected (Local/Custom): ${conn.connection.host}`);
+-                }
+-                return; // Success! Exit function.
+-            } catch (connectionError) {
+-                console.log(`ΓÜá∩╕Å  Link to primary database failed: ${connectionError.message}`);
+-                console.log('ΓÜá∩╕Å  Falling back to In-Memory Database...');
+-            }
+-        }
+-
+-        // 2. Fallback to Local Persistent Database
+-        try {
+-            const fs = require('fs');
+-            const path = require('path');
+-            const dbPath = path.join(__dirname, '../data/db');
+-
+-            if (!fs.existsSync(dbPath)) {
+-                fs.mkdirSync(dbPath, { recursive: true });
+-            }
+-
+-            mongoServer = await MongoMemoryServer.create({
+-                instance: {
+-                    dbPath: dbPath,
+-                    storageEngine: 'wiredTiger'
+-                }
+-            });
+-            const memUri = mongoServer.getUri();
+-
+-            const memConn = await mongoose.connect(memUri);
+-            console.log(`Γ£à MongoDB Connected (Local Fallback): ${memConn.connection.host}`);
+-            console.log('≡ƒÆ╛ Note: Using local permanent database! Data is safely stored in backend/data/db folder and WILL NOT be lost on server restart. You are good to go!');
+-        } catch (memError) {
+-            console.error(`Γ¥î In-Memory DB Error: ${memError.message}`);
+-            throw memError; // Re-throw if even fallback fails
+-        }
+-
++        const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/smart-event';
++        const conn = await mongoose.connect(uri);
++        console.log(`Γ£à MongoDB Connected: ${conn.connection.host}`);
+     } catch (error) {
+-        console.error(`Γ¥î Critical Database Error: ${error.message}`);
+-        console.log('ΓÜá∩╕Å  Server running without database functionality.');
++        console.error(`Γ¥î MongoDB Connection Error: ${error.message}`);
++        process.exit(1);
+     }
+ };
+ 
+diff --git a/backend/controllers/aiController.js b/backend/controllers/aiController.js
+index 6968c89..1c21c4e 100644
+--- a/backend/controllers/aiController.js
++++ b/backend/controllers/aiController.js
+@@ -1,43 +1,85 @@
+ const asyncHandler = require('express-async-handler');
++const Event = require('../models/eventModel');
+ 
+-// @desc    Analyze budget
++// @desc    Analyze event budget and give recommendations
+ // @route   GET /api/ai/analyze-budget
+-// @access  Public
++// @access  Private
+ const analyzeBudget = asyncHandler(async (req, res) => {
+-    const total = parseInt(req.query.total) || 50000;
++    const { eventId } = req.query;
+ 
+-    const allocation = {
+-        venue: total * 0.4,
+-        food: total * 0.3,
+-        decor: total * 0.2,
+-        media: total * 0.1
+-    };
++    if (!eventId) {
++        return res.status(400).json({ message: 'eventId is required' });
++    }
++
++    const event = await Event.findById(eventId);
++    if (!event) {
++        return res.status(404).json({ message: 'Event not found' });
++    }
++
++    const budget = event.budget || 0;
++    const used = event.usedBudget || 0;
++    const remaining = Math.max(0, budget - used);
++    const usedPercent = budget > 0 ? ((used / budget) * 100).toFixed(1) : 0;
++
++    let status = 'On Track';
++    let advice = 'Your budget is well managed.';
++
++    if (usedPercent > 90) {
++        status = 'Critical';
++        advice = 'You have used over 90% of your budget. Avoid adding new expenses.';
++    } else if (usedPercent > 70) {
++        status = 'Warning';
++        advice = 'You have used over 70% of your budget. Review remaining expenses carefully.';
++    } else if (usedPercent > 50) {
++        status = 'Moderate';
++        advice = 'Half your budget is spent. Keep an eye on upcoming costs.';
++    }
+ 
+     res.json({
+-        success: true,
+-        allocation,
+-        tip: "Based on this budget, we recommend local community halls."
++        eventId,
++        eventName: event.name,
++        budget,
++        used,
++        remaining,
++        usedPercent: parseFloat(usedPercent),
++        status,
++        advice
+     });
+ });
+ 
+-// @desc    Get recommendations based on budget
++// @desc    Recommend services based on event category & budget
+ // @route   POST /api/ai/recommend
+-// @access  Public
++// @access  Private
+ const recommendServices = asyncHandler(async (req, res) => {
+-    const { budget } = req.body;
+-    const budgetVal = parseInt(budget);
++    const { category, budget } = req.body;
+ 
+-    let services = [];
++    const recommendations = [];
+ 
+-    if (budgetVal < 10000) {
+-        services = ["Community Hall", "Basic Catering", "Simple Decoration"];
+-    } else if (budgetVal < 30000) {
+-        services = ["Banquet Hall", "Buffet Catering", "Premium Decoration"];
++    if (category === 'Wedding') {
++        recommendations.push(
++            { service: 'Photography', suggestedBudget: budget * 0.2, priority: 'High' },
++            { service: 'Catering', suggestedBudget: budget * 0.35, priority: 'High' },
++            { service: 'Decoration', suggestedBudget: budget * 0.2, priority: 'Medium' },
++            { service: 'Music/DJ', suggestedBudget: budget * 0.1, priority: 'Medium' },
++            { service: 'Venue', suggestedBudget: budget * 0.15, priority: 'High' }
++        );
++    } else if (category === 'Corporate' || category === 'Conference') {
++        recommendations.push(
++            { service: 'Venue', suggestedBudget: budget * 0.4, priority: 'High' },
++            { service: 'Catering', suggestedBudget: budget * 0.3, priority: 'High' },
++            { service: 'Photography', suggestedBudget: budget * 0.15, priority: 'Medium' },
++            { service: 'Decoration', suggestedBudget: budget * 0.15, priority: 'Low' }
++        );
+     } else {
+-        services = ["Resort Venue", "Luxury Catering", "Theme Decoration"];
++        recommendations.push(
++            { service: 'Venue', suggestedBudget: budget * 0.3, priority: 'High' },
++            { service: 'Catering', suggestedBudget: budget * 0.3, priority: 'High' },
++            { service: 'Photography', suggestedBudget: budget * 0.2, priority: 'Medium' },
++            { service: 'Music/DJ', suggestedBudget: budget * 0.2, priority: 'Medium' }
++        );
+     }
+ 
+-    res.json({ recommended_services: services });
++    res.json({ category, budget, recommendations });
+ });
+ 
+ module.exports = { analyzeBudget, recommendServices };

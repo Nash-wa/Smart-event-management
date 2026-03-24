@@ -1,4 +1,5 @@
 const MANUAL_COLLEGES = require('../collegeData');
+const College = require('../models/collegeModel');
 
 // Ensure fetch is available in all environments
 let fetchFn;
@@ -12,10 +13,13 @@ try {
     }
 }
 
-const searchNominatim = async (q, district) => {
+const searchNominatim = async (q, district, limit = 10) => {
     if (!fetchFn) return [];
-    const query = `${q} ${district || ''} college`; // bias towards colleges
-    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&q=${encodeURIComponent(query)}&countrycodes=in`;
+    
+    // Construct query to prioritize colleges in the specific district
+    const query = (q.toLowerCase().includes('college') ? `${q} ${district || ''}` : `${q} college ${district || ''}`).trim();
+    
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=${limit}&q=${encodeURIComponent(query)}&countrycodes=in`;
     const res = await fetchFn(url, { headers: { 'User-Agent': 'smart-event/1.0 (contact@example.com)' } });
     if (!res.ok) return [];
     const json = await res.json();
@@ -31,56 +35,56 @@ exports.searchColleges = async (req, res) => {
         const q = (req.query.q || '').trim();
         const district = req.query.district || '';
 
-        // Manual list for the district (fast browse)
+        // 1) Search in Database (MongoDB)
+        const dbFilter = { isApproved: true };
+        if (district) dbFilter.district = district;
+        if (q) dbFilter.name = { $regex: q, $options: 'i' };
+        
+        const dbColleges = await College.find(dbFilter).limit(20);
+        let results = dbColleges.map(c => ({
+            name: c.name,
+            address: c.address,
+            location: c.location,
+            source: 'db'
+        }));
+
+        // 2) Merge with manual list
         const manualList = MANUAL_COLLEGES[district] || [];
+        const filteredManual = manualList.filter(c => 
+            !q || c.name.toLowerCase().includes(q.toLowerCase()) || (c.address || '').toLowerCase().includes(q.toLowerCase())
+        );
 
-        // If no query provided, prefer manual list. If manual list is empty,
-        // fall back to Nominatim search for colleges in the district.
-        if (!q) {
-            if (manualList.length > 0) {
-                return res.json(manualList.slice(0, 50).map(c => ({ name: c.name, address: c.address, location: c.location })));
+        const seenNames = new Set(results.map(r => r.name.toLowerCase()));
+        for (const c of filteredManual) {
+            if (!seenNames.has(c.name.toLowerCase())) {
+                results.push({
+                    name: c.name,
+                    address: c.address,
+                    location: c.location,
+                    source: 'manual'
+                });
+                seenNames.add(c.name.toLowerCase());
             }
-
-            // Try Nominatim for district-level college list
-            if (fetchFn) {
-                try {
-                    const nom = await searchNominatim(district, district);
-                    return res.json(nom.slice(0, 50));
-                } catch (err) {
-                    console.warn('Nominatim fallback failed:', err.message);
-                    return res.json([]);
-                }
-            }
-
-            return res.json([]);
         }
 
-        // 1) Search manual list (fast)
-        const filteredManual = manualList.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || (c.address || '').toLowerCase().includes(q.toLowerCase()));
-
-        // If manual results are sufficient, return them (but still try nominatim if too few)
-        let results = filteredManual.slice(0, 10).map(c => ({ name: c.name, address: c.address, location: c.location }));
-
-        // 2) If not enough, query Nominatim (rate limited, fallback)
-        if (results.length < 6 && fetchFn) {
+        // 3) If still few results (less than 15) and (q or district) is provided, try Nominatim
+        if (results.length < 15 && fetchFn && (q || district)) {
             try {
-                const nom = await searchNominatim(q, district);
-                // merge unique by name+lat
-                const seen = new Set(results.map(r => `${r.name}-${r.location?.lat || ''}`));
+                // If browsing by district (no q), get more results (up to 75)
+                const nomLimit = q ? 15 : 75; 
+                const nom = await searchNominatim(q || district, district, nomLimit);
                 for (const n of nom) {
-                    const key = `${n.name}-${n.location.lat}`;
-                    if (!seen.has(key)) {
-                        results.push(n);
-                        seen.add(key);
+                    if (!seenNames.has(n.name.toLowerCase())) {
+                        results.push({ ...n, source: 'nominatim' });
+                        seenNames.add(n.name.toLowerCase());
                     }
-                    if (results.length >= 10) break;
                 }
             } catch (err) {
                 console.warn('Nominatim error:', err.message);
             }
         }
 
-        res.json(results.slice(0, 10));
+        res.json(results.slice(0, 100));
     } catch (error) {
         console.error('College search error:', error);
         res.status(500).json({ message: 'Search failed' });

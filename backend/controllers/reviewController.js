@@ -11,7 +11,7 @@ const createReview = asyncHandler(async (req, res) => {
 
     // Verify event exists and belongs to user
     const event = await Event.findById(eventId);
-    if (!event || event.user.toString() !== req.user._id.toString()) {
+    if (!event || (event.user.toString() !== req.user._id.toString() && req.user.role !== 'admin')) {
         res.status(401);
         throw new Error('Not authorized to review for this event');
     }

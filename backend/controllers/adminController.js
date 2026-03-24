@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const Event = require('../models/eventModel');
 const Vendor = require('../models/vendorModel');
 const Category = require('../models/categoryModel');
+const Booking = require('../models/bookingModel');
 const { sendBroadcastEmail } = require('../utils/emailService');
 
 // @desc    Get all users
@@ -10,7 +11,51 @@ const { sendBroadcastEmail } = require('../utils/emailService');
 // @access  Private/Admin
 const getAllUsers = asyncHandler(async (req, res) => {
     const users = await User.find({}).select('-password');
-    res.json(users);
+    
+    // Efficiently add event count to each user
+    const usersWithCounts = await Promise.all(users.map(async (user) => {
+        const eventCount = await Event.countDocuments({ user: user._id });
+        return { ...user.toObject(), eventCount };
+    }));
+    
+    res.json(usersWithCounts);
+});
+
+// @desc    Get all vendors with booking counts
+// @route   GET /api/admin/vendors
+// @access  Private/Admin
+const getAllVendors = asyncHandler(async (req, res) => {
+    const vendors = await Vendor.find({}).populate('owner', 'name email');
+    
+    const vendorsWithCounts = await Promise.all(vendors.map(async (vendor) => {
+        const bookings = await Booking.find({ vendor: vendor._id });
+        const bookingCount = bookings.length;
+        const totalRevenue = bookings
+            .filter(b => b.status === 'confirmed')
+            .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+            
+        return { ...vendor.toObject(), bookingCount, totalRevenue };
+    }));
+    
+    res.json(vendorsWithCounts);
+});
+
+// @desc    Get bookings for a specific vendor
+// @route   GET /api/admin/vendors/:id/bookings
+// @access  Private/Admin
+const getVendorBookings = asyncHandler(async (req, res) => {
+    const bookings = await Booking.find({ vendor: req.params.id })
+        .populate('user', 'name email')
+        .populate('event', 'name startDate');
+    res.json(bookings);
+});
+
+// @desc    Get events for a specific user
+// @route   GET /api/admin/users/:id/events
+// @access  Private/Admin
+const getUserEvents = asyncHandler(async (req, res) => {
+    const events = await Event.find({ user: req.params.id }).populate('user', 'name email');
+    res.json(events);
 });
 
 // @desc    Get platform stats
@@ -22,11 +67,15 @@ const getStats = asyncHandler(async (req, res) => {
     const vendorCount = await Vendor.countDocuments({ isApproved: true });
     const pendingCount = await Vendor.countDocuments({ isApproved: false });
 
+    const bookings = await Booking.find({ status: 'confirmed' });
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+ 
     res.json({
         users: userCount,
         events: eventCount,
         vendors: vendorCount,
-        pending: pendingCount
+        pending: pendingCount,
+        totalRevenue
     });
 });
 
@@ -120,9 +169,12 @@ module.exports = {
     getAllUsers,
     getStats,
     deleteUser,
+    getUserEvents,
     getCategories,
     addCategory,
     deleteCategory,
+    getAllVendors,
+    getVendorBookings,
     broadcastMessage
 };
 
