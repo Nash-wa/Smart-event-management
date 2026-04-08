@@ -55,20 +55,27 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col">
+    <div className="min-h-screen relative overflow-hidden flex flex-col bg-background">
       {/* Navbar */}
-      <header className="glass-card rounded-none border-x-0 border-t-0 p-4 sticky top-0 z-50">
+      <header className="glass-card rounded-none border-x-0 border-t-0 p-4 sticky top-0 z-50 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-white font-bold">S</span>
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-white font-bold">b</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Smart Event</h1>
+            <h1 className="text-xl font-bold tracking-tight text-primary">bendo</h1>
           </div>
+          {loadingEvents && (
+            <div className="glass-card p-8 rounded-3xl mb-8 animate-pulse bg-white/40 border border-primary/5 h-64 flex items-center justify-center shadow-lux">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-[#64748b] text-[10px] font-black uppercase tracking-[0.3em]">Architecting Intelligence...</p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-4">
             <button
               onClick={() => {
-                // Force sync with server for known admin email
                 const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 if (user.email === 'prarthana@gmail.com') {
                   const synced = { ...user, role: 'admin' };
@@ -79,7 +86,7 @@ function Dashboard() {
                 }
                 window.location.reload();
               }}
-              className="px-4 py-2 rounded-xl border border-white/10 text-[10px] font-bold hover:bg-white/5 transition-all text-gray-400"
+              className="px-4 py-2 rounded-xl border border-primary/10 text-[10px] font-bold hover:bg-primary/5 transition-all text-muted-foreground"
             >
               🔄 Sync Session
             </button>
@@ -94,7 +101,7 @@ function Dashboard() {
                 localStorage.removeItem('userInfo');
                 navigate("/");
               }}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-white hover:bg-white/5 transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
             >
               Logout
             </button>
@@ -105,31 +112,31 @@ function Dashboard() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 relative z-10">
         <div className="mb-12 animate-in fade-in slide-in-from-left-4 duration-700">
-          <h2 className="text-5xl font-extrabold mb-3 bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent tracking-tight">
+          <h2 className="text-5xl font-black mb-3 text-primary tracking-tight">
             Command Center
           </h2>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <p className="text-xl text-muted-foreground font-medium flex items-center gap-2">
-                Welcome back, <span className="text-white">{user.name || 'Commander'}</span>
+                Welcome back, <span className="text-primary font-bold">{user.name || 'Commander'}</span>
                 <span className="inline-block animate-bounce">👋</span>
               </p>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-[0.2em] mt-1">Operational Overview • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
+              <p className="text-xs text-[#64748b] font-bold uppercase tracking-[0.2em] mt-1">Operational Overview • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
             </div>
 
             {events.length > 0 && !loadingEvents && (
-              <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-1.5 pl-5 rounded-2xl backdrop-blur-xl">
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Active Mission:
+              <div className="flex items-center gap-4 bg-white/40 border border-primary/5 p-1.5 pl-5 rounded-2xl backdrop-blur-xl">
+                <span className="text-[10px] font-black text-[#64748b] uppercase tracking-widest flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${activeEvent && new Date(activeEvent.startDate) < new Date() ? 'bg-blue-500' : 'bg-emerald-500 animate-pulse'}`}></span>
+                  {activeEvent && new Date(activeEvent.startDate) < new Date() ? 'Archived Mission:' : 'Active Mission:'}
                 </span>
                 <select
-                  className="bg-zinc-900/50 hover:bg-zinc-800 text-sm font-bold text-accent px-4 py-2 rounded-xl outline-none transition-all cursor-pointer border border-white/5"
+                  className="bg-white/60 hover:bg-white text-sm font-bold text-accent px-4 py-2 rounded-xl outline-none transition-all cursor-pointer border border-primary/5 shadow-sm"
                   value={activeEvent?._id}
                   onChange={(e) => setActiveEvent(events.find(ev => ev._id === e.target.value))}
                 >
                   {events.map(ev => (
-                    <option key={ev._id} value={ev._id} className="bg-zinc-900 text-white">{ev.name}</option>
+                    <option key={ev._id} value={ev._id} className="bg-white text-primary">{ev.name}</option>
                   ))}
                 </select>
               </div>
@@ -140,17 +147,17 @@ function Dashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {[
               { label: 'Upcoming', val: events.filter(e => new Date(e.startDate) > new Date()).length.toString(), icon: '🚀', color: 'blue' },
-              { label: 'Completed', val: events.filter(e => new Date(e.startDate) <= new Date()).length.toString(), icon: '✅', color: 'emerald' },
-              { label: 'Active', val: events.length.toString(), icon: '🤝', color: 'purple' },
+              { label: 'Completed', val: events.filter(e => new Date(e.startDate) <= new Date()).length.toString(), icon: 'emerald', color: 'emerald' },
+              { label: 'Active', val: events.filter(e => new Date(e.startDate) > new Date()).length.toString(), icon: '🤝', color: 'purple' },
               { label: 'Budget', val: `₹${events.reduce((acc, curr) => acc + (Number(curr.budget) || 0), 0).toLocaleString()}`, icon: '💎', color: 'amber' }
             ].map((stat, i) => (
-              <div key={i} className="glass-card p-4 rounded-3xl border-white/5 bg-white/5 flex items-center gap-4">
+              <div key={i} className="glass-card p-4 rounded-3xl border-primary/5 bg-white/20 flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center text-xl`}>
                   {stat.icon}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase">{stat.label}</span>
-                  <span className="text-lg font-black text-white leading-none">{stat.val}</span>
+                  <span className="text-[10px] font-bold text-[#64748b] uppercase">{stat.label}</span>
+                  <span className="text-lg font-black text-primary leading-none">{stat.val}</span>
                 </div>
               </div>
             ))}
@@ -159,22 +166,22 @@ function Dashboard() {
 
         {/* Live Feed Banner */}
         {feed.length > 0 && (
-          <div className="mb-10 overflow-hidden rounded-3xl bg-orange-500/10 border border-orange-500/20 p-5 relative group cursor-pointer hover:bg-orange-500/15 transition-all animate-in zoom-in-95 duration-500">
+          <div className="mb-10 overflow-hidden rounded-3xl bg-orange-500/10 border border-orange-500/20 p-5 relative group cursor-pointer hover:bg-orange-500/15 transition-all animate-in zoom-in-95 duration-500 shadow-sm">
             <div className="flex items-center gap-5">
               <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/10">📣</div>
               <div className="flex-1 overflow-hidden">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em]">Live Intel</span>
+                  <span className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em]">Live Intel</span>
                   <span className="w-1 h-1 rounded-full bg-orange-500/40"></span>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase">{feed[0].event?.name}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{feed[0].event?.name}</span>
                 </div>
-                <p className="text-base font-semibold text-white truncate">
+                <p className="text-base font-semibold text-primary truncate">
                   {feed[0].text}
                 </p>
               </div>
               <button
                 onClick={() => alert("Recent Updates:\n" + feed.map(m => `${m.type}: ${m.text}`).join('\n'))}
-                className="hidden md:block text-[10px] font-black text-gray-400 hover:text-white uppercase tracking-widest px-5 py-2.5 border border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                className="hidden md:block text-[10px] font-black text-primary hover:text-accent uppercase tracking-widest px-5 py-2.5 border border-primary/10 rounded-xl hover:bg-white/40 transition-all font-mono"
               >
                 Full Intel Log
               </button>
@@ -189,25 +196,25 @@ function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Create Event Card */}
-          <div className="glass-card p-8 rounded-[2.5rem] group hover:bg-white/5 transition-all cursor-pointer hover:-translate-y-2 duration-300 border-white/5" onClick={() => navigate("/create-event")}>
+          <div className="glass-card p-8 rounded-[2.5rem] bg-white/40 group hover:bg-white/60 transition-all cursor-pointer hover:-translate-y-2 duration-300 border-primary/5 shadow-lux" onClick={() => navigate("/create-event")}>
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
               <span className="text-3xl">➕</span>
             </div>
-            <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">Initiate Event</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-6">Architect a new event from scratch with real-time resource allocation and AI logistics.</p>
-            <div className="flex items-center text-primary text-sm font-bold tracking-tight uppercase">
+            <h3 className="text-2xl font-black mb-3 text-primary group-hover:text-accent transition-colors uppercase italic tracking-tighter">Initiate Event</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-6 font-medium">Architect a new event from scratch with real-time resource allocation and AI logistics.</p>
+            <div className="flex items-center text-primary text-[10px] font-black tracking-widest uppercase">
               Launch Setup <span className="ml-2 group-hover:translate-x-2 transition-transform duration-300">→</span>
             </div>
           </div>
 
           {/* My Events */}
-          <div className="glass-card p-8 rounded-[2.5rem] group hover:bg-white/5 transition-all cursor-pointer hover:-translate-y-2 duration-300 border-white/5" onClick={() => navigate("/my-events")}>
+          <div className="glass-card p-8 rounded-[2.5rem] bg-white/40 group hover:bg-white/60 transition-all cursor-pointer hover:-translate-y-2 duration-300 border-primary/5 shadow-lux" onClick={() => navigate("/my-events")}>
             <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-secondary/20 transition-all duration-300">
               <span className="text-3xl">📅</span>
             </div>
-            <h3 className="text-2xl font-bold mb-3 group-hover:text-secondary transition-colors">Mission Deck</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-6">Review your tactical calendar and ongoing deployments for all active event nodes.</p>
-            <div className="flex items-center text-secondary text-sm font-bold tracking-tight uppercase">
+            <h3 className="text-2xl font-black mb-3 text-primary group-hover:text-secondary transition-colors uppercase italic tracking-tighter">Mission Deck</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-6 font-medium">Review your tactical calendar and ongoing deployments for all active event nodes.</p>
+            <div className="flex items-center text-secondary text-[10px] font-black tracking-widest uppercase">
               Access Archives <span className="ml-2 group-hover:translate-x-2 transition-transform duration-300">→</span>
             </div>
           </div>
@@ -275,15 +282,15 @@ function Dashboard() {
 
           {/* AR Navigation Card */}
           <div
-            className={`glass-card p-8 rounded-[2.5rem] group transition-all duration-300 border-accent/20 bg-accent/5 ${!activeEvent ? 'opacity-40 grayscale pointer-events-none shadow-none' : 'hover:bg-accent/10 hover:-translate-y-2 cursor-pointer shadow-xl shadow-accent/5'}`}
+            className={`glass-card p-8 rounded-[2.5rem] bg-accent/5 group transition-all duration-300 border-accent/20 ${!activeEvent ? 'opacity-40 grayscale pointer-events-none shadow-none' : 'hover:bg-accent/10 hover:-translate-y-2 cursor-pointer shadow-xl shadow-accent/5'}`}
             onClick={() => handleSmartNavigate("/ar-navigation")}
           >
             <div className="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-accent/30 transition-all duration-300">
               <span className="text-3xl">👓</span>
             </div>
-            <h3 className="text-2xl font-bold mb-3 group-hover:text-accent transition-colors">AR Explorer Pro</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-6">Deploy spatial waypoints and guide participants using advanced AR mesh navigation.</p>
-            <div className="flex items-center text-accent text-sm font-bold tracking-tight uppercase">
+            <h3 className="text-2xl font-black mb-3 text-primary group-hover:text-accent transition-colors uppercase italic tracking-tighter">AR Explorer Pro</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-6 font-medium">Deploy spatial waypoints and guide participants using advanced AR mesh navigation.</p>
+            <div className="flex items-center text-accent text-[10px] font-black tracking-widest uppercase">
               Launch Core <span className="ml-2 group-hover:translate-x-2 transition-transform duration-300">→</span>
             </div>
           </div>

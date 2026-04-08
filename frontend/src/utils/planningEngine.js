@@ -158,7 +158,7 @@ export const calculateBudgetAllocation = (totalBudget, category) => {
             { category: "Contingency", percentage: 0.05 }
         ],
         hackathon: [
-            { category: "Cloud & Infrastructure", percentage: 0.3 },
+            { category: "Venue & Infrastructure", percentage: 0.3 },
             { category: "Catering (24/7)", percentage: 0.25 },
             { category: "Prizes & Grants", percentage: 0.25 },
             { category: "Marketing & Swag", percentage: 0.15 },

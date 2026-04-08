@@ -165,6 +165,17 @@ const broadcastMessage = asyncHandler(async (req, res) => {
     res.json({ message: `Broadcast sent to ${emails.length} users (in batches).` });
 });
 
+// @desc    Get historical past events
+// @route   GET /api/admin/past-events
+// @access  Private/Admin
+const getPastEvents = asyncHandler(async (req, res) => {
+    // Specifically querying for historical events we populated
+    const pastEvents = await Event.find({ 
+        tags: { $in: ['historical'] } 
+    }).sort({ startDate: -1 });
+    res.json(pastEvents);
+});
+
 module.exports = {
     getAllUsers,
     getStats,
@@ -175,6 +186,7 @@ module.exports = {
     deleteCategory,
     getAllVendors,
     getVendorBookings,
-    broadcastMessage
+    broadcastMessage,
+    getPastEvents
 };
 

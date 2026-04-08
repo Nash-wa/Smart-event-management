@@ -109,7 +109,7 @@ function Budget() {
 
     const totalBudget = event.budget || 0;
     const vendors = event.selectedVendors ? Object.values(event.selectedVendors) : [];
-    const vendorExpenses = vendors.reduce((sum, v) => sum + (v.price || 0), 0);
+    const vendorExpenses = vendors.reduce((sum, v) => sum + (v?.price || 0), 0);
     const manualExpensesTotal = (event.manualExpenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
     const totalExpenses = vendorExpenses + manualExpensesTotal;
     const remaining = totalBudget - totalExpenses;
@@ -201,9 +201,34 @@ function Budget() {
                         {recommendedAllocations.map((alloc, idx) => {
                             // Find if we have actual spending for this category
                             const actualSpending = vendors
-                                .filter(v => v.category?.toLowerCase() === alloc.category.toLowerCase() ||
-                                    (alloc.category === "Venue & Decor" && (v.category === "Venue" || v.category === "Decor")))
-                                .reduce((sum, v) => sum + (v.price || 0), 0);
+                                .filter(v => {
+                                    if (!v) return false;
+                                    const vCat = (v.category || '').toLowerCase();
+                                    const aCat = alloc.category.toLowerCase();
+                                    
+                                    // Direct match
+                                    if (vCat === aCat) return true;
+                                    
+                                    // Venue mapping
+                                    const venueKeywords = ['venue', 'auditorium', 'hall', 'convention', 'stadium', 'building', 'establishment'];
+                                    const isVenue = venueKeywords.some(kw => vCat.includes(kw));
+                                    
+                                    if (isVenue && (
+                                        aCat.includes('venue') || 
+                                        aCat.includes('infrastructure') || 
+                                        aCat.includes('hire') ||
+                                        aCat.includes('av')
+                                    )) return true;
+                                    
+                                    // Catering mapping
+                                    if (vCat.includes('catering') && aCat.includes('catering')) return true;
+                                    
+                                    // Photography mapping
+                                    if (vCat.includes('photography') && aCat.includes('photography')) return true;
+
+                                    return false;
+                                })
+                                .reduce((sum, v) => sum + (v?.price || 0), 0);
 
                             const utilization = alloc.amount > 0 ? (actualSpending / alloc.amount) * 100 : 0;
 
@@ -251,7 +276,7 @@ function Budget() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <span className="font-mono font-bold text-red-400">₹{(vendor.price || 0).toLocaleString()}</span>
+                                        <span className="font-mono font-bold text-red-400">₹{(vendor?.price || 0).toLocaleString()}</span>
                                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Verified</p>
                                     </div>
                                 </div>

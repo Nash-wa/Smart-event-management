@@ -90,9 +90,14 @@ function MyEvents() {
                   <h3 className="text-xl font-black mb-1 text-white group-hover:text-primary transition-colors truncate uppercase tracking-tight">
                     {event.name}
                   </h3>
-                  <p className="text-sm text-white/40 mb-1 font-mono">
-                    {new Date(event.startDate).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center gap-3 mb-1">
+                    <p className="text-sm text-white/40 font-mono">
+                      {new Date(event.startDate).toLocaleDateString()}
+                    </p>
+                    {new Date(event.startDate) < new Date() && (
+                      <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-widest border border-blue-500/20">Completed</span>
+                    )}
+                  </div>
                   <p className="text-xs text-accent font-black uppercase tracking-widest mb-4">
                     Budget: ₹{(event.usedBudget || 0).toLocaleString()} / ₹{(event.budget || 0).toLocaleString()}
                   </p>
@@ -104,8 +109,12 @@ function MyEvents() {
                         bookings.map(b => (
                           <div key={b._id} className="flex justify-between items-center text-xs">
                             <span className="text-white/80 font-bold truncate max-w-[120px]">{b.vendor?.name || 'Assigned Partner'}</span>
-                            <span className={`px-2 py-[2px] rounded-md text-[8px] font-black uppercase tracking-widest ${b.status === 'confirmed' ? 'bg-green-500/20 text-green-500 border border-green-500/10' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/10'}`}>
-                              {b.status}
+                            <span className={`px-2 py-[2px] rounded-md text-[8px] font-black uppercase tracking-widest ${
+                              new Date(event.startDate) < new Date() && b.status === 'confirmed' ? 'bg-blue-500/20 text-blue-500 border border-blue-500/10' :
+                              b.status === 'confirmed' ? 'bg-green-500/20 text-green-500 border border-green-500/10' : 
+                              'bg-yellow-500/10 text-yellow-500 border border-yellow-500/10'
+                            }`}>
+                              {new Date(event.startDate) < new Date() && b.status === 'confirmed' ? 'COMPLETED' : b.status}
                             </span>
                           </div>
                         ))

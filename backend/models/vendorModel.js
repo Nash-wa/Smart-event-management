@@ -35,7 +35,10 @@ const vendorSchema = mongoose.Schema({
         responsiveness: { type: Number, default: 0 },
         punctuality: { type: Number, default: 0 },
         quality: { type: Number, default: 0 }
-    }
+    },
+    // Availability
+    unavailability: [{ type: Date }], // Specific dates blocked by vendor
+    workingDays: [{ type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] }]
 }, {
     timestamps: true,
 });

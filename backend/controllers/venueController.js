@@ -30,7 +30,6 @@ const searchVenues = asyncHandler(async (req, res) => {
 
             if (response.data.results && response.data.results.length > 0) {
                 const results = response.data.results.map(place => {
-                    // Build photo URL if available
                     const photoRef = place.photos?.[0]?.photo_reference;
                     const photoUrl = photoRef
                         ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=${GOOGLE_API_KEY}`
@@ -40,6 +39,10 @@ const searchVenues = asyncHandler(async (req, res) => {
                         ? calculateDistance(parseFloat(lat), parseFloat(lng),
                             place.geometry.location.lat, place.geometry.location.lng)
                         : null;
+
+                    const price = place.rating 
+                        ? Math.floor((place.rating * 5000) + (Math.random() * 10000)) 
+                        : Math.floor(15000 + (Math.random() * 10000));
 
                     return {
                         id: place.place_id,
@@ -52,6 +55,7 @@ const searchVenues = asyncHandler(async (req, res) => {
                         rating: place.rating || null,
                         totalRatings: place.user_ratings_total || 0,
                         category: place.types?.[0]?.replace(/_/g, ' ') || 'Venue',
+                        price: price,
                         image: photoUrl,
                         source: 'Google Places',
                         mapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
@@ -88,7 +92,7 @@ const searchVenues = asyncHandler(async (req, res) => {
 
         let results = [];
         if (response.data && response.data.length > 0) {
-            results = response.data.map(item => ({
+                results = response.data.map(item => ({
                 id: item.place_id,
                 name: item.display_name.split(',')[0],
                 address: item.display_name,
@@ -97,6 +101,7 @@ const searchVenues = asyncHandler(async (req, res) => {
                     lng: parseFloat(item.lon)
                 },
                 category: item.type || 'Venue',
+                price: Math.floor(10000 + (Math.random() * 20000)),
                 source: 'OpenStreetMap',
                 image: getVenueImage(item.type, item.display_name.split(',')[0]),
                 mapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lon}`

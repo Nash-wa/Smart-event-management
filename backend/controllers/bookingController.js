@@ -32,6 +32,28 @@ const createBooking = asyncHandler(async (req, res) => {
         throw new Error('Not authorized to book services for this event');
     }
 
+    // Check availability: Existing confirmed bookings on the same date
+    const existingBooking = await Booking.findOne({
+        vendor: vendorId,
+        serviceDate: new Date(serviceDate),
+        status: 'confirmed'
+    });
+
+    if (existingBooking) {
+        res.status(400);
+        throw new Error('Vendor is already booked/confirmed for this date');
+    }
+
+    // Check availability: Vendor's marked unavailability
+    const isUnavailable = vendorDoc.unavailability.some(d => 
+        new Date(d).toDateString() === new Date(serviceDate).toDateString()
+    );
+
+    if (isUnavailable) {
+        res.status(400);
+        throw new Error('Vendor is not available on this date');
+    }
+
     const totalPrice = vendorDoc.price;
 
     const booking = await Booking.create({
@@ -57,6 +79,23 @@ const createBooking = asyncHandler(async (req, res) => {
         price: vendorDoc.price,
         status: 'Booked'
     });
+
+    // If the booked service is a venue, update the event's central location for spatial AR navigation
+    const venueKeywords = ['venue', 'auditorium', 'hall', 'convention', 'stadium', 'building', 'establishment', 'center'];
+    const isVenue = venueKeywords.some(kw => 
+        (vendorDoc.category || '').toLowerCase().includes(kw) || 
+        (vendorDoc.name || '').toLowerCase().includes(kw)
+    );
+
+    if (isVenue && vendorDoc.location && vendorDoc.location.lat && vendorDoc.location.lng) {
+        event.venue = vendorDoc.name;
+        event.address = vendorDoc.address || event.address;
+        event.location = {
+            lat: vendorDoc.location.lat,
+            lng: vendorDoc.location.lng,
+            displayAddress: vendorDoc.address || (event.location ? event.location.displayAddress : '')
+        };
+    }
 
     event.usedBudget = (event.usedBudget || 0) + totalPrice;
     event.remainingBudget = (event.budget || 0) - event.usedBudget;
@@ -87,6 +126,24 @@ const getVendorBookings = asyncHandler(async (req, res) => {
 
     const bookings = await Booking.find({ vendor: { $in: vendorIds } })
         .populate('vendor')
+        .populate('event', 'name startDate')
+        .populate('user', 'name email')
+        .sort({ createdAt: -1 });
+
+    res.status(200).json(bookings);
+});
+
+// @desc    Get all bookings (Admin only)
+// @route   GET /api/bookings/admin/all
+// @access  Private (Admin only)
+const getAllBookings = asyncHandler(async (req, res) => {
+    if (req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized as admin');
+    }
+
+    const bookings = await Booking.find({})
+        .populate('vendor', 'name category price owner')
         .populate('event', 'name startDate')
         .populate('user', 'name email')
         .sort({ createdAt: -1 });
@@ -160,6 +217,7 @@ module.exports = {
     createBooking,
     getMyBookings,
     getVendorBookings,
+    getAllBookings,
     getEventBookings,
     updateStatus
 };

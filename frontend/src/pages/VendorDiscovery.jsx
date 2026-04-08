@@ -197,6 +197,15 @@ function VendorCard({ vendor, selected, onSelect, onNavigate, index }) {
                         ✓ Verified
                     </motion.span>
                 )}
+                {vendor.isAvailable === false && (
+                    <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black bg-red-500/15 text-red-500 border border-red-500/30"
+                    >
+                        ✓ Booked
+                    </motion.span>
+                )}
                 {selected && (
                     <motion.span
                         initial={{ scale: 0 }}
@@ -259,10 +268,13 @@ function VendorCard({ vendor, selected, onSelect, onNavigate, index }) {
                     }}
                     className={`flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${selected
                             ? "bg-cyan-500 text-black"
-                            : "bg-white/10 text-white hover:bg-cyan-500 hover:text-black border border-white/10"
+                            : vendor.isAvailable === false 
+                                ? "bg-red-500/10 text-red-500 border border-red-500/20 cursor-not-allowed"
+                                : "bg-white/10 text-white hover:bg-cyan-500 hover:text-black border border-white/10"
                         }`}
+                    disabled={vendor.isAvailable === false}
                 >
-                    {selected ? "✓ Selected" : "Select"}
+                    {selected ? "✓ Selected" : vendor.isAvailable === false ? "Booked" : "Select"}
                 </motion.button>
                 <motion.button
                     whileTap={{ scale: 0.96 }}
@@ -325,6 +337,7 @@ export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendo
     const [activeCategory, setActiveCategory] = useState("All");
     const [rawVendors, setRawVendors] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedVendors, setSelectedVendors] = useState({});
     const [hoveredVendor, setHoveredVendor] = useState(null);
     const [sortMode, setSortMode] = useState("trust"); // trust | rating | distance | price
@@ -336,6 +349,9 @@ export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendo
         try {
             const params = { sort: "rating" };
             if (activeCategory !== "All") params.category = activeCategory;
+            const dateStr = searchParams.get("date");
+            if (dateStr) params.date = dateStr;
+
             if (venue?.lat && venue?.lng) {
                 params.lat = venue.lat;
                 params.lng = venue.lng;
@@ -362,7 +378,9 @@ export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendo
     }, [fetchVendors]);
 
     // ── Sort vendors ──────────────────────────────
-    const sortedVendors = [...rawVendors].sort((a, b) => {
+    const sortedVendors = [...rawVendors]
+        .filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()) || (v.district || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        .sort((a, b) => {
         if (sortMode === "trust") return trustScore(b) - trustScore(a);
         if (sortMode === "rating") return (b.rating || 0) - (a.rating || 0);
         if (sortMode === "distance")
@@ -485,16 +503,16 @@ export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendo
                         <div
                             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border"
                             style={{
-                                background: "rgba(6,182,212,0.1)",
-                                borderColor: "rgba(6,182,212,0.3)",
-                                color: "#06b6d4",
+                                background: searchParams.get('date') && new Date(searchParams.get('date')) < new Date() ? "rgba(59,130,246,0.1)" : "rgba(6,182,212,0.1)",
+                                borderColor: searchParams.get('date') && new Date(searchParams.get('date')) < new Date() ? "rgba(59,130,246,0.3)" : "rgba(6,182,212,0.3)",
+                                color: searchParams.get('date') && new Date(searchParams.get('date')) < new Date() ? "#3b82f6" : "#06b6d4",
                             }}
                         >
                             <span
-                                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                                style={{ background: "#06b6d4" }}
+                                className={`w-1.5 h-1.5 rounded-full ${searchParams.get('date') && new Date(searchParams.get('date')) < new Date() ? '' : 'animate-pulse'}`}
+                                style={{ background: searchParams.get('date') && new Date(searchParams.get('date')) < new Date() ? "#3b82f6" : "#06b6d4" }}
                             />
-                            Live
+                            {searchParams.get('date') && new Date(searchParams.get('date')) < new Date() ? 'Archived' : 'Live'}
                         </div>
                         <AnimatePresence>
                             {selectedCount > 0 && (
@@ -549,6 +567,18 @@ export default function VendorDiscovery({ venueLat, venueLng, venueName, onVendo
                                 {cat}
                             </motion.button>
                         ))}
+                    </div>
+                    
+                    {/* Search Bar */}
+                    <div className="flex-1 min-w-[200px] max-w-sm px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 group focus-within:bg-white/10 transition-all ml-0 md:ml-4">
+                        <span className="text-[14px] opacity-40 group-focus-within:opacity-100 transition-opacity">🔍</span>
+                        <input 
+                            type="text"
+                            placeholder="SEARCH BY NAME OR DISTRICT..."
+                            className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-white/80 w-full outline-none focus:ring-0 placeholder:text-white/20"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
 
                     {/* Sort */}

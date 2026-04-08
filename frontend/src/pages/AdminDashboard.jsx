@@ -3,8 +3,24 @@ import { useNavigate } from "react-router-dom";
 import api from "../api";
 
 function AdminDashboard() {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    const isAdmin = userInfo?.role === 'admin';
+
     const [activeTab, setActiveTab] = useState("stats");
     const [pendingVendors, setPendingVendors] = useState([]);
+
+    if (!isAdmin) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-background text-foreground p-6">
+                <div className="glass-card p-12 rounded-[3rem] text-center border-red-500/20">
+                    <h1 className="text-6xl mb-6">🚫</h1>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-4">Vault Access Denied</h2>
+                    <p className="text-gray-500 max-w-md mx-auto mb-8 font-medium">This terminal is restricted to Level 4 Administrators only. Your credentials have been logged.</p>
+                    <button onClick={() => navigate('/')} className="px-8 py-3 bg-white text-black rounded-xl font-black uppercase tracking-widest text-[10px]">Return to Surface</button>
+                </div>
+            </div>
+        );
+    }
     const [allUsers, setAllUsers] = useState([]);
     const [allEvents, setAllEvents] = useState([]);
     const [allVendors, setAllVendors] = useState([]);
@@ -15,6 +31,10 @@ function AdminDashboard() {
     const [expandedVendor, setExpandedVendor] = useState(null);
     const [vendorBookings, setVendorBookings] = useState([]);
     const [loadingVendorBookings, setLoadingVendorBookings] = useState(false);
+    const [globalBookings, setGlobalBookings] = useState([]);
+    const [loadingGlobal, setLoadingGlobal] = useState(false);
+    const [pastEvents, setPastEvents] = useState([]);
+    const [loadingPast, setLoadingPast] = useState(false);
 
     const navigate = useNavigate();
 
@@ -38,12 +58,31 @@ function AdminDashboard() {
                     setStats(sRes.data);
                     setAllVendors(avRes.data);
                 }
+
+                // Initial fetch for past events if admin
+                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                if (userInfo?.role === 'admin') {
+                    const pastRes = await api.get('/admin/past-events');
+                    if (isMounted) setPastEvents(pastRes.data);
+                }
             } catch (error) {
                 console.error(error);
             }
         };
 
         loadInitialData();
+
+        // Fetch Global Bookings for Admin
+        const fetchGlobalBookings = async () => {
+            setLoadingGlobal(true);
+            try {
+                const res = await api.get('/bookings/admin/all');
+                if (isMounted) setGlobalBookings(res.data);
+            } catch (err) { console.error(err); }
+            finally { if (isMounted) setLoadingGlobal(false); }
+        };
+        fetchGlobalBookings();
+
         return () => { isMounted = false; };
     }, []);
 
@@ -113,82 +152,85 @@ function AdminDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row">
+        <div className="min-h-screen bg-background text-foreground flex flex-col lg:flex-row">
             {/* Sidebar - Desktop */}
-            <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-8 hidden lg:flex bg-[#050505] sticky top-0 h-screen">
+            <aside className="w-64 border-r border-primary/10 p-6 flex flex-col gap-8 hidden lg:flex bg-white/40 backdrop-blur-xl sticky top-0 h-screen">
                 <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-xl">
-                        A
+                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center font-black text-xl text-white shadow-lg">
+                        b
                     </div>
-                    <span className="font-bold text-lg tracking-tight">Admin OS</span>
+                    <span className="font-black text-lg tracking-tight text-primary uppercase italic">bendo Core</span>
                 </div>
 
-                <nav className="flex flex-col gap-1">
+                <nav className="flex flex-col gap-2">
                     <TabButton id="stats" label="Analytics" icon="📊" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="approvals" label="Approvals" icon="⏳" active={activeTab} onClick={setActiveTab} count={pendingVendors.length} />
                     <TabButton id="users" label="Users" icon="👥" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="vendors" label="Vendors" icon="🏪" active={activeTab} onClick={setActiveTab} />
+                    <TabButton id="bookings" label="Bookings" icon="🧾" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="events" label="Events" icon="📅" active={activeTab} onClick={setActiveTab} />
+                    <TabButton id="historical" label="Ledger" icon="📚" active={activeTab} onClick={setActiveTab} />
                     <TabButton id="settings" label="System" icon="⚙️" active={activeTab} onClick={setActiveTab} />
                 </nav>
 
-                <button onClick={logout} className="mt-auto px-4 py-3 text-red-500 hover:bg-red-500/10 rounded-xl text-left transition-all font-semibold">
+                <button onClick={logout} className="mt-auto px-4 py-3 text-red-600 hover:bg-red-500/10 rounded-xl text-left transition-all font-black uppercase text-[10px] tracking-widest">
                     🔴 Sign Out
                 </button>
             </aside>
 
             {/* Mobile Top Bar */}
-            <header className="lg:hidden glass-card rounded-none border-x-0 border-t-0 p-4 sticky top-0 z-[100] flex justify-between items-center bg-black/50 backdrop-blur-xl">
+            <header className="lg:hidden glass-card rounded-none border-x-0 border-t-0 p-4 sticky top-0 z-[100] flex justify-between items-center bg-white/50 backdrop-blur-xl">
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center font-bold">A</div>
-                    <span className="font-bold">Admin OS</span>
+                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center font-black text-white">b</div>
+                    <span className="font-bold text-primary">bendo Core</span>
                 </div>
                 <button onClick={logout} className="text-red-500 text-sm">Logout</button>
             </header>
 
             {/* Mobile Bottom Bar */}
-            <nav className="lg:hidden fixed bottom-0 w-full glass-card rounded-none border-x-0 border-b-0 p-2 z-[100] grid grid-cols-5 gap-1 bg-black/80 backdrop-blur-2xl">
+            <nav className="lg:hidden fixed bottom-0 w-full glass-card rounded-none border-x-0 border-b-0 p-2 z-[100] grid grid-cols-5 gap-1 bg-white/80 backdrop-blur-2xl">
                 <MobileTab active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon="📊" />
                 <MobileTab active={activeTab === 'approvals'} onClick={() => setActiveTab('approvals')} icon="⏳" count={pendingVendors.length} />
                 <MobileTab active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon="👥" />
                 <MobileTab active={activeTab === 'vendors'} onClick={() => setActiveTab('vendors')} icon="🏪" />
                 <MobileTab active={activeTab === 'events'} onClick={() => setActiveTab('events')} icon="📅" />
+                <MobileTab active={activeTab === 'historical'} onClick={() => setActiveTab('historical')} icon="📚" />
                 <MobileTab active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="⚙️" />
             </nav>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 md:p-8 pb-32 lg:pb-8 overflow-y-auto bg-[#0a0a0a] min-h-screen">
+            <main className="flex-1 p-4 md:p-8 pb-32 lg:pb-8 overflow-y-auto bg-background min-h-screen">
                 <header className="mb-8 md:mb-12 flex justify-between items-center animate-fade-in">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold capitalize tracking-tight">{activeTab}</h1>
-                        <p className="text-gray-500 text-sm">Central command for website creators.</p>
+                        <h1 className="text-3xl font-black capitalize tracking-tight text-primary">{activeTab}</h1>
+                        <p className="text-[#64748b] text-sm font-medium">Strategic oversight for the bendo ecosystem.</p>
                     </div>
-                    <button onClick={() => window.location.reload()} className="w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                    <button onClick={() => window.location.reload()} className="w-10 h-10 rounded-xl border border-[#E8E6E1] flex items-center justify-center hover:bg-black/5 transition-all">
                         🔄
                     </button>
                 </header>
 
                 {activeTab === "stats" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in">
-                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-primary/5 to-transparent">
-                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Total Users</span>
-                            <p className="text-4xl md:text-5xl font-bold mt-2 font-mono">{stats.users}</p>
+                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-primary/10 bg-white/40 shadow-lux">
+                            <span className="text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em]">Total Users</span>
+                            <p className="text-4xl md:text-5xl font-black mt-2 font-mono text-primary">{stats.users}</p>
                         </div>
-                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-accent/5 to-transparent">
-                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Active Events</span>
-                            <p className="text-4xl md:text-5xl font-bold mt-2 font-mono">{stats.events}</p>
+                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-primary/10 bg-white/40 shadow-lux">
+                            <span className="text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em]">Active Events</span>
+                            <p className="text-4xl md:text-5xl font-black mt-2 font-mono text-primary">{stats.events}</p>
                         </div>
-                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-green-500/5 to-transparent">
-                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Live Vendors</span>
-                            <p className="text-4xl md:text-5xl font-bold mt-2 font-mono">{stats.vendors}</p>
+                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-primary/10 bg-white/40 shadow-lux">
+                            <span className="text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em]">Live Vendors</span>
+                            <p className="text-4xl md:text-5xl font-black mt-2 font-mono text-primary">{stats.vendors}</p>
                         </div>
-                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-yellow-500/5 to-transparent">
-                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Pending</span>
-                            <p className="text-4xl md:text-5xl font-bold mt-2 font-mono">{stats.pending}</p>
+                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-primary/10 bg-white/40 shadow-lux">
+                            <span className="text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em]">Pending Requests</span>
+                            <p className="text-4xl md:text-5xl font-black mt-2 font-mono text-accent">{stats.pending}</p>
                         </div>
-                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-gradient-to-br from-primary/5 to-transparent">
-                            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Platform Revenue</span>
-                            <p className="text-4xl md:text-5xl font-bold mt-2 font-mono text-accent">₹{stats.totalRevenue?.toLocaleString() || '0'}</p>
+                        <div className="glass-card p-6 md:p-8 rounded-3xl border border-primary/10 bg-white/40 shadow-lux lg:col-span-2">
+                            <span className="text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em]">Platform Revenue</span>
+                            <p className="text-4xl md:text-5xl font-black mt-2 font-mono text-accent">₹{stats.totalRevenue?.toLocaleString() || '0'}</p>
                         </div>
                     </div>
                 )}
@@ -245,13 +287,13 @@ function AdminDashboard() {
                                 <tbody className="divide-y divide-white/5">
                                     {allUsers.map(u => (
                                         <>
-                                            <tr key={u._id} className={`hover:bg-white/5 transition-all group cursor-pointer ${expandedUser === u._id ? 'bg-white/5' : ''}`} onClick={() => fetchUserEvents(u._id)}>
+                                        <tr key={u._id} className={`hover:bg-primary/5 transition-all group cursor-pointer ${expandedUser === u._id ? 'bg-primary/5' : ''}`} onClick={() => fetchUserEvents(u._id)}>
                                                 <td className="p-6">
-                                                    <div className="font-semibold text-white group-hover:text-accent transition-colors flex items-center gap-2">
+                                                    <div className="font-black text-primary group-hover:text-accent transition-colors flex items-center gap-2 uppercase tracking-tight italic">
                                                         {u.name}
-                                                        {expandedUser === u._id ? <span>🔼</span> : <span>🔽</span>}
+                                                        {expandedUser === u._id ? <span className="text-[10px]">🔼</span> : <span className="text-[10px]">🔽</span>}
                                                     </div>
-                                                    <div className="text-gray-500 text-xs truncate max-w-[100px] md:max-w-none">{u.email}</div>
+                                                    <div className="text-[#64748b] text-[10px] font-black uppercase tracking-widest truncate max-w-[100px] md:max-w-none">{u.email}</div>
                                                 </td>
                                                 <td className="p-6">
                                                     <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter ${u.role === 'admin' ? 'bg-red-500/20 text-red-500 border border-red-500/30' : u.role === 'vendor' ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30' : 'bg-white/10 text-gray-400 border border-white/5'}`}>
@@ -460,6 +502,132 @@ function AdminDashboard() {
                     </div>
                 )}
 
+                {activeTab === "bookings" && (
+                    <div className="animate-fade-in space-y-8">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-3xl font-black uppercase tracking-tighter">Global Booking Manifest</h2>
+                            <div className="flex gap-4">
+                                <span className="px-5 py-2 rounded-xl bg-accent/20 border border-accent/30 text-accent text-[10px] font-black uppercase tracking-widest">
+                                    Total: {globalBookings.length}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="glass-card rounded-[40px] border border-white/10 overflow-hidden shadow-2xl bg-white/5">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-white/5 text-gray-400 text-[10px] uppercase font-bold tracking-widest border-b border-white/10">
+                                        <tr>
+                                            <th className="p-8">Assignment</th>
+                                            <th className="p-8">Client</th>
+                                            <th className="p-8">Service Target</th>
+                                            <th className="p-8">Status</th>
+                                            <th className="p-8 text-right">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {loadingGlobal && (
+                                            <tr><td colSpan="5" className="p-20 text-center"><div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto"></div></td></tr>
+                                        )}
+                                        {globalBookings.map(b => (
+                                            <tr key={b._id} className="hover:bg-white/5 transition-all group">
+                                                <td className="p-8">
+                                                    <div className="font-bold text-lg group-hover:text-accent transition-colors">{b.vendor?.name}</div>
+                                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{b.vendor?.category}</div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <div className="font-medium text-sm">{b.user?.name}</div>
+                                                    <div className="text-gray-500 text-xs">{b.event?.name}</div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <div className="font-mono text-xs">{new Date(b.serviceDate).toDateString()}</div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                        new Date(b.serviceDate) < new Date() && b.status === 'confirmed' ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30' :
+                                                        b.status === 'confirmed' ? 'bg-green-500/20 text-green-500 border border-green-500/30' :
+                                                        b.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30' :
+                                                        'bg-red-500/20 text-red-500 border border-red-500/30'
+                                                    }`}>
+                                                        {new Date(b.serviceDate) < new Date() && b.status === 'confirmed' ? 'completed' : b.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-8 text-right font-black text-white">
+                                                    ₹{b.totalPrice?.toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "historical" && (
+                    <div className="animate-fade-in space-y-12 pb-20">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                            <div>
+                                <h2 className="text-4xl font-black uppercase tracking-tighter mb-2">Historical Ledger</h2>
+                                <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Archived Intelligence & Outcomes</p>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-accent">Vault Status: Locked</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {pastEvents.map((event) => (
+                                <div key={event._id} className="glass-card-deep p-8 rounded-[2.5rem] flex flex-col group/arc">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                            {new Date(event.startDate).toLocaleDateString('en-GB')}
+                                        </div>
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl grayscale group-hover/arc:grayscale-0 transition-all">
+                                            {event.category === 'Entrepreneurship' ? '💡' : event.category === 'Women in Tech' ? '⚛️' : '📈'}
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-2xl font-black uppercase tracking-tight mb-2 group-hover/arc:text-accent transition-colors">{event.name}</h3>
+                                    <p className="text-gray-500 text-xs font-medium leading-relaxed mb-6 italic">
+                                        {event.description}
+                                    </p>
+
+                                    <div className="space-y-3 mb-8 bg-white/40 p-5 rounded-3xl border border-primary/5 font-mono">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black text-primary px-2 py-0.5 rounded bg-accent/20 border border-accent/20 tracking-tighter">DATA</span>
+                                            <span className="text-[10px] font-black text-primary/70">{event.features?.stats || 'Metric Cached'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black text-primary px-2 py-0.5 rounded bg-primary/10 border border-primary/10 tracking-tighter">ROLE</span>
+                                            <span className="text-[10px] font-black text-primary/70">{event.features?.role || event.features?.sponsored || 'Platform Node'}</span>
+                                        </div>
+                                        {event.location?.displayAddress && (
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[10px] font-black text-white px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 tracking-tighter">LOC</span>
+                                                <span className="text-[11px] font-bold text-blue-400">{event.location.displayAddress}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-auto pt-6 border-t border-white/5 flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Resolution</span>
+                                            <span className="text-xs font-black text-green-500 uppercase">ARCHIVE_SUCCESS</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => window.open('/reports/sample-report.pdf', '_blank')}
+                                            className="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+                                        >
+                                            💾 Report
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === "settings" && (
                     <div className="max-w-2xl animate-fade-in space-y-6">
                         <div className="glass-card p-8 rounded-3xl border border-white/10 bg-white/5">
@@ -501,7 +669,7 @@ function TabButton({ id, label, icon, active, onClick, count }) {
     return (
         <button
             onClick={() => onClick(id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-white/10 text-white border border-white/10' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-primary text-white shadow-xl' : 'text-[#64748b] hover:text-primary hover:bg-black/5'}`}
         >
             <span className="text-lg">{icon}</span>
             <span className="font-medium text-sm">{label}</span>

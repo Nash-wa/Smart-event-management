@@ -9,6 +9,7 @@ function Services() {
     const [events, setEvents] = useState([]);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const [sortBy, setSortBy] = useState("rating");
+    const [searchTerm, setSearchTerm] = useState("");
     const navigate = useNavigate();
     const { eventId } = useParams();
 
@@ -122,6 +123,18 @@ function Services() {
                     </button>
 
                     <div className="flex flex-wrap items-center gap-4">
+                        {/* Search Input */}
+                        <div className="flex items-center gap-3 bg-white/5 px-5 py-2 rounded-2xl border border-white/10 w-full md:w-80 group focus-within:bg-white/10 transition-all">
+                            <span className="text-gray-500 group-focus-within:text-accent transition-colors">🔍</span>
+                            <input 
+                                type="text"
+                                placeholder="SEARCH VENDORS..."
+                                className="bg-transparent border-none text-[11px] font-black uppercase tracking-widest focus:ring-0 w-full placeholder:text-gray-600"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
                         <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10">
                             <select
                                 className="bg-transparent border-none text-sm font-bold uppercase tracking-widest focus:ring-0 cursor-pointer p-2"
@@ -156,7 +169,9 @@ function Services() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {vendors.map((vendor) => (
+                    {vendors
+                        .filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()) || (v.district || '').toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map((vendor) => (
                         <div
                             key={vendor._id}
                             className="glass-card p-6 rounded-[40px] border border-white/10 bg-white/5 hover:bg-white/10 transition-all group flex flex-col relative overflow-hidden"

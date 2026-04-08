@@ -134,23 +134,23 @@ const GuestARNavigation = () => {
 
     if (loading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-black">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-blue-500 border-gray-700"></div>
+            <div className="flex h-screen w-screen items-center justify-center bg-background">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-accent border-primary/10"></div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="flex flex-col h-screen w-full bg-black p-8 text-center justify-center items-center">
-                <div className="text-red-500 text-5xl mb-4">⚠️</div>
-                <h2 className="text-white text-xl font-bold mb-2">Error</h2>
-                <p className="text-gray-400 mb-6">{error}</p>
+            <div className="flex flex-col h-screen w-full bg-background p-8 text-center justify-center items-center">
+                <div className="text-accent text-5xl mb-4">⚠️</div>
+                <h2 className="text-primary text-xl font-black uppercase italic mb-2 tracking-tighter">Navigation System Error</h2>
+                <p className="text-muted-foreground mb-8 max-w-xs">{error}</p>
                 <button
                     onClick={() => navigate(-1)}
-                    className="bg-white text-black px-6 py-2 rounded-lg font-bold"
+                    className="bg-primary text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-[10px] shadow-lux hover:scale-105 active:scale-95 transition-all"
                 >
-                    Go Back
+                    Return to Event
                 </button>
             </div>
         );
@@ -159,28 +159,28 @@ const GuestARNavigation = () => {
     const targetNode = nodes[currentIndex];
 
     return (
-        <div className="relative h-screen w-full overflow-hidden bg-black font-sans">
+        <div className="relative h-screen w-full overflow-hidden bg-background font-sans">
 
             {/* UI Overlay */}
-            <div className="absolute top-0 left-0 right-0 z-50 p-4">
-                <div className="bg-black/70 backdrop-blur-md border border-white/20 rounded-2xl p-5 shadow-xl text-center">
+            <div className="absolute top-0 left-0 right-0 z-50 p-6">
+                <div className="glass-card-deep p-6 shadow-lux border-accent/20 text-center">
 
                     {!arrived ? (
                         <>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
-                                    Step {currentIndex + 1} of {nodes.length}
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">
+                                    Step {currentIndex + 1} / {nodes.length}
                                 </span>
-                                <span className="text-xs font-mono text-white/50 bg-white/10 px-2 py-1 rounded">
+                                <span className="text-[10px] font-mono font-bold text-primary/60 bg-accent/5 px-3 py-1 rounded-full border border-accent/10 shadow-sm">
                                     {distance ? `${distance}m` : "Locating..."}
                                 </span>
                             </div>
 
-                            <h1 className="text-xl font-bold text-white mb-1">
+                            <h1 className="text-2xl font-black text-primary mb-1 tracking-tighter uppercase italic">
                                 {targetNode?.name || targetNode?.instruction || "Next Checkpoint"}
                             </h1>
 
-                            <p className="text-sm text-gray-300">
+                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">
                                 {targetNode?.instruction || "Follow the arrow to reach your destination."}
                             </p>
 
@@ -195,16 +195,19 @@ const GuestARNavigation = () => {
                             </div>
                         </>
                     ) : (
-                        <div className="py-2">
-                            <div className="text-4xl mb-3">🎉</div>
-                            <h1 className="text-2xl font-bold text-green-400 mb-2">
-                                You have reached {targetNode?.name || "your destination"}!
+                        <div className="py-4">
+                            <div className="text-4xl mb-4">🎉</div>
+                            <h1 className="text-3xl font-black text-accent mb-2 tracking-tighter uppercase italic">
+                                Destination Reached!
                             </h1>
+                            <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest mb-6">
+                                You have arrived at {targetNode?.name || "your final point"}
+                            </p>
                             <button
                                 onClick={() => navigate(-1)}
-                                className="mt-4 bg-green-500 px-6 py-2 rounded-full text-white font-bold text-sm hover:bg-green-600 transition-colors"
+                                className="bg-primary text-white px-10 py-3 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-lux hover:bg-accent transition-all"
                             >
-                                Finish Navigation
+                                Finish Journey
                             </button>
                         </div>
                     )}

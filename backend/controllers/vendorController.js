@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // @route   GET /api/vendors
 // @access  Public
 const getVendors = asyncHandler(async (req, res) => {
-    const { lat, lng, owner, district, category } = req.query;
+    const { lat, lng, owner, district, category, date } = req.query;
     const isApproved = req.query.isApproved === 'false' ? false : true;
 
     let query = { isApproved };
@@ -25,12 +25,38 @@ const getVendors = asyncHandler(async (req, res) => {
 
     let vendors = await Vendor.find(query);
 
+    // If date is provided, check availability for each vendor
+    if (date) {
+        const Booking = require('../models/bookingModel');
+        const searchDate = new Date(date);
+
+        const vendorsWithAvailability = await Promise.all(vendors.map(async (vendor) => {
+            const v = vendor.toObject();
+            
+            // Check manual unavailability
+            const isManuallyUnavailable = v.unavailability?.some(d => 
+                new Date(d).toDateString() === searchDate.toDateString()
+            );
+
+            // Check existing confirmed bookings
+            const hasConfirmedBooking = await Booking.findOne({
+                vendor: v._id,
+                serviceDate: searchDate,
+                status: 'confirmed'
+            });
+
+            v.isAvailable = !isManuallyUnavailable && !hasConfirmedBooking;
+            return v;
+        }));
+        vendors = vendorsWithAvailability;
+    }
+
     if (lat && lng) {
         const userLat = parseFloat(lat);
         const userLng = parseFloat(lng);
 
         vendors = vendors.map(vendor => {
-            const v = vendor.toObject();
+            const v = vendor.toObject ? vendor.toObject() : vendor; // Handle both doc and plain obj
             if (v.location && v.location.lat && v.location.lng) {
                 const distance = calculateDistance(userLat, userLng, v.location.lat, v.location.lng);
                 return { ...v, distance };
@@ -196,6 +222,30 @@ const getVendorRequests = asyncHandler(async (req, res) => {
     res.json(requests);
 });
 
+// @desc    Update vendor availability
+// @route   PUT /api/vendors/:id/availability
+// @access  Private (Vendor owner or Admin)
+const updateAvailability = asyncHandler(async (req, res) => {
+    const { unavailability, workingDays } = req.body;
+    const vendor = await Vendor.findById(req.params.id);
+
+    if (vendor) {
+        if (vendor.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            res.status(403);
+            throw new Error('Not authorized to update this vendor');
+        }
+
+        if (unavailability) vendor.unavailability = unavailability;
+        if (workingDays) vendor.workingDays = workingDays;
+
+        const updatedVendor = await vendor.save();
+        res.json(updatedVendor);
+    } else {
+        res.status(404);
+        throw new Error('Vendor not found');
+    }
+});
+
 module.exports = {
     getVendors,
     getVendorById,
@@ -203,5 +253,6 @@ module.exports = {
     getVendorReviews,
     createVendorReview,
     approveVendor,
-    getVendorRequests
+    getVendorRequests,
+    updateAvailability
 };

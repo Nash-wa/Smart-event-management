@@ -55,7 +55,10 @@ const EventMetricsCard = ({ event, token }) => {
       const diff = eventDate - now;
 
       if (diff <= 0) {
-        setCountdown(prev => ({ ...prev, active: true }));
+        // If it's more than 24h past the start, it's completed (simple heuristic)
+        // or check if endDate exists and is past.
+        const isPast = Math.abs(diff) > (1000 * 60 * 60 * 24); 
+        setCountdown(prev => ({ ...prev, active: true, isPast }));
         return;
       }
 
@@ -111,9 +114,9 @@ const EventMetricsCard = ({ event, token }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* READINESS CIRCULAR CARD */}
-        <div className="glass-card p-6 rounded-3xl border border-white/5 flex flex-col items-center justify-center relative overflow-hidden group hover:border-white/10 transition-all">
+        <div className="glass-card p-6 rounded-3xl border border-primary/5 flex flex-col items-center justify-center relative overflow-hidden group hover:border-accent/20 transition-all shadow-lux bg-white/40">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <span className="text-6xl font-black">Ready</span>
+            <span className="text-6xl font-black text-primary">Ready</span>
           </div>
 
           <div className="relative w-32 h-32 mb-4">
@@ -121,7 +124,7 @@ const EventMetricsCard = ({ event, token }) => {
               <circle
                 cx="64" cy="64" r={radius}
                 stroke="currentColor" strokeWidth="8"
-                fill="transparent" className="text-white/5"
+                fill="transparent" className="text-primary/5"
               />
               <circle
                 cx="64" cy="64" r={radius}
@@ -134,30 +137,30 @@ const EventMetricsCard = ({ event, token }) => {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className={`text-3xl font-black ${getScoreColor(score)}`}>{score}%</span>
-              <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">Readiness</span>
+              <span className="text-[8px] font-black text-[#64748b] uppercase tracking-widest">Readiness</span>
             </div>
           </div>
 
-          <div className={`px-4 py-1.5 rounded-full ${getScoreBg(score)} ${getScoreColor(score)} text-[10px] font-black uppercase tracking-widest`}>
+          <div className={`px-4 py-1.5 rounded-full ${getScoreBg(score)} ${getScoreColor(score)} text-[10px] font-black uppercase tracking-widest border border-current/10`}>
             {score >= 75 ? 'Optimal Status' : score >= 40 ? 'Action Required' : 'Critical State'}
           </div>
         </div>
 
         {/* BUDGET & ANALYTICS CARD */}
-        <div className="lg:col-span-2 glass-card p-6 rounded-3xl border border-white/5 hover:border-white/10 transition-all flex flex-col justify-between">
+        <div className="lg:col-span-2 glass-card p-6 rounded-3xl border border-primary/5 hover:border-accent/20 transition-all flex flex-col justify-between shadow-lux bg-white/40">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Financial Health</p>
-              <h3 className="text-xl font-bold">Budget Performance</h3>
+              <p className="text-[10px] font-black text-accent uppercase tracking-widest">Financial Health</p>
+              <h3 className="text-xl font-black text-primary uppercase italic tracking-tighter">Budget Performance</h3>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-black text-white">${budgetUsed.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-500 font-medium">Out of ${budgetTotal.toLocaleString()}</p>
+              <p className="text-2xl font-black text-primary">₹{budgetUsed.toLocaleString()}</p>
+              <p className="text-[10px] text-[#64748b] font-black uppercase tracking-tighter">OUT OF ₹{budgetTotal.toLocaleString()}</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="relative h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+            <div className="relative h-4 w-full bg-primary/5 rounded-full overflow-hidden border border-primary/5">
               <div
                 className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out rounded-full ${budgetPercentage > 90 ? 'bg-rose-500' : budgetPercentage > 70 ? 'bg-amber-500' : 'bg-accent'
                   }`}
@@ -167,54 +170,58 @@ const EventMetricsCard = ({ event, token }) => {
               </div>
             </div>
 
-            <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-tighter">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#64748b]">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-accent"></span>
-                <span className="text-gray-400">Used: {budgetPercentage.toFixed(1)}%</span>
+                <span>Used: {budgetPercentage.toFixed(1)}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-white/20"></span>
-                <span className="text-gray-400">Free: {(100 - budgetPercentage).toFixed(1)}%</span>
+                <span className="w-2 h-2 rounded-full bg-primary/20"></span>
+                <span>Free: {(100 - budgetPercentage).toFixed(1)}%</span>
               </div>
             </div>
           </div>
 
           {/* Timeline Countdown */}
-          <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+          <div className="mt-6 pt-6 border-t border-primary/5 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl">⏳</div>
+              <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-xl">⏳</div>
               <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">T-Minus</p>
+                <p className="text-[10px] font-black text-[#64748b] uppercase tracking-widest">T-Minus</p>
                 <div className="flex gap-2">
                   {countdown.active ? (
-                    <span className="text-emerald-400 font-bold animate-pulse">Event Live Now! 🚀</span>
+                    countdown.isPast ? (
+                      <span className="text-blue-600 font-bold uppercase tracking-widest text-[10px]">Mission Accomplished 🎬</span>
+                    ) : (
+                      <span className="text-emerald-600 font-bold animate-pulse">Event Live Now! 🚀</span>
+                    )
                   ) : (
                     <>
                       <div className="flex flex-col items-center">
-                        <span className="text-sm font-bold">{countdown.days}</span>
-                        <span className="text-[8px] text-gray-500 uppercase">Days</span>
+                        <span className="text-sm font-black text-primary">{countdown.days}</span>
+                        <span className="text-[8px] text-[#64748b] font-black uppercase">Days</span>
                       </div>
-                      <span className="text-gray-600">:</span>
+                      <span className="text-primary/20">:</span>
                       <div className="flex flex-col items-center">
-                        <span className="text-sm font-bold">{String(countdown.hours).padStart(2, '0')}</span>
-                        <span className="text-[8px] text-gray-500 uppercase">Hrs</span>
+                        <span className="text-sm font-black text-primary">{String(countdown.hours).padStart(2, '0')}</span>
+                        <span className="text-[8px] text-[#64748b] font-black uppercase">Hrs</span>
                       </div>
-                      <span className="text-gray-600">:</span>
+                      <span className="text-primary/20">:</span>
                       <div className="flex flex-col items-center">
-                        <span className="text-sm font-bold">{String(countdown.mins).padStart(2, '0')}</span>
-                        <span className="text-[8px] text-gray-500 uppercase">Min</span>
+                        <span className="text-sm font-black text-primary">{String(countdown.mins).padStart(2, '0')}</span>
+                        <span className="text-[8px] text-[#64748b] font-black uppercase">Min</span>
                       </div>
-                      <span className="text-gray-600">:</span>
+                      <span className="text-primary/20">:</span>
                       <div className="flex flex-col items-center">
-                        <span className="text-sm font-bold text-accent">{String(countdown.secs).padStart(2, '0')}</span>
-                        <span className="text-[8px] text-gray-500 uppercase text-accent/50">Sec</span>
+                        <span className="text-sm font-black text-accent">{String(countdown.secs).padStart(2, '0')}</span>
+                        <span className="text-[8px] text-accent/60 font-black uppercase">Sec</span>
                       </div>
                     </>
                   )}
                 </div>
               </div>
             </div>
-            <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold hover:bg-white/10 transition-all text-gray-300">
+            <button className="px-5 py-2.5 rounded-xl bg-primary/5 border border-primary/10 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all font-mono">
               View Itinerary
             </button>
           </div>
@@ -223,35 +230,35 @@ const EventMetricsCard = ({ event, token }) => {
 
       {/* 4 INTELLIGENCE CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-4 rounded-2xl border border-white/5 hover:bg-white/5 transition-all group">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Services Booked</p>
+        <div className="glass-card p-4 rounded-2xl border border-primary/5 hover:bg-white/60 transition-all group shadow-sm bg-white/40">
+          <p className="text-[9px] font-black text-[#64748b] uppercase tracking-[0.2em] mb-1">Services Booked</p>
           <div className="flex items-end justify-between">
             <h4 className="text-2xl font-black text-primary">{readiness.metrics.servicesCount}</h4>
-            <span className="text-xs text-emerald-500 font-bold mb-1">+{confirmedBookings} verified</span>
+            <span className="text-[9px] text-emerald-600 font-black mb-1">+{confirmedBookings} verified</span>
           </div>
         </div>
 
-        <div className="glass-card p-4 rounded-2xl border border-white/5 hover:bg-white/5 transition-all group">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Remaining Budget</p>
+        <div className="glass-card p-4 rounded-2xl border border-primary/5 hover:bg-white/60 transition-all group shadow-sm bg-white/40">
+          <p className="text-[9px] font-black text-[#64748b] uppercase tracking-[0.2em] mb-1">Remaining Budget</p>
           <div className="flex items-end justify-between">
-            <h4 className="text-2xl font-black text-white">${budgetRemaining.toLocaleString()}</h4>
-            <span className="text-[10px] text-gray-500 mb-1">Safe Zone</span>
+            <h4 className="text-2xl font-black text-primary">₹{budgetRemaining.toLocaleString()}</h4>
+            <span className="text-[9px] font-black text-accent mb-1 tracking-tighter uppercase">Safe Zone</span>
           </div>
         </div>
 
-        <div className="glass-card p-4 rounded-2xl border border-white/5 hover:bg-white/5 transition-all group">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">AR Nodes Count</p>
+        <div className="glass-card p-4 rounded-2xl border border-primary/5 hover:bg-white/60 transition-all group shadow-sm bg-white/40">
+          <p className="text-[9px] font-black text-[#64748b] uppercase tracking-[0.2em] mb-1">AR Nodes Count</p>
           <div className="flex items-end justify-between">
-            <h4 className="text-2xl font-black text-secondary">{readiness.metrics.arNodesCount}</h4>
-            <span className="text-[10px] text-gray-500 mb-1">Active Mesh</span>
+            <h4 className="text-2xl font-black text-primary">{readiness.metrics.arNodesCount}</h4>
+            <span className="text-[9px] font-black text-primary/40 mb-1 tracking-tighter uppercase">Active Mesh</span>
           </div>
         </div>
 
-        <div className="glass-card p-4 rounded-2xl border border-white/5 hover:bg-white/5 transition-all group">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Confirmed Guests</p>
+        <div className="glass-card p-4 rounded-2xl border border-primary/5 hover:bg-white/60 transition-all group shadow-sm bg-white/40">
+          <p className="text-[9px] font-black text-[#64748b] uppercase tracking-[0.2em] mb-1">Confirmed Guests</p>
           <div className="flex items-end justify-between">
-            <h4 className="text-2xl font-black text-emerald-400">{readiness.metrics.guestCount || 0}</h4>
-            <span className="text-[10px] text-gray-500 mb-1">Live RSVP</span>
+            <h4 className="text-2xl font-black text-emerald-600">{readiness.metrics.guestCount || 0}</h4>
+            <span className="text-[9px] font-black text-emerald-600/60 mb-1 tracking-tighter uppercase">Live RSVP</span>
           </div>
         </div>
       </div>

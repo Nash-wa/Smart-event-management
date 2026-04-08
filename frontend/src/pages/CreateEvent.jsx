@@ -144,7 +144,8 @@ function CreateEvent() {
     setShowVendorModal(true);
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/vendors?category=${category}`, {
+      const dateParam = formData.startDate ? `&date=${formData.startDate}` : '';
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/vendors?category=${category}${dateParam}`, {
         headers: {
           'Authorization': `Bearer ${userInfo?.token}`
         }
@@ -795,9 +796,15 @@ function CreateEvent() {
                   </div>
                   <div className="grid grid-cols-1 gap-4">
                     {availableVendors.map((vendor) => (
-                      <div key={vendor._id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center hover:bg-white/10 cursor-pointer vendor-card" onClick={() => selectVendor(vendor)}>
+                      <div key={vendor._id} 
+                        className={`p-4 rounded-xl border flex justify-between items-center transition-all ${vendor.isAvailable === false ? 'opacity-50 grayscale cursor-not-allowed bg-black/20 border-white/5' : 'bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer vendor-card'}`} 
+                        onClick={() => vendor.isAvailable !== false && selectVendor(vendor)}
+                      >
                         <div>
-                          <h3 className="font-bold text-lg">{vendor.name}</h3>
+                          <h3 className="font-bold text-lg flex items-center gap-2">
+                            {vendor.name}
+                            {vendor.isAvailable === false && <span className="text-[10px] bg-red-500/20 text-red-500 px-2 py-0.5 rounded border border-red-500/20 font-black uppercase tracking-tighter shadow-lg shadow-red-500/10">Booked/Unavailable</span>}
+                          </h3>
                           <p className="text-gray-400 text-sm mb-1">{vendor.address || vendor.description || vendor.district || 'Service Provider'}</p>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-yellow-400 font-bold flex items-center gap-1">
@@ -807,8 +814,10 @@ function CreateEvent() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold text-accent">₹{vendor.price}</p>
-                          <button className="text-sm text-green-400 mt-1">Select →</button>
+                          <p className={`text-xl font-bold ${vendor.isAvailable === false ? 'text-gray-500' : 'text-accent'}`}>₹{vendor.price}</p>
+                          <button className={`text-sm mt-1 transition-all ${vendor.isAvailable === false ? 'text-gray-600 cursor-not-allowed' : 'text-green-400 hover:text-green-300'}`} disabled={vendor.isAvailable === false}>
+                            {vendor.isAvailable === false ? 'Booked/Unavailable' : 'Select →'}
+                          </button>
                         </div>
                       </div>
                     ))}

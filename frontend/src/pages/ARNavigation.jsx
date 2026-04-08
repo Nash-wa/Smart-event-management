@@ -47,32 +47,32 @@ const ARHUD = ({ label, distance, isLast, currentStep, totalSteps, bearing }) =>
                 className="absolute top-1/3 left-1/2 -translate-x-1/2 flex flex-col items-center animate-fade-in-up transition-transform duration-300"
                 style={{ transform: `rotateY(${(bearing > 180 ? bearing - 360 : bearing) * -2}deg) translateZ(200px)` }}
             >
-                <div className="glass-card px-8 py-4 rounded-[2rem] border-primary/40 shadow-[0_0_80px_rgba(59,130,246,0.2)] backdrop-blur-2xl flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                        <div className="w-4 h-4 rounded-full bg-primary animate-ping absolute" />
-                        <div className="w-4 h-4 rounded-full bg-primary relative" />
+                <div className="glass-card px-8 py-4 rounded-[2rem] border-primary/20 shadow-lux backdrop-blur-2xl flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-accent animate-ping absolute" />
+                        <div className="w-4 h-4 rounded-full bg-accent relative" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-white font-black tracking-widest text-xl uppercase italic">{label}</span>
+                        <span className="text-primary font-black tracking-widest text-xl uppercase italic">{label}</span>
                         <span className="text-primary/60 text-[10px] uppercase font-mono tracking-tighter">Target Anchor Locked</span>
                     </div>
                 </div>
-                <div className="w-0.5 h-32 bg-gradient-to-b from-primary via-primary/50 to-transparent mt-1 animate-pulse" />
+                <div className="w-0.5 h-32 bg-gradient-to-b from-accent via-accent/50 to-transparent mt-1 animate-pulse" />
             </div>
         )}
         {!isLast && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
                 <div className="w-64 h-64 relative flex items-center justify-center">
                     <div
-                        className="absolute inset-0 border-2 border-dashed border-primary/10 rounded-full transition-transform duration-500"
+                        className="absolute inset-0 border-2 border-dashed border-accent/20 rounded-full transition-transform duration-500"
                         style={{ transform: `rotate(${bearing}deg)` }}
                     >
-                        <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_#3b82f6]" />
+                        <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 w-4 h-4 bg-accent rounded-full shadow-[0_0_20px_var(--accent)]" />
                     </div>
-                    <div className="absolute inset-0 border-[0.5px] border-primary/20 rounded-full animate-[spin_10s_linear_infinite]" />
+                    <div className="absolute inset-0 border-[0.5px] border-primary/10 rounded-full animate-[spin_10s_linear_infinite]" />
                     <svg
                         viewBox="0 0 24 24"
-                        className={`w-24 h-24 transition-all duration-300 ${Math.abs(bearing % 360) < 20 ? 'text-accent drop-shadow-[0_0_50px_#10b981] scale-110' : 'text-white drop-shadow-[0_0_30px_rgba(59,130,246,1)]'}`}
+                        className={`w-24 h-24 transition-all duration-300 ${Math.abs(bearing % 360) < 20 ? 'text-accent drop-shadow-[0_0_50px_var(--accent)] scale-110' : 'text-primary drop-shadow-[0_0_30px_rgba(0,0,0,0.1)]'}`}
                     >
                         <path fill="currentColor" d="M12 2L2 12h5v8h10v-8h5L12 2z" />
                     </svg>
@@ -80,7 +80,7 @@ const ARHUD = ({ label, distance, isLast, currentStep, totalSteps, bearing }) =>
                         <span className={`text-[10px] font-black uppercase mb-1 tracking-widest ${Math.abs(bearing % 360) < 20 ? 'text-accent' : 'text-primary/60'}`}>
                             {Math.abs(bearing % 360) < 20 ? '— TARGET ACQUIRED —' : 'Target Proximity'}
                         </span>
-                        <div className={`glass-card px-8 py-3 rounded-full font-black text-3xl border-primary/40 backdrop-blur-3xl shadow-[0_0_40px_rgba(59,130,246,0.2)] ${parseInt(distance) < 5 ? 'text-accent animate-bounce' : 'text-white'}`}>
+                        <div className={`glass-card px-8 py-3 rounded-full font-black text-3xl border-primary/10 backdrop-blur-3xl shadow-lux ${parseInt(distance) < 5 ? 'text-accent animate-bounce' : 'text-primary'}`}>
                             {parseInt(distance) < 3 ? 'ARRIVED' : distance}
                         </div>
                     </div>
@@ -117,7 +117,6 @@ const NavigationStep = ({ instruction, distance, nextStep, prevStep, isLast, lab
         const timer = setTimeout(() => setGlitch(false), 500);
 
         return () => {
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             const videoEl = videoRef.current;
             if (videoEl && videoEl.srcObject) {
                 videoEl.srcObject.getTracks().forEach(track => track.stop());
@@ -128,20 +127,20 @@ const NavigationStep = ({ instruction, distance, nextStep, prevStep, isLast, lab
     }, [currentStep]);
 
     return (
-        <div className={`relative w-full h-[calc(100vh-120px)] overflow-hidden bg-black rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/5 transition-all duration-700 ${glitch ? 'animate-pulse opacity-80' : ''}`}>
+        <div className={`relative w-full h-[calc(100vh-120px)] overflow-hidden bg-background rounded-[3rem] shadow-lux border border-primary/5 transition-all duration-700 ${glitch ? 'animate-pulse opacity-80' : ''}`}>
             <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className={`absolute inset-0 w-full h-full object-cover grayscale-[15%] brightness-[90%] contrast-[110%] transition-opacity duration-1000 ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 w-full h-full object-cover grayscale-[15%] brightness-[100%] contrast-[105%] transition-opacity duration-1000 ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
             />
             {!cameraActive && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050505]">
-                    <div className="w-24 h-24 rounded-full border-2 border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
-                        <span className="text-4xl text-red-500 shadow-glow">⚠️</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background">
+                    <div className="w-24 h-24 rounded-full border-2 border-accent/20 flex items-center justify-center mb-6 animate-pulse">
+                        <span className="text-4xl text-accent shadow-glass">⚠️</span>
                     </div>
-                    <h3 className="text-white font-mono text-xl font-black uppercase italic tracking-widest">Feed Connection Error</h3>
-                    <p className="text-zinc-500 font-mono text-[10px] mt-2">REQUESTING PERMISSIONS...</p>
+                    <h3 className="text-primary font-mono text-xl font-black uppercase italic tracking-widest">Feed Connection Error</h3>
+                    <p className="text-muted-foreground font-mono text-[10px] mt-2 text-center max-w-xs">REQUESTING PERMISSIONS OR DEVICE SENSOR ACCESS...</p>
                 </div>
             )}
             <RadarMap bearing={bearing} />
@@ -153,31 +152,31 @@ const NavigationStep = ({ instruction, distance, nextStep, prevStep, isLast, lab
                 totalSteps={totalSteps}
                 bearing={bearing}
             />
-            <div className="absolute bottom-10 inset-x-10 p-1 bg-gradient-to-r from-transparent via-white/5 to-transparent backdrop-blur-sm rounded-[2rem] z-30">
-                <div className="flex items-center justify-between gap-6 max-w-4xl mx-auto glass-card p-6 rounded-[2rem] border-white/5">
+            <div className="absolute bottom-10 inset-x-10 p-1 bg-white/50 backdrop-blur-sm rounded-[2rem] z-30 border border-white/20">
+                <div className="flex items-center justify-between gap-6 max-w-4xl mx-auto glass-card p-6 rounded-[2rem] border-primary/10">
                     <div className="flex-1 flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-accent to-purple-800 flex items-center justify-center text-3xl shadow-[0_0_40px_rgba(59,130,246,0.5)]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl shadow-lux">
                             {isLast ? '👑' : '🎯'}
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-white font-black text-2xl tracking-tighter uppercase italic line-clamp-1">{instruction}</h3>
+                            <h3 className="text-primary font-black text-2xl tracking-tighter uppercase italic line-clamp-1">{instruction}</h3>
                             <div className="flex items-center gap-3">
-                                <span className="text-primary font-mono text-[9px] tracking-widest font-black uppercase">Sensor: Geo_Spatial_V8</span>
-                                <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-                                <span className="text-gray-500 font-mono text-[9px] tracking-widest uppercase">{isLast ? "Anchor Reached" : `Proximity: ${distance}`}</span>
+                                <span className="text-accent font-mono text-[9px] tracking-widest font-black uppercase">Sensor: Geo_Spatial_V8</span>
+                                <div className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+                                <span className="text-primary/60 font-mono text-[9px] tracking-widest uppercase">{isLast ? "Anchor Reached" : `Proximity: ${distance}`}</span>
                             </div>
                         </div>
                     </div>
                     <div className="flex gap-3">
-                        <button onClick={prevStep} className="w-14 h-16 rounded-2xl glass-card border-white/10 flex items-center justify-center text-xl hover:bg-white/10 transition-all font-black">←</button>
-                        <button onClick={nextStep} className="w-20 h-16 rounded-2xl bg-white text-black flex flex-col items-center justify-center hover:bg-primary hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95 group">
+                        <button onClick={prevStep} className="w-14 h-16 rounded-2xl glass-card border-primary/10 flex items-center justify-center text-xl hover:bg-primary/5 transition-all font-black">←</button>
+                        <button onClick={nextStep} className="w-20 h-16 rounded-2xl bg-primary text-white flex flex-col items-center justify-center hover:bg-accent transition-all shadow-lux active:scale-95 group">
                             <span className="text-2xl font-black group-hover:translate-x-1 transition-transform">→</span>
                             <span className="text-[7px] font-black uppercase tracking-tighter mt-1">Next</span>
                         </button>
                     </div>
                 </div>
             </div>
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-primary/40 animate-[scan_4s_linear_infinite] z-[100] shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-accent/40 animate-[scan_4s_linear_infinite] z-[100]" />
         </div>
     );
 };
@@ -195,7 +194,7 @@ const ARNavigation = () => {
 
     const getDistance = (lat1, lon1, lat2, lon2) => {
         if (!lat1 || !lon1 || !lat2 || !lon2) return "...";
-        const R = 6371e3; // metres
+        const R = 6371e3;
         const φ1 = lat1 * Math.PI / 180;
         const φ2 = lat2 * Math.PI / 180;
         const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -221,7 +220,7 @@ const ARNavigation = () => {
                 return;
             }
             try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/events/public/${eventId}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events/public/${eventId}`);
                 const data = await res.json();
                 if (res.ok) setEvent(data);
             } catch (error) {
@@ -291,39 +290,45 @@ const ARNavigation = () => {
         }
     };
 
-    if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">INITIALIZING AR SENSORS...</div>;
+    if (loading) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-accent border-primary/10"></div>
+            </div>
+        );
+    }
 
     if (!eventId || !event?.nodes?.length) {
         return (
-            <div className="min-h-screen bg-[#020202] p-6 flex flex-col items-center justify-center text-center">
-                <div className="w-24 h-24 rounded-full border-2 border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
-                    <span className="text-4xl">⚠️</span>
+            <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center text-center">
+                <div className="w-24 h-24 rounded-full border-2 border-accent/20 flex items-center justify-center mb-6 animate-pulse">
+                    <span className="text-4xl text-accent">⚠️</span>
                 </div>
-                <h2 className="text-2xl font-black text-white uppercase italic mb-4">Navigation Offline</h2>
-                <p className="text-zinc-500 max-w-md mb-8">No navigation nodes have been configured for this venue.</p>
-                <button onClick={() => navigate(`/event-plan/${eventId}`)} className="px-8 py-3 bg-white text-black font-black rounded-xl uppercase tracking-tighter hover:bg-primary hover:text-white transition-all">Back to Event Plan</button>
+                <h2 className="text-2xl font-black text-primary uppercase italic mb-4">Navigation Offline</h2>
+                <p className="text-muted-foreground max-w-md mb-8">No navigation nodes have been configured for this venue.</p>
+                <button onClick={() => navigate(`/event-plan/${eventId}`)} className="px-8 py-3 bg-primary text-white font-black rounded-xl uppercase tracking-tighter hover:scale-105 active:scale-95 transition-all shadow-lux">Back to Event Plan</button>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#020202] p-6 lg:p-12 flex flex-col items-center">
+        <div className="min-h-screen bg-background p-6 lg:p-12 flex flex-col items-center">
             <header className="w-full max-w-6xl flex justify-between items-center mb-8">
                 <div onClick={() => navigate('/dashboard')} className="cursor-pointer group flex flex-col">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary" />
-                        <h1 className="text-3xl font-black text-white tracking-tight italic group-hover:text-primary transition-colors uppercase">Venue Navigator V8</h1>
+                        <div className="w-1.5 h-6 bg-accent" />
+                        <h1 className="text-3xl font-black text-primary tracking-tight italic group-hover:text-accent transition-colors uppercase">Venue Navigator V8</h1>
                     </div>
-                    <span className="text-zinc-600 text-[10px] font-mono tracking-[0.4em] mt-1">LOCATION_SYNC: ACTIVE // OPERATIONAL_FEED</span>
+                    <span className="text-muted-foreground text-[10px] font-mono tracking-[0.4em] mt-1">LOCATION_SYNC: ACTIVE // OPERATIONAL_FEED</span>
                 </div>
                 <div className="flex gap-4">
-                    <button onClick={saveLayout} disabled={isSaving} className="glass-card px-6 py-3 rounded-2xl border-primary/20 bg-primary/10 flex items-center gap-2 hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50">
+                    <button onClick={saveLayout} disabled={isSaving} className="glass-card px-6 py-3 rounded-2xl border-accent/20 bg-accent/5 flex items-center gap-2 hover:bg-accent/10 transition-all active:scale-95 disabled:opacity-50">
                         <span className="text-lg">{isSaving ? '⌛' : '💾'}</span>
                         <span className="text-[10px] font-black uppercase tracking-widest text-primary">{isSaving ? 'Saving...' : 'Save Blueprint'}</span>
                     </button>
                     <div className="glass-card px-6 py-3 rounded-2xl border-white/5 bg-white/5 flex flex-col items-end">
-                        <span className="text-zinc-500 font-mono text-[8px] tracking-widest uppercase mb-1">Target Point</span>
-                        <span className="text-primary font-black text-xl italic font-mono leading-none">{step + 1} / {steps.length}</span>
+                        <span className="text-muted-foreground font-mono text-[8px] tracking-widest uppercase mb-1">Target Point</span>
+                        <span className="text-accent font-black text-xl italic font-mono leading-none">{step + 1} / {steps.length}</span>
                     </div>
                 </div>
             </header>

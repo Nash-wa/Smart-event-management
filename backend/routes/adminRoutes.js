@@ -21,4 +21,9 @@ router.delete('/categories/:id', protect, adminOnly, deleteCategory);
 // Broadcast to users
 router.post('/broadcast', protect, adminOnly, broadcastMessage);
 
+// Historical Ledger
+const { authorize } = require('../middleware/authMiddleware');
+const { getPastEvents } = require('../controllers/adminController');
+router.get('/past-events', protect, authorize('admin'), getPastEvents);
+
 module.exports = router;

@@ -157,6 +157,40 @@ const createEvent = asyncHandler(async (req, res) => {
         console.error('Failed to create milestone reminders', err);
     }
 
+    // Automatically create bookings for selected vendors
+    if (selectedVendors && typeof selectedVendors === 'object') {
+        try {
+            const Booking = require('../models/bookingModel');
+            const bookingsToCreate = [];
+            
+            // selectedVendors can be a Map or a plain object
+            const vendorEntries = selectedVendors instanceof Map ? 
+                Array.from(selectedVendors.entries()) : 
+                Object.entries(selectedVendors);
+
+            for (const [category, vendorInfo] of vendorEntries) {
+                const vId = vendorInfo.vendorId || vendorInfo._id;
+                if (vId) {
+                    bookingsToCreate.push({
+                        user: req.user._id,
+                        vendor: vId,
+                        event: event._id,
+                        serviceDate: startDate,
+                        totalPrice: vendorInfo.price || 0,
+                        status: 'pending',
+                        notes: `Automated booking for ${category} via event creation.`
+                    });
+                }
+            }
+
+            if (bookingsToCreate.length > 0) {
+                await Booking.insertMany(bookingsToCreate);
+            }
+        } catch (err) {
+            console.error('Failed to create automated bookings:', err);
+        }
+    }
+
     res.status(201).json(event);
 });
 
@@ -250,6 +284,54 @@ const updateEvent = asyncHandler(async (req, res) => {
             event.platformCommission = Number(req.body.budget) * 0.1;
         }
         event.location = req.body.location || event.location;
+        // Check for new vendors added in selectedVendors
+        if (req.body.selectedVendors && typeof req.body.selectedVendors === 'object') {
+            try {
+                const Booking = require('../models/bookingModel');
+                const oldVendors = event.selectedVendors || {};
+                const newVendors = req.body.selectedVendors;
+                const bookingsToCreate = [];
+
+                // Standardize newVendors to entries
+                const newEntries = newVendors instanceof Map ? 
+                    Array.from(newVendors.entries()) : 
+                    Object.entries(newVendors);
+
+                for (const [category, vendorInfo] of newEntries) {
+                    const vId = vendorInfo.vendorId || vendorInfo._id;
+                    if (!vId) continue;
+
+                    // Check if this vendor was already in the old list (primitive check)
+                    let alreadyHandled = false;
+                    const oldEntries = oldVendors instanceof Map ? 
+                        Array.from(oldVendors.values()) : 
+                        Object.values(oldVendors);
+
+                    if (oldEntries.some(oldV => (oldV.vendorId?.toString() || oldV._id?.toString()) === vId.toString())) {
+                        alreadyHandled = true;
+                    }
+
+                    if (!alreadyHandled) {
+                        bookingsToCreate.push({
+                            user: req.user._id,
+                            vendor: vId,
+                            event: event._id,
+                            serviceDate: req.body.startDate || event.startDate,
+                            totalPrice: vendorInfo.price || 0,
+                            status: 'pending',
+                            notes: `Automated booking for ${category} added during event update.`
+                        });
+                    }
+                }
+
+                if (bookingsToCreate.length > 0) {
+                    await Booking.insertMany(bookingsToCreate);
+                }
+            } catch (err) {
+                console.error('Failed to create bookings on update:', err);
+            }
+        }
+
         event.selectedVendors = req.body.selectedVendors || event.selectedVendors;
         event.features = req.body.features || event.features;
         event.plan = req.body.plan || event.plan;
